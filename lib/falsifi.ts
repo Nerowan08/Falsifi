@@ -3,7 +3,10 @@ import { bytesToHex } from "@noble/hashes/utils.js";
 
 export type Posture = "Constructive" | "Balanced" | "Cautious";
 
-export type EvidenceDirection = "supports" | "contradicts";
+export type EvidenceDirection =
+  | "supports"
+  | "contradicts"
+  | "unclassified";
 
 export type EvidenceRelation = "direct" | "derived" | "duplicate";
 
@@ -345,7 +348,11 @@ function combinations<T>(items: T[], size: number): T[][] {
 }
 
 const evidenceContribution = (item: EvidenceItem) =>
-  (item.direction === "supports" ? 1 : -1) *
+  (item.direction === "supports"
+    ? 1
+    : item.direction === "contradicts"
+      ? -1
+      : 0) *
   item.impact *
   item.reliability;
 
@@ -558,7 +565,9 @@ function buildEvidenceGroups(
       const netContribution =
         calculateEvidenceGroupContribution(sortedItems);
       const absoluteContribution = Math.abs(netContribution);
-      const directions = (["supports", "contradicts"] as const).filter(
+      const directions = (
+        ["supports", "contradicts", "unclassified"] as const
+      ).filter(
         (direction) =>
           sortedItems.some((item) => item.direction === direction),
       );
@@ -1145,7 +1154,11 @@ function scoreEvidenceStress(
       return {
         ...item,
         direction:
-          item.direction === "supports" ? "contradicts" : "supports",
+          item.direction === "supports"
+            ? "contradicts"
+            : item.direction === "contradicts"
+              ? "supports"
+              : "unclassified",
       };
     }),
   };
@@ -1402,6 +1415,7 @@ const evidenceGroups = new Set<EvidenceGroup>(EVIDENCE_GROUP_ORDER);
 const evidenceDirections = new Set<EvidenceDirection>([
   "supports",
   "contradicts",
+  "unclassified",
 ]);
 
 const evidenceRelations = new Set<EvidenceRelation>([
