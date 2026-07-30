@@ -37,7 +37,7 @@ The data model also asked ordinary users for arbitrary 0–100 impact and
 confidence numbers. Even deterministic mathematics can create false precision
 when its inputs are ungrounded subjective numbers.
 
-The v0.6 redesign therefore removes scores and model sensitivity from the
+The v0.7 interface therefore removes scores and model sensitivity from the
 primary path. The main output is simple and directly observable:
 
 ```text
@@ -48,6 +48,8 @@ user-added material count
 
 The tool does not require a fixed research sequence. Users choose when to add
 material, edit a claim, review a relationship, or add optional review notes.
+They may also request candidate public pages. Search results stay unselected,
+unverified, and unclassified until the user chooses to add them.
 
 ## Existing alternatives
 
@@ -146,9 +148,12 @@ relationships, not universal automatic source tracing.
 Falsifi 不能再定位成泛化的“投资论点跟踪、压力测试、反方论证、证据溯源、
 提醒”大合集，因为这些能力都有公开竞品。
 
-v0.6 只解决一个问题：把一只股票的研究材料按来源归组。股票判断可以选填。相同规范化网址无法
+v0.7 只解决一个问题：把一只股票的研究材料按来源归组。股票判断可以选填。相同规范化网址无法
 通过修改标签被拆开；用户也可以明确标记两条材料来自同一底层来源。行情数据
 不计入用户材料，主结果也不依赖用户随意填写的 0–100 分。
+
+用户可以主动让工具搜索候选网页。结果默认不勾选、未核实、未分类，确认前
+不会加入记录；这项搜索也不等于完整公告库或新闻库。
 
 产品不再规定用户下一步必须做什么。添加材料、修改判断、检查归组和填写可选
 复核信息都由用户自己决定。
