@@ -1,0 +1,4 @@
+{
+  "tickers": ["AAPL", "MSFT"],
+  "note": "Example US filing watchlist. Edit this file in your fork."
+}
