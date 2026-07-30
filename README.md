@@ -3,7 +3,8 @@
 > **See how your stock-thesis material groups by source.**
 
 Falsifi is an open-source tool for sorting stock-research material by source.
-Pick a listed stock and add the material you used. Writing a claim is optional.
+Pick a listed stock, ask the tool for candidate public pages, or add your own
+link. Writing a claim is optional.
 Falsifi groups matching links and items that you mark as coming from the same
 source. It then shows:
 
@@ -30,7 +31,7 @@ diversity.
 Falsifi keeps the job small:
 
 ```text
-your material
+material you choose
 → matching links and user-confirmed relationships
 → source groups
 ```
@@ -39,13 +40,16 @@ There is no required research sequence. After opening a workspace, the user
 chooses whether to add material, edit the claim, or inspect the source groups.
 Market data and optional review notes do not control the grouping result.
 
-## What v0.6 changes
+## What v0.7 changes
 
 - **One clear landing-page task.** Falsifi no longer presents itself as a
   general stock-analysis dashboard.
 - **The user chooses what to do.** Adding material, editing the claim, and
   reviewing groups are available without a forced sequence or automatic
   follow-up dialog.
+- **User-controlled source search.** “Find public sources” searches for
+  candidate pages only after the user asks. Results start unselected and
+  unverified; nothing enters the record until the user confirms it.
 - **A clear output without subjective scores.** The main view reports material
   count, source-group count, and grouped items. It does not need user-entered
   0–100 impact or confidence numbers.
@@ -94,7 +98,8 @@ Example:
 ## Basic use
 
 - Search a U.S., mainland China, or Hong Kong listed equity.
-- Add the material you want to organize, in any order.
+- Ask Falsifi for candidate public pages or add a link yourself.
+- Open each candidate page and select only material you want to keep.
 - Write a claim if it helps you keep the material in context.
 - If two items come from the same document, dataset, interview, or
   republication chain, link them.
@@ -103,9 +108,12 @@ Example:
 Review dates, invalidation conditions, and contrary material can be useful, but
 they are optional and do not block source grouping.
 
-Delayed Yahoo Finance data supplies only compact market context. The adapter is
-undocumented and suitable for personal or self-hosted evaluation, not a public
-commercial market-data service. See [DATA_SOURCES.md](./DATA_SOURCES.md).
+Yahoo Finance supplies delayed market context and experimental public-page
+search results. The search sends the company name, ticker, and visible search
+terms, never the user's claim. The adapter is undocumented and suitable for
+personal or self-hosted evaluation, not a public commercial data service. It
+is not a complete filing or news archive, especially for mainland China and
+Hong Kong stocks. See [DATA_SOURCES.md](./DATA_SOURCES.md).
 
 ## Run locally
 
