@@ -2,7 +2,6 @@
 
 import {
   ArrowRight,
-  CalendarClock,
   Check,
   Circle,
   FileCheck2,
@@ -20,7 +19,6 @@ import {
 
 import type {
   ResearchPlan,
-  ResearchPurpose,
   ThesisCase,
 } from "@/lib/falsifi";
 import type { Locale } from "@/lib/i18n";
@@ -60,24 +58,21 @@ type ResearchCopy = {
   advancedTitle: string;
   advancedHelp: string;
   modal: {
-    eyebrow: string;
-    title: string;
-    subtitle: string;
-    purpose: string;
-    purposes: Record<ResearchPurpose, string>;
+    titles: Record<ResearchPlanEditorMode, string>;
+    subtitles: Record<ResearchPlanEditorMode, string>;
     thesis: string;
     thesisPlaceholder: string;
-    horizon: string;
-    horizonPlaceholder: string;
     invalidation: string;
     invalidationPlaceholder: string;
     reviewDate: string;
-    validation: string;
+    dateValidation: string;
     cancel: string;
     save: string;
     close: string;
   };
 };
+
+export type ResearchPlanEditorMode = "claim" | "review";
 
 const COPY: Record<Locale, ResearchCopy> = {
   en: {
@@ -135,30 +130,25 @@ const COPY: Record<Locale, ResearchCopy> = {
     advancedHelp:
       "Inspect rule sensitivity, related evidence groups, and scenario boundaries.",
     modal: {
-      eyebrow: "Claim definition",
-      title: "Make one claim testable",
-      subtitle:
-        "Write what you expect, what observable fact would weaken it, and when you will check again.",
-      purpose: "Why are you checking it?",
-      purposes: {
-        "new-research": "New research",
-        "holding-review": "Review an existing holding",
-        watchlist: "Track a watchlist idea",
+      titles: {
+        claim: "Edit claim",
+        review: "Check settings",
       },
-      thesis: "Research claim",
+      subtitles: {
+        claim: "",
+        review: "Both fields are optional.",
+      },
+      thesis: "Your claim",
       thesisPlaceholder:
         "Example: Over the next 12 months, operating-margin recovery can outpace slower revenue growth.",
-      horizon: "Time horizon",
-      horizonPlaceholder: "Example: 12 months",
-      invalidation: "What would materially weaken this claim?",
+      invalidation: "What would make you change your view?",
       invalidationPlaceholder:
-        "Use an observable condition, not a vague feeling. Example: two quarters of organic growth below 8%.",
-      reviewDate: "Review again on",
-      validation:
-        "Complete the claim, time horizon, invalidation condition, and review date.",
+        "Example: organic growth stays below 8% for two quarters.",
+      reviewDate: "Check again",
+      dateValidation: "Choose a valid date.",
       cancel: "Cancel",
-      save: "Save and add evidence",
-      close: "Close claim definition",
+      save: "Save",
+      close: "Close",
     },
   },
   "zh-CN": {
@@ -215,29 +205,25 @@ const COPY: Record<Locale, ResearchCopy> = {
     advancedTitle: "高级模型压力测试",
     advancedHelp: "查看规则敏感性、关联证据组和情景边界。",
     modal: {
-      eyebrow: "判断定义",
-      title: "把一项判断写成可以检验的句子",
-      subtitle:
-        "写清你预计会发生什么、哪项可观察事实会削弱它，以及何时重新检查。",
-      purpose: "为什么要检查它？",
-      purposes: {
-        "new-research": "研究一只新股票",
-        "holding-review": "复核现有持仓",
-        watchlist: "跟踪观察名单",
+      titles: {
+        claim: "编辑判断",
+        review: "复查设置",
       },
-      thesis: "研究判断",
+      subtitles: {
+        claim: "",
+        review: "两项都可不填。",
+      },
+      thesis: "你的判断",
       thesisPlaceholder:
         "例如：未来 12 个月，经营利润率改善能够抵消收入增速放缓。",
-      horizon: "研究期限",
-      horizonPlaceholder: "例如：12 个月",
-      invalidation: "什么情况会实质性削弱这项判断？",
+      invalidation: "什么情况会让你改变判断？",
       invalidationPlaceholder:
-        "请使用可观察条件，而不是模糊感受。例如：有机收入连续两个季度低于 8%。",
-      reviewDate: "下次复核日期",
-      validation: "请完整填写研究判断、期限、失效条件和复核日期。",
+        "例如：有机收入连续两个季度低于 8%",
+      reviewDate: "下次检查",
+      dateValidation: "请选择有效日期。",
       cancel: "取消",
-      save: "保存并添加证据",
-      close: "关闭判断定义",
+      save: "保存",
+      close: "关闭",
     },
   },
   ja: {
@@ -295,29 +281,25 @@ const COPY: Record<Locale, ResearchCopy> = {
     advancedHelp:
       "ルール感応度、関連エビデンス群、シナリオ境界を確認します。",
     modal: {
-      eyebrow: "仮説の定義",
-      title: "一つの仮説を検証可能にする",
-      subtitle:
-        "予想、弱める観察可能な事実、次回確認日を記録します。",
-      purpose: "確認する目的",
-      purposes: {
-        "new-research": "新規調査",
-        "holding-review": "保有銘柄の見直し",
-        watchlist: "ウォッチリストの追跡",
+      titles: {
+        claim: "仮説を編集",
+        review: "確認設定",
+      },
+      subtitles: {
+        claim: "",
+        review: "どちらも任意です。",
       },
       thesis: "調査仮説",
       thesisPlaceholder:
         "例：今後12か月、営業利益率の回復が売上成長の鈍化を上回る。",
-      horizon: "調査期間",
-      horizonPlaceholder: "例：12か月",
-      invalidation: "何がこの仮説を実質的に弱めますか？",
+      invalidation: "何があれば判断を変えますか？",
       invalidationPlaceholder:
-        "曖昧な印象ではなく観察可能な条件を記入してください。",
-      reviewDate: "次回レビュー日",
-      validation: "仮説、期間、反証条件、レビュー日をすべて入力してください。",
+        "例：有機成長率が2四半期連続で8%を下回る。",
+      reviewDate: "次回確認",
+      dateValidation: "有効な日付を選んでください。",
       cancel: "キャンセル",
-      save: "保存して証拠を追加",
-      close: "仮説定義を閉じる",
+      save: "保存",
+      close: "閉じる",
     },
   },
   es: {
@@ -376,30 +358,25 @@ const COPY: Record<Locale, ResearchCopy> = {
     advancedHelp:
       "Examina la sensibilidad de reglas, los grupos relacionados y los límites del escenario.",
     modal: {
-      eyebrow: "Definición de la tesis",
-      title: "Convierte una tesis en algo comprobable",
-      subtitle:
-        "Escribe qué esperas, qué hecho observable la debilitaría y cuándo revisarás de nuevo.",
-      purpose: "Motivo de la comprobación",
-      purposes: {
-        "new-research": "Nueva investigación",
-        "holding-review": "Revisar una posición existente",
-        watchlist: "Seguir una idea",
+      titles: {
+        claim: "Editar tesis",
+        review: "Ajustes de revisión",
+      },
+      subtitles: {
+        claim: "",
+        review: "Ambos campos son opcionales.",
       },
       thesis: "Tesis de investigación",
       thesisPlaceholder:
         "Ejemplo: en 12 meses, la recuperación del margen operativo compensará el menor crecimiento.",
-      horizon: "Horizonte temporal",
-      horizonPlaceholder: "Ejemplo: 12 meses",
-      invalidation: "¿Qué debilitaría materialmente esta tesis?",
+      invalidation: "¿Qué te haría cambiar de opinión?",
       invalidationPlaceholder:
-        "Usa una condición observable, no una sensación imprecisa.",
+        "Ejemplo: crecimiento orgánico inferior al 8% durante dos trimestres.",
       reviewDate: "Próxima revisión",
-      validation:
-        "Completa la tesis, el horizonte, la condición de invalidación y la fecha.",
+      dateValidation: "Elige una fecha válida.",
       cancel: "Cancelar",
-      save: "Guardar y añadir evidencia",
-      close: "Cerrar la definición",
+      save: "Guardar",
+      close: "Cerrar",
     },
   },
 };
@@ -600,11 +577,13 @@ export function ResearchActionSummary({
 export function ResearchPlanModal({
   thesisCase,
   locale,
+  mode,
   onClose,
   onSave,
 }: {
   thesisCase: ThesisCase;
   locale: Locale;
+  mode: ResearchPlanEditorMode;
   onClose: () => void;
   onSave: (value: {
     thesis: string;
@@ -614,9 +593,17 @@ export function ResearchPlanModal({
 }) {
   const copy = COPY[locale].modal;
   const [error, setError] = useState("");
-  const firstFieldRef = useRef<HTMLSelectElement>(null);
+  const claimFieldRef = useRef<HTMLTextAreaElement>(null);
+  const reviewFieldRef = useRef<HTMLTextAreaElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef(onClose);
+  const initialPlan: ResearchPlan = thesisCase.researchPlan ?? {
+    purpose: "new-research",
+    thesisConfirmed: false,
+    invalidationCriteria: "",
+    nextReviewDate: "",
+  };
 
   useEffect(() => {
     closeRef.current = onClose;
@@ -627,63 +614,81 @@ export function ResearchPlanModal({
       document.activeElement instanceof HTMLElement
         ? document.activeElement
         : null;
-    firstFieldRef.current?.focus();
+    if (mode === "claim") {
+      claimFieldRef.current?.focus();
+    } else {
+      reviewFieldRef.current?.focus();
+    }
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeRef.current();
+      if (event.key === "Escape") {
+        closeRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]',
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
       window.removeEventListener("keydown", closeOnEscape);
       returnFocusRef.current?.focus();
     };
-  }, []);
+  }, [mode]);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const purpose = String(form.get("purpose")) as ResearchPurpose;
-    const thesis = String(form.get("thesis") ?? "").trim();
-    const horizon = String(form.get("horizon") ?? "").trim();
-    const invalidationCriteria = String(
-      form.get("invalidationCriteria") ?? "",
-    ).trim();
-    const nextReviewDate = String(
-      form.get("nextReviewDate") ?? "",
-    ).trim();
-
-    if (
-      !["new-research", "holding-review", "watchlist"].includes(purpose) ||
-      thesis.length < 12 ||
-      !horizon ||
-      invalidationCriteria.length < 12 ||
-      !/^\d{4}-\d{2}-\d{2}$/.test(nextReviewDate)
-    ) {
-      setError(copy.validation);
+    if (mode === "claim") {
+      const thesis = String(form.get("thesis") ?? "").trim();
+      onSave({
+        thesis: thesis || thesisCase.thesis,
+        horizon: thesisCase.horizon,
+        researchPlan: {
+          ...initialPlan,
+          thesisConfirmed: Boolean(thesis),
+        },
+      });
       return;
     }
 
+    const nextReviewDate = String(form.get("nextReviewDate") ?? "").trim();
+    if (
+      nextReviewDate &&
+      !/^\d{4}-\d{2}-\d{2}$/.test(nextReviewDate)
+    ) {
+      setError(copy.dateValidation);
+      return;
+    }
     onSave({
-      thesis,
-      horizon,
+      thesis: thesisCase.thesis,
+      horizon: thesisCase.horizon,
       researchPlan: {
-        purpose,
-        thesisConfirmed: true,
-        invalidationCriteria,
+        ...initialPlan,
+        invalidationCriteria: String(
+          form.get("invalidationCriteria") ?? "",
+        ).trim(),
         nextReviewDate,
       },
     });
   };
 
-  const initialPlan: ResearchPlan = thesisCase.researchPlan ?? {
-    purpose: "new-research",
-    thesisConfirmed: false,
-    invalidationCriteria: "",
-    nextReviewDate: "",
-  };
-
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <div
+        ref={dialogRef}
         className="modal research-plan-modal"
         role="dialog"
         aria-modal="true"
@@ -692,9 +697,8 @@ export function ResearchPlanModal({
       >
         <div className="modal-header">
           <div>
-            <span className="eyebrow">{copy.eyebrow}</span>
-            <h2 id="research-plan-title">{copy.title}</h2>
-            <p>{copy.subtitle}</p>
+            <h2 id="research-plan-title">{copy.titles[mode]}</h2>
+            {copy.subtitles[mode] && <p>{copy.subtitles[mode]}</p>}
           </div>
           <button
             className="icon-button"
@@ -705,76 +709,54 @@ export function ResearchPlanModal({
           </button>
         </div>
         <form onSubmit={submit}>
-          <label className="field">
-            <span>{copy.purpose}</span>
-            <select
-              ref={firstFieldRef}
-              name="purpose"
-              defaultValue={initialPlan.purpose}
-            >
-              {(Object.keys(copy.purposes) as ResearchPurpose[]).map(
-                (purpose) => (
-                  <option value={purpose} key={purpose}>
-                    {copy.purposes[purpose]}
-                  </option>
-                ),
-              )}
-            </select>
-          </label>
-          <label className="field">
-            <span>{copy.thesis}</span>
-            <textarea
-              name="thesis"
-              rows={3}
-              required
-              minLength={12}
-              maxLength={5000}
-              defaultValue={
-                initialPlan.thesisConfirmed ? thesisCase.thesis : ""
-              }
-              placeholder={copy.thesisPlaceholder}
-            />
-          </label>
-          <label className="field">
-            <span>{copy.horizon}</span>
-            <input
-              name="horizon"
-              required
-              maxLength={120}
-              defaultValue={
-                initialPlan.thesisConfirmed ? thesisCase.horizon : ""
-              }
-              placeholder={copy.horizonPlaceholder}
-            />
-          </label>
-          <label className="field">
-            <span>{copy.invalidation}</span>
-            <textarea
-              name="invalidationCriteria"
-              rows={3}
-              required
-              minLength={12}
-              maxLength={2000}
-              defaultValue={initialPlan.invalidationCriteria}
-              placeholder={copy.invalidationPlaceholder}
-            />
-          </label>
-          <label className="field">
-            <span>{copy.reviewDate}</span>
-            <input
-              name="nextReviewDate"
-              type="date"
-              required
-              defaultValue={initialPlan.nextReviewDate}
-            />
-          </label>
-          {error && <p className="form-error">{error}</p>}
+          {mode === "claim" ? (
+            <label className="field">
+              <span>{copy.thesis}</span>
+              <textarea
+                ref={claimFieldRef}
+                name="thesis"
+                rows={4}
+                maxLength={5000}
+                defaultValue={
+                  initialPlan.thesisConfirmed ? thesisCase.thesis : ""
+                }
+                placeholder={copy.thesisPlaceholder}
+              />
+            </label>
+          ) : (
+            <>
+              <label className="field">
+                <span>{copy.invalidation}</span>
+                <textarea
+                  ref={reviewFieldRef}
+                  name="invalidationCriteria"
+                  rows={3}
+                  maxLength={2000}
+                  defaultValue={initialPlan.invalidationCriteria}
+                  placeholder={copy.invalidationPlaceholder}
+                />
+              </label>
+              <label className="field">
+                <span>{copy.reviewDate}</span>
+                <input
+                  name="nextReviewDate"
+                  type="date"
+                  defaultValue={initialPlan.nextReviewDate}
+                />
+              </label>
+            </>
+          )}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
           <div className="modal-actions">
             <button type="button" className="button ghost" onClick={onClose}>
               {copy.cancel}
             </button>
             <button type="submit" className="button primary">
-              <CalendarClock size={15} />
+              <Check size={15} />
               {copy.save}
             </button>
           </div>
