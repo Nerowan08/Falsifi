@@ -22,13 +22,13 @@ score =
   + Σ (value_j − baseline_j) × impact_per_unit_j × input_direction_j
 ```
 
-Items with the same declared `originId` and `claimId` are first averaged into
-one argument unit. Distinct argument units are then averaged within their
-related evidence group before the group is added to the score. Duplicating one
-declared source-and-claim pair therefore cannot change its relative weight.
-Independently declared groups still add separately. Evidence-exclusion
-counterfactuals keep the case's original group topology and recompute the
-two-level average from the items and argument units that remain enabled.
+Within each legacy analytical group, the engine keeps at most the strongest
+supporting contribution and the strongest challenging contribution. When both
+directions are present, it averages those two values. Repeating a row, changing
+its label, or adding more rows already assigned to the same group therefore
+cannot increase that group’s influence. Evidence-exclusion counterfactuals
+keep the case’s original group topology and recompute the bounded group
+contribution from the items that remain enabled.
 `evidence_sign` is `+1` for supporting evidence and `−1` for weakening
 evidence. The scenario-input summation adds each input’s change from its
 baseline; `input_direction` is the configured slope sign (`+1` or `−1`) for
@@ -50,14 +50,23 @@ configured rule model; it is not a backtest.
 Removing an observation does not mean its opposite is true, and it does not
 establish a real-world causal effect.
 
-## 3. Evidence dependency grouping
+## 3. Source grouping in the focused product
 
-Flat evidence lists can reuse the same underlying information. Falsifi places
-enabled items in the same **related evidence group** when they share:
+Flat material lists can reuse the same underlying source. The primary workflow
+places user-added items in the same **source group** when they share:
 
+- the same canonical HTTP(S) URL;
 - an explicit `originId`;
-- an explicit `claimId`; or
-- a `dependsOnIds` edge.
+- or a `sameSourceAsIds` edge explicitly recorded by the user.
+
+A matching `claimId` or `dependsOnIds` edge does not merge primary source
+groups. Independent sources may report the same claim, and logical dependency
+does not establish common provenance. Those legacy fields remain available to
+older rule-model diagnostics but are not used for the focused source count.
+
+Canonicalization removes fragments and common tracking parameters, normalizes
+the host and trailing slash, and preserves meaningful query parameters. User
+metadata may connect more material but cannot split one canonical URL.
 
 The relationship graph is treated as undirected for grouping. Diagnostics
 include:
@@ -71,8 +80,8 @@ include:
 - score effects from excluding each source category.
 
 This process does not prove statistical independence or detect copied text.
-Users remain responsible for declaring relationships and reviewing, disabling,
-or editing weights when several items reuse the same information.
+Users remain responsible for declaring same-source relationships. The tool
+cannot discover every copied article or republication chain.
 
 ## 4. Smallest tested item and related-group changes
 
@@ -193,7 +202,8 @@ tamper-proof registry.
 ## Known limitations
 
 - User-defined weights and thresholds can encode bias.
-- Dependencies are declared, not automatically verified from URLs or text.
+- Exact canonical URLs are grouped automatically; relationships between
+  different URLs are declared and are not verified from full page text.
 - Related-group scoring depends on user-declared relationships and is not a
   causal graph.
 - The pairwise search can miss interactions involving three or more
