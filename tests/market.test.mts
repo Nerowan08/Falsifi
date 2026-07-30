@@ -8,6 +8,7 @@ import {
 } from "../lib/falsifi.ts";
 import {
   buildMarketCase,
+  buildResearchCase,
   calculateMarketMetrics,
   inferMarketRegion,
   normalizeMarketCase,
@@ -55,6 +56,25 @@ const chartPayload = {
     error: null,
   },
 };
+
+test("starts an evidence-only case when market context is unavailable", () => {
+  const thesisCase = buildResearchCase(
+    {
+      symbol: "NEW",
+      name: "Newly Listed Company",
+      exchange: "NMS",
+      exchangeName: "Nasdaq",
+      type: "EQUITY",
+      region: "us",
+    },
+    "en",
+  );
+
+  assert.equal(isThesisCase(thesisCase), true);
+  assert.equal(thesisCase.marketSnapshot, undefined);
+  assert.equal(thesisCase.evidence.length, 0);
+  assert.equal(runStressTest(thesisCase).score, 50);
+});
 
 test("parses a real-market chart response into a bounded snapshot", () => {
   const snapshot = parseYahooChart(chartPayload);
@@ -172,6 +192,27 @@ test("builds a valid non-demo case from market data", () => {
   assert.ok(drawdown.value >= 0);
   assert.equal(drawdown.direction, -1);
   assert.equal(analysis.independenceAudit.independentRootCount, 1);
+});
+
+test("normalizes legacy automatic market rows to explicit system provenance", () => {
+  const thesisCase = buildMarketCase(parseYahooChart(chartPayload), "en");
+  thesisCase.evidence.forEach((item) => {
+    delete item.provenance;
+    delete item.verification;
+    delete item.relation;
+    delete item.originId;
+  });
+
+  const normalized = normalizeMarketCase(thesisCase);
+
+  assert.ok(
+    normalized.evidence.every(
+      (item) =>
+        item.provenance === "system-market" &&
+        item.verification === "reviewed" &&
+        item.relation === "derived",
+    ),
+  );
 });
 
 test("refreshes market-derived inputs while preserving the user's research case", () => {
