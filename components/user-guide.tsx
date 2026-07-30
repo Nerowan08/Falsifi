@@ -92,9 +92,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "Search a U.S., mainland China, or Hong Kong listed stock and open its workspace.",
         },
         {
-          title: "2. Add a claim or material",
+          title: "2. Find or add material",
           body:
-            "Write a claim, add material, or set a check date in any order. You can change each later.",
+            "Use “Find public sources” to get candidates, or paste a link yourself. You can write a claim or set a check date at any time.",
         },
         {
           title: "3. Read the source result",
@@ -107,22 +107,22 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "Add material correctly",
       title: "Record material without manufacturing precision",
       intro:
-        "The normal form asks for facts and provenance, not arbitrary numerical confidence scores.",
+        "Search can save time, but every result remains unverified until you check it.",
       items: [
         {
-          title: "Title, publisher, URL, and date",
+          title: "Find public sources",
           body:
-            "Describe the specific fact, link the page you actually checked, and use the observation or publication date. The URL must be an HTTP or HTTPS link.",
+            "Click the button to search for the selected company. Nothing is selected or added automatically. You can change the search terms without sending your claim.",
         },
         {
-          title: "Source type",
+          title: "Open the page before using it",
           body:
-            "Choose company or regulatory disclosure only when you checked the original document. Management comments, market data, and external analysis are separate categories.",
+            "Search results can be old, duplicated, unrelated, or behind a subscription. Open the page, check the publisher and date, then select only useful material.",
         },
         {
-          title: "Supports or challenges",
+          title: "Add a link yourself",
           body:
-            "Choose the direction of this fact relative to your exact thesis—not whether the news sounds generally positive or negative.",
+            "For material the search misses, add the page title and HTTP or HTTPS link manually. Publisher, date, type, and notes are optional.",
         },
         {
           title: "Shared underlying source",
@@ -132,7 +132,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Check status and optional details",
           body:
-            "Mark whether you read the original, checked a secondary source, or have not checked it yet. Publisher, date, notes, and importance are optional.",
+            "Found pages are added as unverified and not classified as supporting or weakening a claim. Update the check status only after you review the page.",
         },
       ],
     },
@@ -176,6 +176,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "A user cannot split the same canonical URL into several groups by entering different labels.",
         "Different links are grouped only when a stored source identity or explicit same-source relationship connects them.",
         "Falsifi does not crawl every page, compare full article text, or guarantee that it has discovered every syndication chain.",
+        "Public-source search uses Yahoo Finance and is not a complete filing or news archive. Coverage can be thin for mainland China and Hong Kong stocks.",
         "More source groups do not prove the investment thesis true.",
         "Delayed market data is background only and is not counted as user material.",
       ],
@@ -235,9 +236,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "搜索美股、A 股或港股，进入这只股票的工具页。",
         },
         {
-          title: "2. 自由添加内容",
+          title: "2. 让工具找，或自己添加",
           body:
-            "你可以先写判断，也可以先加材料。检查条件和日期都是选填，之后随时能改。",
+            "点“帮我找材料”查看候选网页，也可以自己贴链接。判断和复查日期随时可填。",
         },
         {
           title: "3. 查看来源组",
@@ -249,22 +250,22 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
     evidence: {
       nav: "添加材料",
       title: "只填需要的信息",
-      intro: "先填材料内容、链接、类型和核查状态。其他信息放在“更多选项”里。",
+      intro: "搜索可以省时间，但在你打开网页核对前，结果一律标为“未核实”。",
       items: [
         {
-          title: "材料内容和链接",
+          title: "让工具找材料",
           body:
-            "写下关键信息，并贴上原网页链接。",
+            "点击按钮后，工具会搜索当前公司。不会自动勾选，也不会自动加入。你可以改搜索词，系统不会发送你的判断。",
         },
         {
-          title: "来源类型",
+          title: "先打开网页核对",
           body:
-            "只有确实阅读公司或监管机构原始文件时，才选择“公司或监管披露”。管理层发言、行情数据和外部分析分别记录。",
+            "搜索结果可能过时、重复、不相关，也可能需要订阅。确认发布方和日期后，再勾选有用的材料。",
         },
         {
-          title: "支持判断或削弱判断",
+          title: "自己添加链接",
           body:
-            "方向必须相对于你写下的那项具体判断，而不是笼统判断这条新闻是利好还是利空。",
+            "搜索没有找到时，可以自己填写材料内容和网页链接。发布方、日期、类型和备注按需补充。",
         },
         {
           title: "是否来自同一来源",
@@ -274,7 +275,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "核查状态和更多选项",
           body:
-            "核查状态默认是“尚未核查”。发布方、日期、备注和是否来自同一来源都可以按需补充。",
+            "搜索加入的材料默认“尚未核查”，也不会自动归为支持或不支持判断。看过网页后再修改核查状态。",
         },
       ],
     },
@@ -316,6 +317,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "修改材料名称，不会把同一个链接拆成多组。",
         "不同链接只有在你标记为来自同一来源时才会归组。",
         "Falsifi 不会抓取并比较所有文章全文，也不能保证发现互联网上全部转载链。",
+        "公开材料搜索使用 Yahoo Finance，不是完整公告库或新闻库；A 股和港股的结果可能较少。",
         "来源组更多，不代表投资判断正确。",
         "延迟行情只是背景，不会算作你添加的材料。",
       ],
@@ -376,9 +378,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "米国、中国A株、香港株から検索できます。",
         },
         {
-          title: "2. 判断または資料を追加する",
+          title: "2. 資料を探す・追加する",
           body:
-            "先に判断を書いても、先に資料を追加しても構いません。",
+            "「公開資料を探す」で候補を表示するか、自分でリンクを追加します。仮説や確認日はいつでも記録できます。",
         },
         {
           title: "3. 出典グループを見る",
@@ -390,22 +392,22 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
     evidence: {
       nav: "資料の追加",
       title: "恣意的な数値ではなく事実と出典を記録",
-      intro: "通常フォームでは数値の信頼度や影響点を要求しません。",
+      intro: "検索は時間を節約しますが、ページを確認するまではすべて未確認です。",
       items: [
         {
-          title: "タイトル、発行者、URL、日付",
+          title: "公開資料を探す",
           body:
-            "具体的事実を記述し、実際に確認したHTTP/HTTPSページと観察・公開日を記録します。",
+            "ボタンを押すと選択中の企業を検索します。自動選択や自動追加はしません。仮説を送信せずに検索語を変更できます。",
         },
         {
-          title: "出典タイプ",
+          title: "追加前にページを確認",
           body:
-            "原文を確認した場合のみ企業・規制当局資料を選びます。経営陣発言、市場データ、外部分析は別です。",
+            "結果は古い、重複、無関係、または購読が必要な場合があります。発行者と日付を確認してから選んでください。",
         },
         {
-          title: "支持または反証",
+          title: "リンクを手動で追加",
           body:
-            "一般的な好材料・悪材料ではなく、記録した仮説に対する方向を選びます。",
+            "検索で見つからない場合は、資料の内容とHTTP/HTTPSリンクを入力します。発行者、日付、種類、メモは任意です。",
         },
         {
           title: "共通の底層ソース",
@@ -415,7 +417,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "確認方法と任意の役割分類",
           body:
-            "初期状態は「未確認」です。発行者、日付、メモ、重要度、同一出典の関係は必要なときだけ追加できます。",
+            "検索から追加した資料は未確認で、仮説を支持・反証するものとして自動分類されません。確認後に状態を更新してください。",
         },
       ],
     },
@@ -456,6 +458,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "異なるラベルで同じURLを複数群に分割できません。",
         "異なるリンクは記録済みの共通ソース・主張・関係がある場合のみまとめます。",
         "全記事本文をクロールせず、全転載関係の発見を保証しません。",
+        "公開資料検索は Yahoo Finance を使用し、完全な開示・ニュースアーカイブではありません。中国A株・香港株は結果が少ない場合があります。",
         "構造完成は仮説の正しさを証明しません。",
         "遅延市場データは背景のみで、証拠要件を満たしません。",
       ],
@@ -514,9 +517,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "Busca una acción de EE. UU., China continental o Hong Kong.",
         },
         {
-          title: "2. Añade una tesis o un material",
+          title: "2. Busca o añade material",
           body:
-            "Puedes escribir primero la tesis o añadir primero un material.",
+            "Usa «Buscar fuentes públicas» para ver candidatos o pega un enlace. La tesis y la fecha de revisión se pueden añadir en cualquier momento.",
         },
         {
           title: "3. Lee los grupos de fuentes",
@@ -528,22 +531,23 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
     evidence: {
       nav: "Añadir material",
       title: "Registra hechos y procedencia, no precisión inventada",
-      intro: "El formulario normal no pide porcentajes arbitrarios.",
+      intro:
+        "La búsqueda ahorra tiempo, pero todo resultado queda sin verificar hasta que abras la página.",
       items: [
         {
-          title: "Título, editor, URL y fecha",
+          title: "Buscar fuentes públicas",
           body:
-            "Describe el hecho, enlaza la página HTTP/HTTPS revisada y registra la fecha.",
+            "El botón busca la empresa seleccionada. No marca ni añade nada automáticamente. Puedes cambiar los términos sin enviar tu tesis.",
         },
         {
-          title: "Tipo de fuente",
+          title: "Abrir la página antes de usarla",
           body:
-            "Marca fuente empresarial o regulatoria solo si revisaste el documento original.",
+            "Los resultados pueden ser antiguos, repetidos, irrelevantes o requerir suscripción. Revisa el editor y la fecha antes de elegir.",
         },
         {
-          title: "Apoya o cuestiona",
+          title: "Añadir un enlace a mano",
           body:
-            "Elige la dirección respecto a tu tesis exacta, no si la noticia parece positiva o negativa.",
+            "Si la búsqueda no lo encuentra, añade el título y el enlace HTTP/HTTPS. Editor, fecha, tipo y nota son opcionales.",
         },
         {
           title: "Misma fuente subyacente",
@@ -553,7 +557,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Verificación y papel opcional",
           body:
-            "El estado inicial es «sin verificar». El editor, la fecha, la nota, la importancia y la relación entre fuentes son opcionales.",
+            "El material encontrado se añade sin verificar y sin clasificarlo como apoyo o rechazo de la tesis. Cambia el estado solo después de revisarlo.",
         },
       ],
     },
@@ -594,6 +598,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "No se puede dividir la misma URL usando etiquetas diferentes.",
         "Enlaces distintos solo se agrupan mediante una identidad de fuente o una relación explícita de misma fuente.",
         "No rastrea todo el texto web ni garantiza descubrir todas las republicaciones.",
+        "La búsqueda usa Yahoo Finance y no es un archivo completo de noticias o documentos. La cobertura puede ser limitada para acciones chinas y de Hong Kong.",
         "Una estructura completa no prueba que la tesis sea cierta.",
         "Los datos retrasados de mercado son contexto y no cumplen los requisitos de evidencia.",
       ],
