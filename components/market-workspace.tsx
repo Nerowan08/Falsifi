@@ -4,8 +4,7 @@ import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
-  BookOpen,
-  Database,
+  Check,
   ExternalLink,
   FileUp,
   LoaderCircle,
@@ -18,7 +17,7 @@ import {
   isMarketSnapshot,
   type MarketSnapshot,
 } from "@/lib/falsifi";
-import { t, type Locale } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
 import {
   MarketRegion,
   isExplicitSymbolInput,
@@ -33,6 +32,12 @@ type MarketCopy = {
   heroBody: string;
   searchPlaceholder: string;
   searchLabel: string;
+  thesisLabel: string;
+  thesisPlaceholder: string;
+  thesisHelp: string;
+  thesisRequired: string;
+  productBoundary: string;
+  selectedStock: string;
   marketsLabel: string;
   markets: Record<MarketRegion, string>;
   quickTitle: string;
@@ -74,12 +79,19 @@ type MarketCopy = {
 
 const MARKET_COPY: Record<Locale, MarketCopy> = {
   en: {
-    heroEyebrow: "Stock research workspace",
-    heroTitle: "Choose a listed stock. Start with verifiable data.",
+    heroEyebrow: "Source-group check for a stock thesis",
+    heroTitle: "How many source groups are behind your stock thesis?",
     heroBody:
-      "Search U.S., mainland China, or Hong Kong equities. Falsifi loads about one year of delayed market data, builds a rule-based starting case, and tests what would change its assessment.",
+      "Choose a stock and write one claim. Falsifi groups matching canonical URLs and material you identify as coming from the same underlying source.",
     searchPlaceholder: "Ticker or company name — e.g. AAPL, 603901, Tencent",
-    searchLabel: "Search stocks",
+    searchLabel: "Stock",
+    thesisLabel: "Your one-sentence claim",
+    thesisPlaceholder:
+      "Example: Over the next 12 months, operating-margin recovery will outweigh slower revenue growth.",
+    thesisHelp: "Write one concrete claim. You will define what would weaken it next.",
+    thesisRequired: "Write a specific claim of at least 12 characters.",
+    productBoundary: "No price prediction · No buy/sell signal · No account required",
+    selectedStock: "Selected",
     marketsLabel: "Stock markets",
     markets: {
       all: "All markets",
@@ -94,16 +106,16 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     searchHint: "Type a company name or ticker to search.",
     empty: "No matching listed stock was found.",
     unavailable:
-      "Market data is temporarily unavailable. Try the ticker again shortly.",
+      "Market context is unavailable, but you can still check your evidence.",
     errors: {
       invalidSymbol: "Enter a valid listed stock ticker.",
       unsupportedInstrument: "This workspace supports listed stocks only.",
       insufficientHistory:
-        "This stock does not yet have the 200 daily observations required for the analysis.",
+        "There is not enough history for market context; the evidence check can still continue.",
       notFound: "No listed stock was found for that ticker.",
     },
-    analyzing: "Loading market history…",
-    analyze: "Analyze",
+    analyzing: "Preparing the evidence check…",
+    analyze: "Check my thesis",
     changeStock: "Change stock",
     importCase: "Import an existing Falsifi case",
     overview: "Market overview",
@@ -127,12 +139,19 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
       "Quotes may be delayed or incomplete. The latest daily bar and volume can be provisional before market close. Verify material figures with the exchange or issuer.",
   },
   "zh-CN": {
-    heroEyebrow: "股票研究工作台",
-    heroTitle: "选择一只上市股票，从可核查的数据开始。",
+    heroEyebrow: "股票判断来源归组工具",
+    heroTitle: "这项股票判断背后，有多少个来源组？",
     heroBody:
-      "搜索美股、A 股或港股。Falsifi 会读取约一年的延迟行情，生成一个可检查的规则模型初始案例，并测试什么变化会改变当前判断。",
+      "选择一只股票，写下一项判断。Falsifi 会将相同规范化网址，以及你明确标记为同源的材料归为一组。",
     searchPlaceholder: "股票代码或公司名称，例如 AAPL、603901、腾讯",
-    searchLabel: "搜索股票",
+    searchLabel: "股票",
+    thesisLabel: "用一句话写下你的判断",
+    thesisPlaceholder:
+      "例如：未来 12 个月，永创智能的海外扩张将带动收入增速回升。",
+    thesisHelp: "只写一个具体判断；下一步再写什么情况会削弱它。",
+    thesisRequired: "请写下一项不少于 12 个字符的具体判断。",
+    productBoundary: "不预测股价 · 不给买卖建议 · 无需账户",
+    selectedStock: "已选择",
     marketsLabel: "股票市场",
     markets: {
       all: "全部市场",
@@ -146,15 +165,16 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     delayed: "区分行情时间与获取时间",
     searchHint: "输入公司名称或股票代码开始搜索。",
     empty: "没有找到匹配的上市股票。",
-    unavailable: "行情服务暂时不可用，请稍后重新尝试该代码。",
+    unavailable: "行情背景暂时不可用，但仍可继续核查证据。",
     errors: {
       invalidSymbol: "请输入有效的上市股票代码。",
       unsupportedInstrument: "当前工作台仅支持上市股票。",
-      insufficientHistory: "该股票尚不足 200 个日度数据点，暂时无法生成分析。",
+      insufficientHistory:
+        "该股票历史数据不足以生成行情背景，但仍可继续核查证据。",
       notFound: "没有找到该代码对应的上市股票。",
     },
-    analyzing: "正在读取行情历史…",
-    analyze: "分析",
+    analyzing: "正在准备证据核查…",
+    analyze: "检查我的判断",
     changeStock: "更换股票",
     importCase: "导入已有 Falsifi 案例",
     overview: "行情概览",
@@ -178,12 +198,19 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
       "行情可能延迟或不完整；交易时段内最新日线与成交量可能尚未收盘。重大数据请以交易所或公司披露为准。",
   },
   ja: {
-    heroEyebrow: "株式リサーチ",
-    heroTitle: "上場銘柄を選び、確認可能なデータから始めます。",
+    heroEyebrow: "株式仮説の出典グループ確認",
+    heroTitle: "その株式仮説の背後には、いくつの出典グループがありますか？",
     heroBody:
-      "米国株、中国A株、香港株を検索できます。約1年分の遅延市場データからルールベースの初期ケースを作り、評価が変わる条件をテストします。",
+      "銘柄と一つの仮説を入力します。同じ正規化URLと、同一の底層ソースだと明示した資料をグループ化します。",
     searchPlaceholder: "ティッカーまたは企業名 — AAPL、603901、Tencent",
-    searchLabel: "銘柄を検索",
+    searchLabel: "銘柄",
+    thesisLabel: "一文の仮説",
+    thesisPlaceholder:
+      "例：今後12か月、営業利益率の回復が売上成長の鈍化を上回る。",
+    thesisHelp: "具体的な仮説を一つ書き、次の画面で弱める条件を定義します。",
+    thesisRequired: "12文字以上の具体的な仮説を入力してください。",
+    productBoundary: "株価予測なし · 売買推奨なし · 登録不要",
+    selectedStock: "選択済み",
     marketsLabel: "株式市場",
     markets: {
       all: "すべて",
@@ -198,16 +225,16 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     searchHint: "企業名またはティッカーを入力してください。",
     empty: "一致する上場銘柄が見つかりません。",
     unavailable:
-      "市場データを一時的に取得できません。しばらくして再試行してください。",
+      "市場データは取得できませんが、証拠チェックは続けられます。",
     errors: {
       invalidSymbol: "有効な上場株式ティッカーを入力してください。",
       unsupportedInstrument: "このワークスペースは上場株式のみ対応します。",
       insufficientHistory:
-        "分析に必要な200営業日分のデータがまだありません。",
+        "市場背景に必要な履歴が不足していますが、証拠チェックは続けられます。",
       notFound: "そのティッカーに一致する上場株式が見つかりません。",
     },
-    analyzing: "市場履歴を読み込み中…",
-    analyze: "分析",
+    analyzing: "証拠チェックを準備中…",
+    analyze: "仮説を確認",
     changeStock: "銘柄を変更",
     importCase: "既存の Falsifi ケースを読み込む",
     overview: "市場スナップショット",
@@ -231,12 +258,19 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
       "価格は遅延・欠損する場合があります。取引時間中の最新日足と出来高は暫定値の場合があります。重要な数値は取引所・発行体で確認してください。",
   },
   es: {
-    heroEyebrow: "Análisis bursátil",
-    heroTitle: "Elige una acción cotizada y empieza con datos verificables.",
+    heroEyebrow: "Comprobación de grupos de fuentes",
+    heroTitle: "¿Cuántos grupos de fuentes hay detrás de tu tesis?",
     heroBody:
-      "Busca acciones de EE. UU., China continental o Hong Kong. Falsifi carga aproximadamente un año de datos retrasados, crea un caso inicial basado en reglas y prueba qué cambiaría su evaluación.",
+      "Elige una acción y escribe una tesis. Falsifi agrupa URL canónicas iguales y materiales que identifiques como procedentes de la misma fuente.",
     searchPlaceholder: "Ticker o empresa — AAPL, 603901, Tencent",
-    searchLabel: "Buscar acciones",
+    searchLabel: "Acción",
+    thesisLabel: "Tu tesis en una frase",
+    thesisPlaceholder:
+      "Ejemplo: en 12 meses, la recuperación del margen compensará el menor crecimiento.",
+    thesisHelp: "Escribe una sola tesis concreta; después definirás qué la debilitaría.",
+    thesisRequired: "Escribe una tesis concreta de al menos 12 caracteres.",
+    productBoundary: "Sin precio objetivo · Sin señal de compra/venta · Sin cuenta",
+    selectedStock: "Seleccionada",
     marketsLabel: "Mercados bursátiles",
     markets: {
       all: "Todos",
@@ -251,16 +285,16 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     searchHint: "Escribe el nombre de una empresa o su ticker.",
     empty: "No se encontró una acción cotizada coincidente.",
     unavailable:
-      "Los datos de mercado no están disponibles temporalmente. Inténtalo de nuevo.",
+      "El contexto de mercado no está disponible, pero puedes continuar con la comprobación.",
     errors: {
       invalidSymbol: "Introduce un ticker bursátil válido.",
       unsupportedInstrument: "Este espacio solo admite acciones cotizadas.",
       insufficientHistory:
-        "La acción aún no tiene las 200 observaciones diarias requeridas.",
+        "No hay historial suficiente para el contexto de mercado, pero la comprobación puede continuar.",
       notFound: "No se encontró una acción cotizada con ese ticker.",
     },
-    analyzing: "Cargando historial de mercado…",
-    analyze: "Analizar",
+    analyzing: "Preparando la comprobación…",
+    analyze: "Comprobar mi tesis",
     changeStock: "Cambiar acción",
     importCase: "Importar un caso de Falsifi",
     overview: "Instantánea de mercado",
@@ -354,31 +388,39 @@ export function StockPicker({
   locale,
   onSelect,
   onImport,
-  onOpenGuide,
 }: {
   locale: Locale;
-  onSelect: (snapshot: MarketSnapshot) => void;
+  onSelect: (
+    stock: StockSearchResult,
+    thesis: string,
+    snapshot?: MarketSnapshot,
+  ) => void;
   onImport: () => void;
-  onOpenGuide: () => void;
 }) {
   const text = marketUi(locale);
   const [query, setQuery] = useState("");
-  const [region, setRegion] = useState<MarketRegion>("all");
+  const [thesis, setThesis] = useState("");
+  const [selectedStock, setSelectedStock] =
+    useState<StockSearchResult | null>(null);
   const [results, setResults] = useState<StockSearchResult[]>([]);
   const [resultKey, setResultKey] = useState("");
   const [searching, setSearching] = useState(false);
   const [loadingSymbol, setLoadingSymbol] = useState("");
   const [error, setError] = useState("");
   const trimmedQuery = query.trim();
+  const trimmedThesis = thesis.trim();
+  const region: MarketRegion = "all";
   const minimumLength = /^\d+$/.test(trimmedQuery) ? 1 : 2;
   const queryReady = trimmedQuery.length >= minimumLength;
   const searchKey = `${region}:${trimmedQuery.toLocaleLowerCase(locale)}`;
   const visibleResults = resultKey === searchKey ? results : [];
   const isSearching =
-    queryReady && (searching || resultKey !== searchKey);
+    !selectedStock &&
+    queryReady &&
+    (searching || resultKey !== searchKey);
 
   useEffect(() => {
-    if (!queryReady) return;
+    if (!queryReady || selectedStock?.symbol === trimmedQuery) return;
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -422,11 +464,16 @@ export function StockPicker({
     queryReady,
     region,
     searchKey,
+    selectedStock?.symbol,
     text,
     trimmedQuery,
   ]);
 
   const analyze = async (stock: StockSearchResult) => {
+    if (trimmedThesis.length < 12) {
+      setError(text.thesisRequired);
+      return;
+    }
     setLoadingSymbol(stock.symbol);
     setError("");
     try {
@@ -437,11 +484,25 @@ export function StockPicker({
       });
       const response = await fetch(`/api/stocks/quote?${params}`);
       if (!response.ok) {
+        try {
+          const failure = (await response.clone().json()) as {
+            code?: string;
+          };
+          if (
+            failure.code === "INSUFFICIENT_HISTORY" ||
+            failure.code === "SERVICE_UNAVAILABLE"
+          ) {
+            onSelect(stock, trimmedThesis);
+            return;
+          }
+        } catch {
+          // Fall through to the localized blocking error below.
+        }
         throw new Error(await responseMessage(response, text));
       }
       const body = (await response.json()) as { snapshot?: unknown };
       if (!isMarketSnapshot(body.snapshot)) throw new Error(text.unavailable);
-      onSelect(body.snapshot);
+      onSelect(stock, trimmedThesis, body.snapshot);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : text.unavailable);
     } finally {
@@ -451,7 +512,17 @@ export function StockPicker({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
+    if (trimmedThesis.length < 12) {
+      setError(text.thesisRequired);
+      return;
+    }
+    if (selectedStock) {
+      void analyze(selectedStock);
+      return;
+    }
     if (visibleResults[0]) {
+      setSelectedStock(visibleResults[0]);
+      setQuery(visibleResults[0].symbol);
       void analyze(visibleResults[0]);
       return;
     }
@@ -470,10 +541,13 @@ export function StockPicker({
     });
   };
 
-  const visiblePicks =
-    region === "all"
-      ? QUICK_PICKS
-      : QUICK_PICKS.filter((item) => item.region === region);
+  const selectResult = (stock: StockSearchResult) => {
+    setSelectedStock(stock);
+    setQuery(stock.symbol);
+    setResults([]);
+    setResultKey("");
+    setError("");
+  };
 
   return (
     <section className="stock-picker">
@@ -484,148 +558,130 @@ export function StockPicker({
         </span>
         <h1>{text.heroTitle}</h1>
         <p>{text.heroBody}</p>
-        <div className="picker-trust">
-          <span>
-            <Database size={14} />
-            {text.realData}
-          </span>
-          <span>
-            <ShieldCheck size={14} />
-            {text.noAccount}
-          </span>
-          <span>{text.delayed}</span>
-        </div>
-        <button
-          type="button"
-          className="picker-guide"
-          onClick={onOpenGuide}
-        >
-          <BookOpen size={15} />
-          {t(locale, "guide.pickerCta")}
-          <ArrowRight size={14} />
-        </button>
+        <span className="picker-boundary">{text.productBoundary}</span>
       </div>
 
       <div className="stock-search-panel">
-        <div
-          className="market-tabs"
-          role="tablist"
-          aria-label={text.marketsLabel}
-        >
-          {(Object.keys(text.markets) as MarketRegion[]).map((item) => (
-            <button
-              type="button"
-              role="tab"
-              aria-selected={region === item}
-              className={region === item ? "active" : ""}
-              key={item}
-              onClick={() => setRegion(item)}
-            >
-              {text.markets[item]}
-            </button>
-          ))}
-        </div>
-
-        <form className="stock-search" onSubmit={submit}>
-          <Search size={19} aria-hidden="true" />
-          <label className="sr-only" htmlFor="stock-search-input">
-            {text.searchLabel}
+        <form className="thesis-start-form" onSubmit={submit}>
+          <label className="start-field" htmlFor="stock-search-input">
+            <span>01</span>
+            <strong>{text.searchLabel}</strong>
           </label>
-          <input
-            id="stock-search-input"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={text.searchPlaceholder}
-            autoComplete="off"
-            spellCheck={false}
-          />
-          <button
-            type="submit"
-            className="button primary"
-            disabled={
-              !trimmedQuery || Boolean(loadingSymbol) || isSearching
-            }
+          <div
+            className={`stock-search ${selectedStock ? "selected" : ""}`}
           >
-            {isSearching ? (
-              <LoaderCircle className="spin" size={15} />
-            ) : (
-              <ArrowRight size={15} />
+            <Search size={19} aria-hidden="true" />
+            <input
+              id="stock-search-input"
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setSelectedStock(null);
+              }}
+              placeholder={text.searchPlaceholder}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            {selectedStock && (
+              <span className="selected-stock">
+                <Check size={14} />
+                {text.selectedStock}
+              </span>
             )}
-            {text.analyze}
-          </button>
-        </form>
-
-        {trimmedQuery && (
-          <div className="stock-results" aria-live="polite">
-            {isSearching && !visibleResults.length ? (
-              <div className="search-state">
-                <LoaderCircle className="spin" size={16} />
-                {text.searchHint}
-              </div>
-            ) : visibleResults.length ? (
-              visibleResults.map((stock) => (
-                <button
-                  type="button"
-                  key={stock.symbol}
-                  onClick={() => void analyze(stock)}
-                  disabled={Boolean(loadingSymbol)}
-                >
-                  <span className="result-symbol">{stock.symbol}</span>
-                  <span className="result-company">
-                    <strong>{stock.name}</strong>
-                    <small>
-                      {stock.exchangeName || stock.exchange || stock.type}
-                    </small>
-                  </span>
-                  {loadingSymbol === stock.symbol ? (
-                    <LoaderCircle className="spin" size={16} />
-                  ) : (
-                    <ArrowRight size={16} />
-                  )}
-                </button>
-              ))
-            ) : !error ? (
-              <div className="search-state">{text.empty}</div>
-            ) : null}
           </div>
-        )}
 
-        {error && (
-          <p className="market-error" role="alert">
-            {error}
-          </p>
-        )}
+          {trimmedQuery && !selectedStock && (
+            <div className="stock-results" aria-live="polite">
+              {isSearching && !visibleResults.length ? (
+                <div className="search-state">
+                  <LoaderCircle className="spin" size={16} />
+                  {text.searchHint}
+                </div>
+              ) : visibleResults.length ? (
+                visibleResults.map((stock) => (
+                  <button
+                    type="button"
+                    key={stock.symbol}
+                    onClick={() => selectResult(stock)}
+                  >
+                    <span className="result-symbol">{stock.symbol}</span>
+                    <span className="result-company">
+                      <strong>{stock.name}</strong>
+                      <small>
+                        {stock.exchangeName || stock.exchange || stock.type}
+                      </small>
+                    </span>
+                    <ArrowRight size={16} />
+                  </button>
+                ))
+              ) : !error ? (
+                <div className="search-state">{text.empty}</div>
+              ) : null}
+            </div>
+          )}
 
-        {!trimmedQuery && (
-          <div className="quick-picks">
-            <span>{text.quickTitle}</span>
-            <div>
-              {visiblePicks.map((stock) => (
+          {!trimmedQuery && (
+            <div className="ticker-examples">
+              {QUICK_PICKS.slice(0, 3).map((stock) => (
                 <button
                   type="button"
                   key={stock.symbol}
-                  onClick={() => void analyze(stock)}
-                  disabled={Boolean(loadingSymbol)}
+                  onClick={() => selectResult(stock)}
                 >
-                  <strong>{stock.symbol}</strong>
-                  <span>{stock.name}</span>
-                  {loadingSymbol === stock.symbol ? (
-                    <LoaderCircle className="spin" size={14} />
-                  ) : (
-                    <ArrowRight size={14} />
-                  )}
+                  {stock.symbol}
                 </button>
               ))}
             </div>
-          </div>
-        )}
+          )}
 
-        <div className="picker-import">
+          <label className="start-field" htmlFor="thesis-input">
+            <span>02</span>
+            <strong>{text.thesisLabel}</strong>
+          </label>
+          <textarea
+            id="thesis-input"
+            value={thesis}
+            onChange={(event) => setThesis(event.target.value)}
+            placeholder={text.thesisPlaceholder}
+            rows={3}
+            minLength={12}
+            maxLength={5000}
+            required
+          />
+          <small className="thesis-help">{text.thesisHelp}</small>
+
+          {error && (
+            <p className="market-error" role="alert">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="submit"
+            className="button primary start-submit"
+            disabled={
+              !trimmedQuery ||
+              trimmedThesis.length < 12 ||
+              Boolean(loadingSymbol) ||
+              isSearching
+            }
+          >
+            {loadingSymbol ? (
+              <LoaderCircle className="spin" size={16} />
+            ) : (
+              <ArrowRight size={16} />
+            )}
+            {loadingSymbol ? text.analyzing : text.analyze}
+          </button>
+        </form>
+
+        <details className="picker-secondary">
+          <summary>{text.importCase}</summary>
           <button type="button" onClick={onImport}>
             <FileUp size={14} />
             {text.importCase}
           </button>
-        </div>
+        </details>
       </div>
     </section>
   );
