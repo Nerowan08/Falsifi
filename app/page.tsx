@@ -39,6 +39,7 @@ import {
   ResearchActionSummary,
   ResearchPlanModal,
   researchUi,
+  type ResearchPlanEditorMode,
 } from "@/components/research-action";
 import { UserGuide } from "@/components/user-guide";
 import {
@@ -1603,10 +1604,7 @@ const SIMPLE_EVIDENCE_COPY: Record<
     relationshipHelp: string;
     noRelationship: string;
     details: string;
-    importance: string;
-    importanceOptions: Record<"pivotal" | "material" | "context", string>;
     verification: string;
-    verificationPrompt: string;
     verificationRequired: string;
     verificationOptions: Record<
       "original" | "reviewed" | "unverified",
@@ -1615,63 +1613,41 @@ const SIMPLE_EVIDENCE_COPY: Record<
   }
 > = {
   en: {
-    relationship: "Does this repeat the same underlying source?",
+    relationship: "Same source as an existing item?",
     relationshipHelp:
-      "Choose another item only when both ultimately trace to the same document, dataset, interview, or republication chain.",
-    noRelationship: "No known relationship",
-    details: "Optional classification details",
-    importance: "Role in your thesis",
-    importanceOptions: {
-      pivotal: "Pivotal — the claim depends on it",
-      material: "Important — it could change the claim",
-      context: "Context — useful background only",
-    },
-    verification: "How you checked it",
-    verificationPrompt: "Select how you checked this material",
-    verificationRequired:
-      "Select how you checked this material before saving it.",
+      "Use this when two items come from the same document, dataset, interview, or republication.",
+    noRelationship: "No / not sure",
+    details: "More options",
+    verification: "Check status",
+    verificationRequired: "Choose a check status.",
     verificationOptions: {
       original: "Read the original document",
       reviewed: "Checked a reliable secondary source",
-      unverified: "Not independently checked yet",
+      unverified: "Not checked yet",
     },
   },
   "zh-CN": {
-    relationship: "这项材料是否重复了已有材料的同一底层来源？",
+    relationship: "是否来自已有材料的同一来源？",
     relationshipHelp:
-      "只有在两项材料最终来自同一文件、数据集、采访或转载链时才选择已有材料。",
-    noRelationship: "暂未发现关联",
-    details: "可选分类信息",
-    importance: "它在判断中的作用",
-    importanceOptions: {
-      pivotal: "关键：没有它就难以支持判断",
-      material: "重要：它可能明显改变判断",
-      context: "背景：只提供补充信息",
-    },
-    verification: "你如何核查它",
-    verificationPrompt: "请选择你对这项材料的核查方式",
-    verificationRequired: "保存前请选择你对这项材料的核查方式。",
+      "如果两条材料来自同一份文件、同一组数据、同一次采访或互相转载，请选择对应材料。",
+    noRelationship: "不是或不确定",
+    details: "更多选项",
+    verification: "核查状态",
+    verificationRequired: "请选择核查状态。",
     verificationOptions: {
       original: "已阅读原始文件",
       reviewed: "已核对可靠二手来源",
-      unverified: "尚未独立核查",
+      unverified: "尚未核查",
     },
   },
   ja: {
-    relationship: "既存資料と同じ底層ソースを繰り返していますか？",
+    relationship: "既存資料と同じ出典ですか？",
     relationshipHelp:
       "同じ文書、データセット、インタビュー、転載経路に由来する場合のみ選択してください。",
-    noRelationship: "既知の関連なし",
-    details: "任意の分類情報",
-    importance: "仮説での役割",
-    importanceOptions: {
-      pivotal: "中核：仮説がこれに依存",
-      material: "重要：仮説を大きく変え得る",
-      context: "背景：補足情報のみ",
-    },
-    verification: "確認方法",
-    verificationPrompt: "この資料の確認方法を選択",
-    verificationRequired: "保存する前に確認方法を選択してください。",
+    noRelationship: "いいえ / 不明",
+    details: "その他の設定",
+    verification: "確認状態",
+    verificationRequired: "確認状態を選択してください。",
     verificationOptions: {
       original: "原資料を確認済み",
       reviewed: "信頼できる二次資料を確認",
@@ -1679,21 +1655,13 @@ const SIMPLE_EVIDENCE_COPY: Record<
     },
   },
   es: {
-    relationship: "¿Repite la misma fuente subyacente?",
+    relationship: "¿Viene de la misma fuente que otro material?",
     relationshipHelp:
       "Elige otro elemento solo si ambos proceden del mismo documento, conjunto de datos, entrevista o cadena de republicación.",
-    noRelationship: "Sin relación conocida",
-    details: "Clasificación opcional",
-    importance: "Papel en tu tesis",
-    importanceOptions: {
-      pivotal: "Esencial — la tesis depende de ello",
-      material: "Importante — podría cambiar la tesis",
-      context: "Contexto — solo información de fondo",
-    },
-    verification: "Cómo lo comprobaste",
-    verificationPrompt: "Selecciona cómo comprobaste este material",
-    verificationRequired:
-      "Selecciona cómo comprobaste este material antes de guardarlo.",
+    noRelationship: "No / no estoy seguro",
+    details: "Más opciones",
+    verification: "Estado de revisión",
+    verificationRequired: "Elige un estado de revisión.",
     verificationOptions: {
       original: "Leí el documento original",
       reviewed: "Revisé una fuente secundaria fiable",
@@ -1718,18 +1686,12 @@ function EvidenceModal({
   onSave: (item: EvidenceItem) => void;
 }) {
   const simpleCopy = SIMPLE_EVIDENCE_COPY[locale];
-  const initialImportance =
-    (initial?.impact ?? 3) >= 5
-      ? "pivotal"
-      : (initial?.impact ?? 3) <= 1
-        ? "context"
-        : "material";
-  const initialVerification = initial?.verification ?? "";
-  const [direction, setDirection] = useState<EvidenceDirection>(
-    initial?.direction ?? defaults?.direction ?? "contradicts",
-  );
+  const initialVerification = initial?.verification ?? "unverified";
+  const direction =
+    initial?.direction ?? defaults?.direction ?? "supports";
   const [error, setError] = useState("");
   const firstFieldRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
   const closeRef = useRef(onClose);
 
@@ -1744,7 +1706,26 @@ function EvidenceModal({
         : null;
     firstFieldRef.current?.focus();
     const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape") closeRef.current();
+      if (event.key === "Escape") {
+        closeRef.current();
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = Array.from(
+        dialogRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), a[href]',
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener("keydown", closeOnEscape);
     return () => {
@@ -1757,16 +1738,14 @@ function EvidenceModal({
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const title = String(form.get("title") ?? "").trim();
-    const source = String(form.get("source") ?? "").trim();
+    const sourceName = String(form.get("source") ?? "").trim();
     const sourceUrl = String(form.get("sourceUrl") ?? "").trim();
-    const asOf = String(form.get("asOf") ?? "").trim();
+    const asOf =
+      String(form.get("asOf") ?? "").trim() ||
+      new Date().toISOString().slice(0, 10);
     const group = String(form.get("group") ?? "") as EvidenceGroup;
     const note = String(form.get("note") ?? "").trim();
     const relatedToId = String(form.get("relatedToId") ?? "").trim();
-    const importance = String(form.get("importance") ?? "material") as
-      | "pivotal"
-      | "material"
-      | "context";
     const verification = String(form.get("verification") ?? "") as
       | "original"
       | "reviewed"
@@ -1777,16 +1756,8 @@ function EvidenceModal({
       setError(t(locale, "evidence.validation.titleRequired"));
       return;
     }
-    if (!source) {
-      setError(t(locale, "evidence.validation.sourceRequired"));
-      return;
-    }
     if (!isHttpUrl(sourceUrl)) {
       setError(t(locale, "evidence.validation.urlInvalid"));
-      return;
-    }
-    if (!asOf) {
-      setError(t(locale, "evidence.validation.dateRequired"));
       return;
     }
     if (
@@ -1799,11 +1770,9 @@ function EvidenceModal({
       | "original"
       | "reviewed"
       | "unverified";
-    const impactByImportance = {
-      pivotal: 6,
-      material: 3,
-      context: 1,
-    } as const;
+    const source =
+      sourceName ||
+      new URL(sourceUrl).hostname.replace(/^www\./, "");
     const reliabilityByVerification = {
       original: 1,
       reviewed: 0.75,
@@ -1818,7 +1787,7 @@ function EvidenceModal({
       asOf,
       group,
       direction,
-      impact: impactByImportance[importance] ?? 3,
+      impact: initial?.impact ?? 3,
       reliability:
         reliabilityByVerification[selectedVerification] ?? 0.75,
       note,
@@ -1836,6 +1805,7 @@ function EvidenceModal({
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
       <div
+        ref={dialogRef}
         className="modal"
         role="dialog"
         aria-modal="true"
@@ -1844,12 +1814,6 @@ function EvidenceModal({
       >
         <div className="modal-header">
           <div>
-            <span className="eyebrow">
-              {t(
-                locale,
-                initial ? "evidence.edit.subtitle" : "evidence.add.subtitle",
-              )}
-            </span>
             <h2 id="evidence-modal-title">
               {t(
                 locale,
@@ -1877,152 +1841,125 @@ function EvidenceModal({
               placeholder={t(locale, "evidence.form.titlePlaceholder")}
             />
           </label>
-          <div className="form-grid">
-            <label className="field">
-              <span>{t(locale, "evidence.form.source")}</span>
-              <input
-                name="source"
-                required
-                maxLength={300}
-                defaultValue={initial?.source}
-                placeholder={t(locale, "evidence.form.sourcePlaceholder")}
-              />
-            </label>
-            <label className="field">
-              <span>{t(locale, "evidence.form.sourceGroup")}</span>
-              <select
-                name="group"
-                defaultValue={
-                  initial?.group ?? defaults?.group ?? "External estimate"
-                }
-              >
-                {(Object.keys(groupKeys) as EvidenceGroup[]).map((group) => (
-                  <option key={group} value={group}>
-                    {t(locale, groupKeys[group])}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className="form-grid">
-            <label className="field wide">
-              <span>{t(locale, "evidence.form.sourceUrl")}</span>
-              <input
-                name="sourceUrl"
-                type="url"
-                required
-                maxLength={2048}
-                defaultValue={initial?.sourceUrl}
-                placeholder={t(locale, "evidence.form.sourceUrlPlaceholder")}
-              />
-            </label>
-            <label className="field">
-              <span>{t(locale, "evidence.form.asOf")}</span>
-              <input
-                name="asOf"
-                type="date"
-                required
-                defaultValue={
-                  initial?.asOf ?? new Date().toISOString().slice(0, 10)
-                }
-              />
-            </label>
-          </div>
-          <fieldset className="field">
-            <legend>{t(locale, "evidence.form.direction")}</legend>
-            <div className="segmented">
-              {(["supports", "contradicts"] as EvidenceDirection[]).map(
-                (value) => (
-                  <button
-                    type="button"
-                    key={value}
-                    className={direction === value ? "active" : ""}
-                    onClick={() => setDirection(value)}
-                    aria-pressed={direction === value}
-                  >
-                    {t(
-                      locale,
-                      value === "supports"
-                        ? "common.supports"
-                        : "common.contradicts",
-                    )}
-                  </button>
-                ),
-              )}
-            </div>
-          </fieldset>
           <label className="field">
-            <span>{simpleCopy.relationship}</span>
-            <select
-              name="relatedToId"
-              defaultValue={initial?.sameSourceAsIds?.[0] ?? ""}
-            >
-              <option value="">{simpleCopy.noRelationship}</option>
-              {evidenceItems
-                .filter(
-                  (item) =>
-                    item.id !== initial?.id &&
-                    item.relation !== "derived" &&
-                    item.provenance !== "system-market",
-                )
-                .map((item) => (
-                  <option value={item.id} key={item.id}>
-                    {item.title}
-                  </option>
-                ))}
-            </select>
-            <small>{simpleCopy.relationshipHelp}</small>
-          </label>
-          <label className="field">
-            <span>{t(locale, "evidence.form.note")}</span>
-            <textarea
-              name="note"
-              rows={3}
-              maxLength={2000}
-              defaultValue={initial?.note}
-              placeholder={t(locale, "evidence.form.notePlaceholder")}
+            <span>{t(locale, "evidence.form.sourceUrl")}</span>
+            <input
+              name="sourceUrl"
+              type="url"
+              required
+              maxLength={2048}
+              defaultValue={initial?.sourceUrl}
+              placeholder={t(locale, "evidence.form.sourceUrlPlaceholder")}
             />
           </label>
-          <label className="field">
-            <span>{simpleCopy.verification}</span>
-            <select
-              name="verification"
-              defaultValue={initialVerification}
-              required
-            >
-              <option value="" disabled>
-                {simpleCopy.verificationPrompt}
-              </option>
-              {(
-                ["original", "reviewed", "unverified"] as const
-              ).map((value) => (
-                <option value={value} key={value}>
-                  {simpleCopy.verificationOptions[value]}
-                </option>
-              ))}
-            </select>
-          </label>
+          {evidenceItems.some(
+            (item) =>
+              item.id !== initial?.id &&
+              item.relation !== "derived" &&
+              item.provenance !== "system-market",
+          ) && (
+            <label className="field">
+              <span>{simpleCopy.relationship}</span>
+              <select
+                name="relatedToId"
+                defaultValue={initial?.sameSourceAsIds?.[0] ?? ""}
+              >
+                <option value="">{simpleCopy.noRelationship}</option>
+                {evidenceItems
+                  .filter(
+                    (item) =>
+                      item.id !== initial?.id &&
+                      item.relation !== "derived" &&
+                      item.provenance !== "system-market",
+                  )
+                  .map((item) => (
+                    <option value={item.id} key={item.id}>
+                      {item.title}
+                    </option>
+                  ))}
+              </select>
+              <small>{simpleCopy.relationshipHelp}</small>
+            </label>
+          )}
           <details className="evidence-entry-details">
             <summary>{simpleCopy.details}</summary>
             <div>
+              <div className="form-grid">
+                <label className="field">
+                  <span>{t(locale, "evidence.form.source")}</span>
+                  <input
+                    name="source"
+                    maxLength={300}
+                    defaultValue={initial?.source}
+                    placeholder={t(
+                      locale,
+                      "evidence.form.sourcePlaceholder",
+                    )}
+                  />
+                </label>
+                <label className="field">
+                  <span>{t(locale, "evidence.form.asOf")}</span>
+                  <input
+                    name="asOf"
+                    type="date"
+                    defaultValue={
+                      initial?.asOf ??
+                      new Date().toISOString().slice(0, 10)
+                    }
+                  />
+                </label>
+              </div>
               <label className="field">
-                <span>{simpleCopy.importance}</span>
+                <span>{t(locale, "evidence.form.sourceGroup")}</span>
                 <select
-                  name="importance"
-                  defaultValue={initialImportance}
+                  name="group"
+                  defaultValue={
+                    initial?.group ??
+                    defaults?.group ??
+                    "External estimate"
+                  }
+                >
+                  {(Object.keys(groupKeys) as EvidenceGroup[]).map(
+                    (group) => (
+                      <option key={group} value={group}>
+                        {t(locale, groupKeys[group])}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+              <label className="field">
+                <span>{simpleCopy.verification}</span>
+                <select
+                  name="verification"
+                  defaultValue={initialVerification}
                 >
                   {(
-                    ["pivotal", "material", "context"] as const
+                    ["original", "reviewed", "unverified"] as const
                   ).map((value) => (
                     <option value={value} key={value}>
-                      {simpleCopy.importanceOptions[value]}
+                      {simpleCopy.verificationOptions[value]}
                     </option>
                   ))}
                 </select>
               </label>
+              <label className="field">
+                <span>{t(locale, "evidence.form.note")}</span>
+                <textarea
+                  name="note"
+                  rows={3}
+                  maxLength={2000}
+                  defaultValue={initial?.note}
+                  placeholder={t(locale, "evidence.form.notePlaceholder")}
+                />
+              </label>
             </div>
           </details>
-          {error && <p className="form-error">{error}</p>}
+          {error && (
+            <p className="form-error" role="alert">
+              {error}
+            </p>
+          )}
           <div className="modal-actions">
             <button type="button" className="button ghost" onClick={onClose}>
               {t(locale, "action.cancel")}
@@ -2056,7 +1993,8 @@ export default function HomePage() {
   const [evidenceDefaults, setEvidenceDefaults] =
     useState<EvidenceDefaults>();
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
-  const [showResearchPlanModal, setShowResearchPlanModal] = useState(false);
+  const [researchPlanEditor, setResearchPlanEditor] =
+    useState<ResearchPlanEditorMode | null>(null);
   const [refreshingMarket, setRefreshingMarket] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
@@ -2327,9 +2265,6 @@ export default function HomePage() {
     researchPlan: NonNullable<ThesisCase["researchPlan"]>;
   }) => {
     if (!thesisCase) return;
-    const hasManualEvidence = thesisCase.evidence.some(
-      (item) => item.relation !== "derived",
-    );
     setThesisCase({
       ...thesisCase,
       thesis,
@@ -2337,15 +2272,7 @@ export default function HomePage() {
       researchPlan,
       lastUpdated: new Date().toISOString(),
     });
-    setShowResearchPlanModal(false);
-    if (!hasManualEvidence) {
-      setEditingEvidence(null);
-      setEvidenceDefaults({
-        group: "Official filing",
-        direction: "supports",
-      });
-      setShowEvidenceModal(true);
-    }
+    setResearchPlanEditor(null);
   };
 
   const refreshCurrentMarket = async () => {
@@ -2376,57 +2303,16 @@ export default function HomePage() {
     }
   };
 
-  const handleReadinessAction = (action: ReadinessAction) => {
-    if (
-      action === "define-case" ||
-      action === "add-invalidation" ||
-      action === "set-review-date"
-    ) {
-      setShowResearchPlanModal(true);
-      return;
-    }
-    if (action === "save-baseline") {
-      void createSnapshot(true);
-      return;
-    }
-
-    if (action === "add-primary-source") {
-      openAddEvidence({
-        group: "Official filing",
-        direction: "supports",
-      });
-    } else if (action === "add-counter-evidence") {
-      openAddEvidence({
-        group: "External estimate",
-        direction: "contradicts",
-      });
-    } else {
-      openAddEvidence({
-        group: "External estimate",
-        direction: "supports",
-      });
-    }
-  };
-
   const selectStock = (
     stock: StockSearchResult,
-    thesisDraft: string,
     snapshot?: MarketSnapshot,
   ) => {
     const starterCase = buildResearchCase(stock, locale, snapshot);
-    const horizon: Record<Locale, string> = {
-      en: "12 months",
-      "zh-CN": "12 个月",
-      ja: "12か月",
-      es: "12 meses",
-    };
     setThesisCase({
       ...starterCase,
-      thesis: thesisDraft.trim(),
-      horizon: horizon[locale],
       researchPlan: {
         purpose: "new-research",
-        thesisConfirmed: true,
+        thesisConfirmed: false,
         invalidationCriteria: "",
         nextReviewDate: "",
       },
@@ -2436,7 +2322,7 @@ export default function HomePage() {
     setEditingEvidence(null);
     setEvidenceDefaults(undefined);
     setShowEvidenceModal(false);
-    setShowResearchPlanModal(true);
+    setResearchPlanEditor(null);
     setActiveView("stress");
   };
 
@@ -2461,7 +2347,7 @@ export default function HomePage() {
     setEditingEvidence(null);
     setEvidenceDefaults(undefined);
     setShowEvidenceModal(false);
-    setShowResearchPlanModal(false);
+    setResearchPlanEditor(null);
     setActiveView("stress");
   };
 
@@ -2538,11 +2424,10 @@ export default function HomePage() {
             {activeView === "stress" && (
               <FalsifyWorkspace
                 thesisCase={thesisCase}
-                readiness={readiness}
                 locale={locale}
                 refreshing={refreshingMarket}
-                onEditPlan={() => setShowResearchPlanModal(true)}
-                onNextAction={handleReadinessAction}
+                onEditClaim={() => setResearchPlanEditor("claim")}
+                onEditReview={() => setResearchPlanEditor("review")}
                 onAddEvidence={() => openAddEvidence()}
                 onEditEvidence={(item) => {
                   setEditingEvidence(item);
@@ -2638,11 +2523,12 @@ export default function HomePage() {
         />
       )}
 
-      {showResearchPlanModal && thesisCase && (
+      {researchPlanEditor && thesisCase && (
         <ResearchPlanModal
           thesisCase={thesisCase}
           locale={locale}
-          onClose={() => setShowResearchPlanModal(false)}
+          mode={researchPlanEditor}
+          onClose={() => setResearchPlanEditor(null)}
           onSave={saveResearchPlan}
         />
       )}
