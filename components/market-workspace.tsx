@@ -32,10 +32,6 @@ type MarketCopy = {
   heroBody: string;
   searchPlaceholder: string;
   searchLabel: string;
-  thesisLabel: string;
-  thesisPlaceholder: string;
-  thesisHelp: string;
-  thesisRequired: string;
   productBoundary: string;
   selectedStock: string;
   marketsLabel: string;
@@ -45,6 +41,7 @@ type MarketCopy = {
   noAccount: string;
   delayed: string;
   searchHint: string;
+  chooseResult: string;
   empty: string;
   unavailable: string;
   errors: {
@@ -79,18 +76,13 @@ type MarketCopy = {
 
 const MARKET_COPY: Record<Locale, MarketCopy> = {
   en: {
-    heroEyebrow: "Source-group check for a stock thesis",
-    heroTitle: "How many source groups are behind your stock thesis?",
+    heroEyebrow: "Source groups",
+    heroTitle: "See where your stock research really comes from.",
     heroBody:
-      "Choose a stock and write one claim. Falsifi groups matching canonical URLs and material you identify as coming from the same underlying source.",
+      "Choose a stock. Then add a claim or material in any order.",
     searchPlaceholder: "Ticker or company name — e.g. AAPL, 603901, Tencent",
-    searchLabel: "Stock",
-    thesisLabel: "Your one-sentence claim",
-    thesisPlaceholder:
-      "Example: Over the next 12 months, operating-margin recovery will outweigh slower revenue growth.",
-    thesisHelp: "Write one concrete claim. You will define what would weaken it next.",
-    thesisRequired: "Write a specific claim of at least 12 characters.",
-    productBoundary: "No price prediction · No buy/sell signal · No account required",
+    searchLabel: "Choose a stock",
+    productBoundary: "No price prediction · No buy/sell signal · No sign-up",
     selectedStock: "Selected",
     marketsLabel: "Stock markets",
     markets: {
@@ -104,6 +96,7 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     noAccount: "No Falsifi sign-up or market-data API key",
     delayed: "Market time and retrieval time shown",
     searchHint: "Type a company name or ticker to search.",
+    chooseResult: "Choose a stock from the results.",
     empty: "No matching listed stock was found.",
     unavailable:
       "Market context is unavailable, but you can still check your evidence.",
@@ -114,8 +107,8 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
         "There is not enough history for market context; the evidence check can still continue.",
       notFound: "No listed stock was found for that ticker.",
     },
-    analyzing: "Preparing the evidence check…",
-    analyze: "Check my thesis",
+    analyzing: "Opening…",
+    analyze: "Open workspace",
     changeStock: "Change stock",
     importCase: "Import an existing Falsifi case",
     overview: "Market overview",
@@ -139,18 +132,12 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
       "Quotes may be delayed or incomplete. The latest daily bar and volume can be provisional before market close. Verify material figures with the exchange or issuer.",
   },
   "zh-CN": {
-    heroEyebrow: "股票判断来源归组工具",
-    heroTitle: "这项股票判断背后，有多少个来源组？",
-    heroBody:
-      "选择一只股票，写下一项判断。Falsifi 会将相同规范化网址，以及你明确标记为同源的材料归为一组。",
+    heroEyebrow: "材料来源检查",
+    heroTitle: "把重复来源的股票材料归到一起",
+    heroBody: "选择股票后，按需写判断或添加材料。",
     searchPlaceholder: "股票代码或公司名称，例如 AAPL、603901、腾讯",
-    searchLabel: "股票",
-    thesisLabel: "用一句话写下你的判断",
-    thesisPlaceholder:
-      "例如：未来 12 个月，永创智能的海外扩张将带动收入增速回升。",
-    thesisHelp: "只写一个具体判断；下一步再写什么情况会削弱它。",
-    thesisRequired: "请写下一项不少于 12 个字符的具体判断。",
-    productBoundary: "不预测股价 · 不给买卖建议 · 无需账户",
+    searchLabel: "选择股票",
+    productBoundary: "不预测 · 不荐股 · 无需注册",
     selectedStock: "已选择",
     marketsLabel: "股票市场",
     markets: {
@@ -164,17 +151,18 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     noAccount: "无需注册 Falsifi，也无需行情 API Key",
     delayed: "区分行情时间与获取时间",
     searchHint: "输入公司名称或股票代码开始搜索。",
+    chooseResult: "请从搜索结果中选择一只股票。",
     empty: "没有找到匹配的上市股票。",
-    unavailable: "行情背景暂时不可用，但仍可继续核查证据。",
+    unavailable: "暂时没有行情，但仍可继续整理材料。",
     errors: {
       invalidSymbol: "请输入有效的上市股票代码。",
       unsupportedInstrument: "当前工作台仅支持上市股票。",
       insufficientHistory:
-        "该股票历史数据不足以生成行情背景，但仍可继续核查证据。",
+        "该股票历史数据不足，但仍可继续整理材料。",
       notFound: "没有找到该代码对应的上市股票。",
     },
-    analyzing: "正在准备证据核查…",
-    analyze: "检查我的判断",
+    analyzing: "正在打开…",
+    analyze: "进入工具",
     changeStock: "更换股票",
     importCase: "导入已有 Falsifi 案例",
     overview: "行情概览",
@@ -198,17 +186,11 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
       "行情可能延迟或不完整；交易时段内最新日线与成交量可能尚未收盘。重大数据请以交易所或公司披露为准。",
   },
   ja: {
-    heroEyebrow: "株式仮説の出典グループ確認",
-    heroTitle: "その株式仮説の背後には、いくつの出典グループがありますか？",
-    heroBody:
-      "銘柄と一つの仮説を入力します。同じ正規化URLと、同一の底層ソースだと明示した資料をグループ化します。",
+    heroEyebrow: "資料の出典整理",
+    heroTitle: "同じ出典の株式資料をまとめます",
+    heroBody: "まず銘柄を選びます。その後は、仮説と資料を好きな順番で追加できます。",
     searchPlaceholder: "ティッカーまたは企業名 — AAPL、603901、Tencent",
-    searchLabel: "銘柄",
-    thesisLabel: "一文の仮説",
-    thesisPlaceholder:
-      "例：今後12か月、営業利益率の回復が売上成長の鈍化を上回る。",
-    thesisHelp: "具体的な仮説を一つ書き、次の画面で弱める条件を定義します。",
-    thesisRequired: "12文字以上の具体的な仮説を入力してください。",
+    searchLabel: "銘柄を選ぶ",
     productBoundary: "株価予測なし · 売買推奨なし · 登録不要",
     selectedStock: "選択済み",
     marketsLabel: "株式市場",
@@ -223,6 +205,7 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     noAccount: "Falsifi登録・市場データAPIキー不要",
     delayed: "市場時刻と取得時刻を区別",
     searchHint: "企業名またはティッカーを入力してください。",
+    chooseResult: "検索結果から銘柄を選んでください。",
     empty: "一致する上場銘柄が見つかりません。",
     unavailable:
       "市場データは取得できませんが、証拠チェックは続けられます。",
@@ -233,8 +216,8 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
         "市場背景に必要な履歴が不足していますが、証拠チェックは続けられます。",
       notFound: "そのティッカーに一致する上場株式が見つかりません。",
     },
-    analyzing: "証拠チェックを準備中…",
-    analyze: "仮説を確認",
+    analyzing: "開いています…",
+    analyze: "ツールを開く",
     changeStock: "銘柄を変更",
     importCase: "既存の Falsifi ケースを読み込む",
     overview: "市場スナップショット",
@@ -258,17 +241,11 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
       "価格は遅延・欠損する場合があります。取引時間中の最新日足と出来高は暫定値の場合があります。重要な数値は取引所・発行体で確認してください。",
   },
   es: {
-    heroEyebrow: "Comprobación de grupos de fuentes",
-    heroTitle: "¿Cuántos grupos de fuentes hay detrás de tu tesis?",
-    heroBody:
-      "Elige una acción y escribe una tesis. Falsifi agrupa URL canónicas iguales y materiales que identifiques como procedentes de la misma fuente.",
+    heroEyebrow: "Fuentes del material",
+    heroTitle: "Agrupa el material bursátil que viene de la misma fuente",
+    heroBody: "Primero elige una acción. Después añade la tesis y el material en el orden que prefieras.",
     searchPlaceholder: "Ticker o empresa — AAPL, 603901, Tencent",
-    searchLabel: "Acción",
-    thesisLabel: "Tu tesis en una frase",
-    thesisPlaceholder:
-      "Ejemplo: en 12 meses, la recuperación del margen compensará el menor crecimiento.",
-    thesisHelp: "Escribe una sola tesis concreta; después definirás qué la debilitaría.",
-    thesisRequired: "Escribe una tesis concreta de al menos 12 caracteres.",
+    searchLabel: "Elige una acción",
     productBoundary: "Sin precio objetivo · Sin señal de compra/venta · Sin cuenta",
     selectedStock: "Seleccionada",
     marketsLabel: "Mercados bursátiles",
@@ -283,6 +260,7 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     noAccount: "Sin registro en Falsifi ni clave API de mercado",
     delayed: "Hora de mercado y de consulta separadas",
     searchHint: "Escribe el nombre de una empresa o su ticker.",
+    chooseResult: "Elige una acción de los resultados.",
     empty: "No se encontró una acción cotizada coincidente.",
     unavailable:
       "El contexto de mercado no está disponible, pero puedes continuar con la comprobación.",
@@ -293,8 +271,8 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
         "No hay historial suficiente para el contexto de mercado, pero la comprobación puede continuar.",
       notFound: "No se encontró una acción cotizada con ese ticker.",
     },
-    analyzing: "Preparando la comprobación…",
-    analyze: "Comprobar mi tesis",
+    analyzing: "Abriendo…",
+    analyze: "Abrir herramienta",
     changeStock: "Cambiar acción",
     importCase: "Importar un caso de Falsifi",
     overview: "Instantánea de mercado",
@@ -392,14 +370,12 @@ export function StockPicker({
   locale: Locale;
   onSelect: (
     stock: StockSearchResult,
-    thesis: string,
     snapshot?: MarketSnapshot,
   ) => void;
   onImport: () => void;
 }) {
   const text = marketUi(locale);
   const [query, setQuery] = useState("");
-  const [thesis, setThesis] = useState("");
   const [selectedStock, setSelectedStock] =
     useState<StockSearchResult | null>(null);
   const [results, setResults] = useState<StockSearchResult[]>([]);
@@ -408,7 +384,6 @@ export function StockPicker({
   const [loadingSymbol, setLoadingSymbol] = useState("");
   const [error, setError] = useState("");
   const trimmedQuery = query.trim();
-  const trimmedThesis = thesis.trim();
   const region: MarketRegion = "all";
   const minimumLength = /^\d+$/.test(trimmedQuery) ? 1 : 2;
   const queryReady = trimmedQuery.length >= minimumLength;
@@ -470,10 +445,6 @@ export function StockPicker({
   ]);
 
   const analyze = async (stock: StockSearchResult) => {
-    if (trimmedThesis.length < 12) {
-      setError(text.thesisRequired);
-      return;
-    }
     setLoadingSymbol(stock.symbol);
     setError("");
     try {
@@ -492,7 +463,7 @@ export function StockPicker({
             failure.code === "INSUFFICIENT_HISTORY" ||
             failure.code === "SERVICE_UNAVAILABLE"
           ) {
-            onSelect(stock, trimmedThesis);
+            onSelect(stock);
             return;
           }
         } catch {
@@ -502,7 +473,7 @@ export function StockPicker({
       }
       const body = (await response.json()) as { snapshot?: unknown };
       if (!isMarketSnapshot(body.snapshot)) throw new Error(text.unavailable);
-      onSelect(stock, trimmedThesis, body.snapshot);
+      onSelect(stock, body.snapshot);
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : text.unavailable);
     } finally {
@@ -512,18 +483,12 @@ export function StockPicker({
 
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (trimmedThesis.length < 12) {
-      setError(text.thesisRequired);
-      return;
-    }
     if (selectedStock) {
       void analyze(selectedStock);
       return;
     }
-    if (visibleResults[0]) {
-      setSelectedStock(visibleResults[0]);
-      setQuery(visibleResults[0].symbol);
-      void analyze(visibleResults[0]);
+    if (visibleResults.length) {
+      setError(text.chooseResult);
       return;
     }
     const symbol = normalizeSymbolInput(trimmedQuery, region);
@@ -634,22 +599,6 @@ export function StockPicker({
             </div>
           )}
 
-          <label className="start-field" htmlFor="thesis-input">
-            <span>02</span>
-            <strong>{text.thesisLabel}</strong>
-          </label>
-          <textarea
-            id="thesis-input"
-            value={thesis}
-            onChange={(event) => setThesis(event.target.value)}
-            placeholder={text.thesisPlaceholder}
-            rows={3}
-            minLength={12}
-            maxLength={5000}
-            required
-          />
-          <small className="thesis-help">{text.thesisHelp}</small>
-
           {error && (
             <p className="market-error" role="alert">
               {error}
@@ -661,7 +610,6 @@ export function StockPicker({
             className="button primary start-submit"
             disabled={
               !trimmedQuery ||
-              trimmedThesis.length < 12 ||
               Boolean(loadingSymbol) ||
               isSearching
             }
