@@ -13,9 +13,8 @@ contain capable products.
 
 The product has therefore been narrowed to one job:
 
-> Given one stock thesis and several pieces of material, show how many
-> source groups the current record identifies and identify the
-> next missing evidence action.
+> Given one stock and several pieces of research material, show how many
+> source groups the current record identifies. A written thesis is optional.
 
 The memorable problem is:
 
@@ -39,14 +38,16 @@ confidence numbers. Even deterministic mathematics can create false precision
 when its inputs are ungrounded subjective numbers.
 
 The v0.6 redesign therefore removes scores and model sensitivity from the
-primary path. The main output is weight-free and directly observable:
+primary path. The main output is simple and directly observable:
 
 ```text
 user-added material count
 → source groups identified in the current record
 → material grouped with another item
-→ next missing evidence action
 ```
+
+The tool does not require a fixed research sequence. Users choose when to add
+material, edit a claim, review a relationship, or add optional review notes.
 
 ## Existing alternatives
 
@@ -74,18 +75,18 @@ Accordingly, the following claims are not distinctive:
 - “keep an auditable decision history”; or
 - “stress-test a stock idea.”
 
-## The narrower gap
+## A narrow focus, not a uniqueness claim
 
-In the public product pages reviewed, no product was found that makes the
-following combination its primary personal-investing task:
+The public product review shows that Falsifi has a narrower focus than many
+general investment-research tools:
 
 1. canonical-URL identity that a user cannot split with labels;
-2. explicit grouping of shared underlying sources;
-3. a first-class “materials → identified source groups” result; and
-4. a deterministic next missing evidence action.
+2. user-confirmed grouping of shared underlying sources;
+3. a first-class “materials → identified source groups” result.
 
-This is a bounded review result. It is not proof that no private, internal, or
-undocumented product implements the same workflow.
+This list describes the product focus. It does not prove that Falsifi is unique,
+and it does not rule out similar public, private, internal, or undocumented
+tools.
 
 ## Why this pain is real
 
@@ -106,14 +107,12 @@ groups.
 Reasonable:
 
 > Falsifi shows how material for one stock thesis groups by source. It groups
-> identical canonical URLs and explicit same-source relationships, then shows
-> the next missing evidence action.
+> identical canonical URLs and explicit same-source relationships.
 
 Also reasonable:
 
-> In our July 2026 review of public product pages, we did not find a
-> personal-investing product that made canonical source grouping plus a
-> “materials-to-source-groups” result its primary task.
+> Falsifi focuses on matching-link and same-source grouping, with a clear
+> “materials-to-source-groups” result.
 
 Not reasonable:
 
@@ -136,7 +135,6 @@ paste URL or upload document
 → detect cross-site repetitions
 → trace a report back to a filing or transcript
 → let the user confirm or reject each proposed relationship
-→ recommend one genuinely different counter-source to inspect
 ```
 
 Until that extraction and provenance layer exists, the interface describes its
@@ -148,11 +146,13 @@ relationships, not universal automatic source tracing.
 Falsifi 不能再定位成泛化的“投资论点跟踪、压力测试、反方论证、证据溯源、
 提醒”大合集，因为这些能力都有公开竞品。
 
-v0.6 只解决一个问题：用户已经有一项股票判断和若干材料，系统显示当前记录
-识别出多少个来源组，并指出下一项缺失证据。相同规范化网址无法通过
-修改标签被拆开；行情数据不参与人工证据来源数；主结果不依赖用户随意填写的
-0–100 分。
+v0.6 只解决一个问题：把一只股票的研究材料按来源归组。股票判断可以选填。相同规范化网址无法
+通过修改标签被拆开；用户也可以明确标记两条材料来自同一底层来源。行情数据
+不计入用户材料，主结果也不依赖用户随意填写的 0–100 分。
 
-本轮公开产品页审查中，没有发现把“规范化网址防拆分 + 同源关系归组 +
-材料数到来源组数的首要结果 + 下一项证据缺口”同时作为个人股票研究核心任务
-的产品。但这只能作为有边界的检索结论，不能宣传“全球首创”或“从未有人做过”。
+产品不再规定用户下一步必须做什么。添加材料、修改判断、检查归组和填写可选
+复核信息都由用户自己决定。
+
+公开产品审查只能说明 Falsifi 选择了“相同链接不拆分 + 用户确认同源关系 +
+材料数到来源组数”这个较窄的方向，不能证明产品独一无二，也不能宣传
+“全球首创”或“从未有人做过”。
