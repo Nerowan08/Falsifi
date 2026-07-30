@@ -3795,6 +3795,64 @@ a {
   letter-spacing: 0;
 }
 
+.focus-command-bar {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 14px;
+}
+
+.focus-command-bar h2 {
+  font-size: 13px;
+  margin: 0;
+}
+
+.focus-command-bar > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.focus-command-bar .button {
+  min-height: 44px;
+}
+
+.focus-result-card {
+  align-items: center;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin-top: 16px;
+  padding: clamp(22px, 4vw, 34px);
+}
+
+.focus-result-card > span {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.focus-result-card h2 {
+  font-size: clamp(24px, 3.5vw, 36px);
+  letter-spacing: -0.045em;
+  line-height: 1.18;
+  margin: 0;
+}
+
+.focus-result-card .focus-counts {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+}
+
 .focus-steps {
   display: grid;
   gap: 0;
@@ -4003,6 +4061,73 @@ a {
   margin: 22px 0 24px;
   max-width: 820px;
   padding: 0;
+}
+
+.focus-review-settings {
+  align-items: start;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 0.35fr) auto;
+  margin-top: 24px;
+  padding-top: 18px;
+}
+
+.focus-review-settings > div {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.focus-review-settings span {
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.focus-review-settings strong {
+  color: var(--text-soft);
+  font-size: 12px;
+  font-weight: 550;
+  line-height: 1.5;
+}
+
+.focus-review-settings button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--brand-dark);
+  display: inline-flex;
+  font-size: 11px;
+  gap: 6px;
+}
+
+.focus-materials {
+  border-bottom: 1px solid var(--border);
+  padding: 34px 4px;
+}
+
+.focus-materials .focus-section-heading {
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
+
+.focus-materials .focus-section-heading > div {
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.focus-materials .focus-section-heading p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  margin: 0;
+  max-width: 660px;
+}
+
+.focus-materials .focus-section-heading .button {
+  flex: 0 0 auto;
+  min-height: 42px;
 }
 
 .focus-claim dl {
@@ -4362,6 +4487,37 @@ a {
     margin-top: 10px;
   }
 
+  .focus-command-bar {
+    align-items: stretch;
+    display: block;
+  }
+
+  .focus-command-bar h2 {
+    margin-bottom: 12px;
+  }
+
+  .focus-command-bar > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .focus-command-bar .button {
+    justify-content: center;
+  }
+
+  .focus-result-card {
+    display: block;
+    padding: 24px 20px;
+  }
+
+  .focus-result-card h2 {
+    margin-top: 9px;
+  }
+
+  .focus-result-card .focus-counts {
+    margin-top: 22px;
+  }
+
   .focus-steps {
     overflow-x: auto;
   }
@@ -4397,6 +4553,19 @@ a {
     grid-template-columns: 1fr;
   }
 
+  .focus-review-settings {
+    grid-template-columns: 1fr;
+  }
+
+  .focus-materials {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .focus-materials .focus-section-heading {
+    gap: 16px;
+  }
+
   .focus-details > summary,
   .focus-details-body,
   .market-context-row {
@@ -4430,6 +4599,19 @@ a {
 
   .focus-counts {
     grid-template-columns: auto auto auto;
+  }
+
+  .focus-command-bar > div {
+    grid-template-columns: 1fr;
+  }
+
+  .focus-materials .focus-section-heading {
+    display: grid;
+  }
+
+  .focus-materials .focus-section-heading .button {
+    justify-content: center;
+    width: 100%;
   }
 
   .source-group-list article > header {
