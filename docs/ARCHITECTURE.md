@@ -63,15 +63,22 @@ provenance fields:
 - `dependsOnIds`: explicit evidence dependencies; and
 - `relation`: `direct`, `derived`, or `duplicate`.
 
+v0.6 adds optional fields used by the focused workflow:
+
+- `sameSourceAsIds`: explicit same-source relationships;
+- `verification`: `original`, `reviewed`, or `unverified`; and
+- `provenance`: `user` or `system-market`.
+
 The runtime validator rejects self-references and dangling dependencies. Old v1
-case files without these fields continue to work, with each unlinked item
-treated as its own related group.
+case files without these fields continue to work. Canonical URL matching still
+applies; missing verification is treated conservatively as unverified by the
+readiness layer.
 
 v0.4 added an optional `marketSnapshot` with instrument metadata, fetch and
 market timestamps, normalized daily observations, calculated metrics, and a
 source URL. Imported cases without a snapshot remain valid.
 
-v0.5 adds an optional `researchPlan`:
+v0.6 uses an optional `researchPlan`:
 
 - `purpose`: new research, holding review, or watchlist;
 - `thesisConfirmed`: whether the displayed claim is the user’s actual claim;
@@ -84,23 +91,24 @@ research plan is valid but does not pass the readiness gate.
 
 ## Group-aware evidence model
 
-`originId`, `claimId`, and `dependsOnIds` connect evidence that reuses an
-underlying source or claim. The engine builds connected related evidence groups.
-For enabled items, it:
+The legacy model engine retains `originId`, `claimId`, and `dependsOnIds` for
+saved analytical cases. For enabled items, it:
 
 1. calculates each item’s signed weighted contribution;
-2. averages items with the same declared source-and-claim pair into one
-   argument unit;
-3. averages those argument units inside each related evidence group; and
-4. adds the resulting group contributions to the case score.
+2. keeps at most the strongest supporting and strongest challenging
+   contribution in each related group;
+3. averages those two directions when both are present; and
+4. adds each bounded group contribution to the case score.
 
 This prevents duplicated items from one declared source from multiplying that
 source’s model contribution. It does not detect an undeclared relationship,
 prove statistical independence between groups, or establish causality.
 
-The readiness layer applies a separate source-diversity rule: at least three
-related evidence groups and at least two user-added evidence items. Market-
-derived items do not satisfy the primary-source or counter-evidence checks.
+The focused workflow uses a stricter source grouping: canonical URL,
+`originId`, and `sameSourceAsIds` only. A shared `claimId` or logical dependency
+does not merge independent sources. Readiness requires at least two verified
+source groups. Unverified and system-market items cannot satisfy the
+primary-source, counter-evidence, or diversity checks.
 
 ## Search boundaries
 
