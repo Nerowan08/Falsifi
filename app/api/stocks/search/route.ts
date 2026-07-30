@@ -90,7 +90,13 @@ export async function GET(request: Request) {
 
   const normalized = normalizeSymbolInput(query, region);
   if (normalized && isExplicitSymbolInput(query) && !results.length) {
-    results.push(directCandidate(normalized, region));
+    const candidate = directCandidate(normalized, region);
+    if (
+      candidate.region !== "other" &&
+      (region === "all" || candidate.region === region)
+    ) {
+      results.push(candidate);
+    }
   }
 
   if (!results.length && lastError) {

@@ -31,6 +31,10 @@ test("renders development preview metadata", async () => {
   );
   const html = await response.text();
   assert.match(html, developmentPreviewMeta);
-  assert.match(html, /Choose a real stock\. Test the case, not a demo\./);
+  assert.match(
+    html,
+    /Choose a listed stock\. Start with verifiable data\./,
+  );
+  assert.match(html, /User guide/);
   assert.doesNotMatch(html, /Northstar Cloud/);
 });

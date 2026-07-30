@@ -2,12 +2,13 @@
 
 > **Find what would flip your view.**
 
-Falsifi is an open-source, evidence-first stress lab for investment theses. It
-does not invent another buy/sell signal. It makes a research case explicit,
-tests how it breaks, and preserves the exact state for later review.
+Falsifi is an open-source, source-linked stress-testing workspace for stock
+research. It does not produce another buy/sell signal. It makes a research case
+explicit, tests which changes would alter the current assessment, and preserves
+the exact state for later review.
 
 [简体中文](./README.zh-CN.md) · [Methodology](./docs/METHODOLOGY.md) ·
-[Uniqueness audit](./docs/UNIQUENESS.md) · [Data sources](./DATA_SOURCES.md)
+[Landscape review](./docs/UNIQUENESS.md) · [Data sources](./DATA_SOURCES.md)
 
 Live app: [thesis-trace.nerowan22.chatgpt.site](https://thesis-trace.nerowan22.chatgpt.site)
 
@@ -15,8 +16,8 @@ Live app: [thesis-trace.nerowan22.chatgpt.site](https://thesis-trace.nerowan22.c
 
 Most AI stock tools ask, “What should I buy?”
 
-Falsifi asks a more disciplined question: “What is the smallest feasible
-change that would make this research posture flip?”
+Falsifi asks a more disciplined question: “What is the smallest tested change
+that would alter my current assessment?”
 
 The result is a debugger for investor reasoning—not an oracle, probability
 model, or trading system.
@@ -26,34 +27,44 @@ model, or trading system.
 - **Real stock entry point** — search or enter U.S., mainland China, and Hong
   Kong symbols instead of landing in a fictional demo.
 - **Source-linked market snapshot** — loads one year of delayed daily prices,
-  shows retrieval time and provenance, and calculates returns, volatility,
-  drawdown, RSI, moving averages, and volume confirmation when volume is
-  available. Analysis requires at least 200 valid daily observations.
+  shows market time, retrieval time, and source details, and calculates
+  returns, annualized volatility, maximum drawdown, Wilder RSI, moving averages,
+  and recent volume relative to its 20-session average. A complete adjusted-close
+  series is used when available; otherwise the full ordinary-close series is
+  used, and the interface labels the actual basis.
+  Analysis requires at least 200 valid daily observations.
 - **Inspectable case generation** — converts those market observations into a
-  non-demo stress case. Every generated item remains editable and cites its
-  upstream series.
-- **Evidence independence audit** — groups items that share an origin, claim,
-  or declared dependency so repetition is not mistaken for corroboration.
-- **Minimum independent flip** — removes whole evidence roots and finds the
-  smallest tested root set that changes the research posture.
-- **Joint flip frontier** — searches pairs of assumptions inside declared
-  ranges and returns the closest normalized two-variable flip paths.
-- **Three stress semantics** — compares removing evidence, degrading its
-  reliability, and observing a contradiction. These are deliberately not
-  treated as equivalent.
-- **Measured ablations** — removes each enabled item and recomputes the case
-  rather than asking an AI to describe its own importance.
-- **Single-variable cliff** — finds the nearest tested assumption move that
-  crosses a posture threshold.
-- **Source shocks and freshness checks** — recomputes the case after removing
-  each source group and identifies stale observations.
-- **Local evidence ledger** — add, edit, disable, search, and delete sourced
+  non-demo technical starting case. Every generated item remains editable and
+  cites its upstream market series. The generated case is not a return
+  forecast.
+- **Evidence dependency check** — groups items that share an original source,
+  underlying claim, or declared dependency. Separate groups are not proof of
+  statistical independence, and grouping does not automatically change any
+  assigned weight.
+- **Smallest tested assessment change** — removes whole related evidence groups
+  and finds the smallest tested group set that crosses an assessment threshold.
+- **Two-variable threshold combinations** — searches pairs of scenario inputs
+  inside declared ranges and returns the closest normalized combinations that
+  cross a threshold.
+- **Three evidence test modes** — compares excluding evidence, reducing its
+  confidence weight by half, and reversing its direction.
+- **Score change if excluded** — removes each enabled item and recomputes the
+  rule score. It is a model explanation, not a causal estimate or backtest.
+- **One-variable sensitivity** — finds the nearest tested change in one
+  scenario input while the other inputs stay fixed.
+- **Source-type exclusion and freshness checks** — recomputes the case after
+  excluding each source category and identifies observations older than the
+  configured window.
+- **Local evidence list** — add, edit, disable, search, and delete sourced
   observations without creating an account.
 - **Restorable SHA-256 snapshots** — freezes canonical case JSON for local
   version comparison. This is a content fingerprint, not a trusted timestamp.
 - **Four interface languages** — English, Simplified Chinese, Japanese, and
   Spanish. Generated case text follows the selected language; user-authored
   research is never silently translated.
+- **Built-in practical guide** — the header and stock-search page both link to
+  a complete four-language walkthrough of the data, controls, limits, local
+  storage, and common errors.
 - **Local-first workspace** — no telemetry, database, brokerage connection, or
   user account is required. A network request is required to load market data.
 
@@ -89,11 +100,12 @@ npm run build
    initial case. Only listed equities with at least 200 valid daily
    observations are accepted; ETFs, indexes, futures, FX, and crypto are
    rejected.
-4. Add official filings, management disclosures, or independent estimates in
-   **Evidence**. Market-derived observations intentionally share one
-   provenance root, so one price feed is never presented as independent
-   corroboration.
-5. Stress assumptions, save a snapshot, or export the complete case JSON.
+4. Add regulatory filings, management disclosures, or third-party research in
+   **Evidence**. Market-derived observations intentionally share one related
+   evidence group because they come from one market series. Review or adjust
+   their weights yourself; grouping reports the relationship but does not
+   reweight the score.
+5. Change scenario inputs, save a snapshot, or export the complete case JSON.
 
 The built-in Yahoo Finance chart/search adapter is undocumented and intended
 for personal or self-hosted evaluation. It can be delayed, throttled, or
@@ -109,8 +121,8 @@ The machine-readable schema is
 For the same valid case JSON and engine version, Falsifi returns the same
 result. The core engine is pure TypeScript with no network dependency.
 
-- independent-root flip search is exact through four roots;
-- joint-frontier search is exhaustive until the 100,000-state limit, then
+- related-group removal search is exact through four groups;
+- two-variable search is exhaustive until the 100,000-state limit, then
   switches to deterministic sampling and reports that fact;
 - an absent result means “not found inside the tested bounds,” not proof that a
   thesis is true or robust.
@@ -157,12 +169,13 @@ docs/                   Method, architecture, and landscape audit
 ## Honest differentiation
 
 Individual ideas such as thesis tracking, scenario analysis, counterfactual
-explanations, evidence ledgers, and SHA-256 evidence packs already exist.
+explanations, evidence records, and SHA-256 evidence packs already exist.
 Falsifi’s distinction is their integration into an evidence-first workflow:
 
 ```text
-provenance graph → independent-root ablation → minimum flip
-                 → joint assumption frontier → versioned local record
+evidence relationship graph → related-group removal test
+                            → one- and two-variable sensitivity
+                            → restorable local versions
 ```
 
 Our public landscape scan found no exact open-source equivalent, but this is
@@ -191,5 +204,6 @@ responsibility. See [`SECURITY.md`](./SECURITY.md) and
 Falsifi is an educational research and decision-journaling tool. It does not
 provide investment advice, recommendations, forecasts, suitability assessment,
 or trade execution. Scores are user-defined research constructs, not objective
-odds. Market data can be delayed, incomplete, adjusted, or unavailable. Verify
-primary sources. Investing involves risk, including loss of principal.
+odds. Market data can be delayed, incomplete, or unavailable; historical returns
+may use adjusted or ordinary closing prices as labeled. Verify primary sources.
+Investing involves risk, including loss of principal.

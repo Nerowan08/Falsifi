@@ -56,6 +56,24 @@ test("the published stability metric is deterministic", () => {
   assert.equal(result.evidenceStress.degradeFactor, 0.5);
 });
 
+test("a case with no enabled evidence gets no evidence-buffer credit", () => {
+  const emptyEvidenceCase = structuredClone(DEMO_CASE);
+  emptyEvidenceCase.baseScore = 50;
+  emptyEvidenceCase.evidence.forEach((item) => {
+    item.enabled = false;
+  });
+  emptyEvidenceCase.assumptions.forEach((item) => {
+    item.value = item.baseline;
+    item.impactPerUnit = 0;
+  });
+
+  const result = runStressTest(emptyEvidenceCase);
+
+  assert.equal(result.minimumFlipSet.length, 0);
+  assert.equal(result.assumptionFlip, null);
+  assert.equal(result.stabilityScore, 59);
+});
+
 test("the independence audit clusters shared provenance deterministically", () => {
   const audit = auditEvidenceIndependence(DEMO_CASE);
   const repeated = auditEvidenceIndependence(DEMO_CASE);
@@ -215,6 +233,24 @@ test("canonical JSON does not depend on object key order", () => {
   assert.equal(
     canonicalStringify({ beta: 2, alpha: { y: 2, x: 1 } }),
     canonicalStringify({ alpha: { x: 1, y: 2 }, beta: 2 }),
+  );
+});
+
+test("canonical JSON follows JSON semantics for undefined values", async () => {
+  const withOptionalFields = {
+    alpha: 1,
+    omitted: undefined,
+    values: [1, undefined, 3],
+  };
+  const afterJsonRoundTrip = JSON.parse(JSON.stringify(withOptionalFields));
+
+  assert.equal(
+    canonicalStringify(withOptionalFields),
+    canonicalStringify(afterJsonRoundTrip),
+  );
+  assert.equal(
+    await sha256(withOptionalFields),
+    await sha256(afterJsonRoundTrip),
   );
 });
 

@@ -43,6 +43,7 @@ export type MarketSnapshot = {
   exchange: string;
   currency: string;
   instrumentType: string;
+  priceBasis?: "adjusted" | "close";
   price: number;
   previousClose: number;
   change: number;
@@ -320,10 +321,13 @@ const compareStrings = (left: string, right: string) =>
   left < right ? -1 : left > right ? 1 : 0;
 
 /**
- * Groups enabled evidence into independent roots. Shared origin IDs, shared
- * claim IDs, and explicit dependency edges are treated as declarations that
- * two items are not independent. The graph is intentionally undirected for
- * clustering: dependency direction is provenance, not additional weight.
+ * Groups enabled evidence by declared relationships. Shared origin IDs,
+ * shared claim IDs, and explicit dependency edges place items in the same
+ * connected group. The graph is intentionally undirected for clustering:
+ * dependency direction is source metadata, not additional score weight.
+ *
+ * The public API retains the historical EvidenceRoot name for schema and
+ * import compatibility; the UI calls these "related evidence groups."
  */
 export function buildEvidenceRoots(thesisCase: ThesisCase): EvidenceRoot[] {
   const evidence = thesisCase.evidence
@@ -1064,8 +1068,17 @@ function calculateStabilityScore(
         ? nearestThreshold
         : Math.abs(score - nearestThreshold)
       : 0;
+  const enabledEvidenceCount = thesisCase.evidence.filter(
+    (item) => item.enabled,
+  ).length;
+  const testedEvidenceBuffer =
+    minimumFlipSet.length > 0
+      ? minimumFlipSet.length
+      : Math.min(enabledEvidenceCount, 4);
   const evidenceResilience =
-    minimumFlipSet.length === 0 ? 1 : clamp(minimumFlipSet.length / 3, 0, 1);
+    enabledEvidenceCount === 0
+      ? 0
+      : clamp(testedEvidenceBuffer / 3, 0, 1);
   const assumption = assumptionFlip
     ? thesisCase.assumptions.find(
         (item) => item.id === assumptionFlip.assumptionId,
@@ -1145,11 +1158,25 @@ export function runStressTest(thesisCase: ThesisCase): StressResult {
 
 export function canonicalStringify(value: unknown): string {
   if (Array.isArray(value)) {
-    return `[${value.map((item) => canonicalStringify(item)).join(",")}]`;
+    return `[${value
+      .map((item) =>
+        item === undefined ||
+        typeof item === "function" ||
+        typeof item === "symbol"
+          ? "null"
+          : canonicalStringify(item),
+      )
+      .join(",")}]`;
   }
   if (value && typeof value === "object") {
     const record = value as Record<string, unknown>;
     return `{${Object.keys(record)
+      .filter(
+        (key) =>
+          record[key] !== undefined &&
+          typeof record[key] !== "function" &&
+          typeof record[key] !== "symbol",
+      )
       .sort()
       .map(
         (key) =>
@@ -1157,7 +1184,7 @@ export function canonicalStringify(value: unknown): string {
       )
       .join(",")}}`;
   }
-  return JSON.stringify(value);
+  return JSON.stringify(value) ?? "null";
 }
 
 export async function sha256(value: unknown) {
@@ -1304,6 +1331,9 @@ export function isMarketSnapshot(value: unknown): value is MarketSnapshot {
     typeof value.currency !== "string" ||
     value.currency.length > 12 ||
     value.instrumentType !== "EQUITY" ||
+    (value.priceBasis !== undefined &&
+      value.priceBasis !== "adjusted" &&
+      value.priceBasis !== "close") ||
     !isFiniteNumber(value.price) ||
     value.price <= 0 ||
     !isFiniteNumber(value.previousClose) ||

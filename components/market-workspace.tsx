@@ -4,6 +4,7 @@ import {
   ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
+  BookOpen,
   Database,
   ExternalLink,
   FileUp,
@@ -17,7 +18,7 @@ import {
   isMarketSnapshot,
   type MarketSnapshot,
 } from "@/lib/falsifi";
-import type { Locale } from "@/lib/i18n";
+import { t, type Locale } from "@/lib/i18n";
 import {
   MarketRegion,
   isExplicitSymbolInput,
@@ -52,8 +53,13 @@ type MarketCopy = {
   changeStock: string;
   importCase: string;
   overview: string;
-  oneYearHistory: string;
+  history: {
+    adjusted: string;
+    close: string;
+    unknown: string;
+  };
   source: string;
+  marketTime: string;
   fetched: string;
   metrics: {
     month: string;
@@ -68,10 +74,10 @@ type MarketCopy = {
 
 const MARKET_COPY: Record<Locale, MarketCopy> = {
   en: {
-    heroEyebrow: "Live research workspace",
-    heroTitle: "Choose a real stock. Test the case, not a demo.",
+    heroEyebrow: "Stock research workspace",
+    heroTitle: "Choose a listed stock. Start with verifiable data.",
     heroBody:
-      "Search U.S., mainland China, or Hong Kong equities. Falsifi loads one year of delayed market data, builds an inspectable case, and shows what would flip it.",
+      "Search U.S., mainland China, or Hong Kong equities. Falsifi loads about one year of delayed market data, builds a rule-based starting case, and tests what would change its assessment.",
     searchPlaceholder: "Ticker or company name — e.g. AAPL, 603901, Tencent",
     searchLabel: "Search stocks",
     marketsLabel: "Stock markets",
@@ -82,9 +88,9 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
       hk: "Hong Kong",
     },
     quickTitle: "Start with a real company",
-    realData: "Real delayed market data",
-    noAccount: "No account or API key",
-    delayed: "Source-linked and time-stamped",
+    realData: "Delayed market data",
+    noAccount: "No Falsifi sign-up or market-data API key",
+    delayed: "Market time and retrieval time shown",
     searchHint: "Type a company name or ticker to search.",
     empty: "No matching listed stock was found.",
     unavailable:
@@ -100,26 +106,31 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     analyze: "Analyze",
     changeStock: "Change stock",
     importCase: "Import an existing Falsifi case",
-    overview: "Market snapshot",
-    oneYearHistory: "Adjusted close · 1 year",
+    overview: "Market overview",
+    history: {
+      adjusted: "Adjusted close · 1 year",
+      close: "Close · 1 year",
+      unknown: "Price history · 1 year",
+    },
     source: "Source",
+    marketTime: "Market data time",
     fetched: "Retrieved",
     metrics: {
       month: "1-month return",
       quarter: "3-month return",
-      year: "1-year return",
-      volatility: "30-day volatility",
+      year: "Available 1-year return",
+      volatility: "Annualized volatility · 30 sessions",
       drawdown: "Maximum drawdown",
       rsi: "RSI (14)",
     },
     verify:
-      "Quotes may be delayed or incomplete. Verify material figures with the exchange or issuer.",
+      "Quotes may be delayed or incomplete. The latest daily bar and volume can be provisional before market close. Verify material figures with the exchange or issuer.",
   },
   "zh-CN": {
-    heroEyebrow: "真实研究工作台",
-    heroTitle: "选择一只真实股票，而不是查看演示。",
+    heroEyebrow: "股票研究工作台",
+    heroTitle: "选择一只上市股票，从可核查的数据开始。",
     heroBody:
-      "搜索美股、A 股或港股。Falsifi 会读取一年延迟行情，自动构建可审查的研究案例，并找出什么变化会推翻当前判断。",
+      "搜索美股、A 股或港股。Falsifi 会读取约一年的延迟行情，生成一个可检查的规则模型初始案例，并测试什么变化会改变当前判断。",
     searchPlaceholder: "股票代码或公司名称，例如 AAPL、603901、腾讯",
     searchLabel: "搜索股票",
     marketsLabel: "股票市场",
@@ -130,9 +141,9 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
       hk: "港股",
     },
     quickTitle: "从真实公司开始",
-    realData: "真实延迟行情",
-    noAccount: "无需账号或 API Key",
-    delayed: "带来源与时间戳",
+    realData: "延迟行情数据",
+    noAccount: "无需注册 Falsifi，也无需行情 API Key",
+    delayed: "区分行情时间与获取时间",
     searchHint: "输入公司名称或股票代码开始搜索。",
     empty: "没有找到匹配的上市股票。",
     unavailable: "行情服务暂时不可用，请稍后重新尝试该代码。",
@@ -146,25 +157,31 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     analyze: "分析",
     changeStock: "更换股票",
     importCase: "导入已有 Falsifi 案例",
-    overview: "真实行情快照",
-    oneYearHistory: "复权收盘价 · 1 年",
+    overview: "行情概览",
+    history: {
+      adjusted: "复权收盘价 · 1 年",
+      close: "收盘价 · 1 年",
+      unknown: "价格走势 · 1 年",
+    },
     source: "数据来源",
+    marketTime: "行情时间",
     fetched: "获取时间",
     metrics: {
       month: "1 个月收益",
       quarter: "3 个月收益",
-      year: "1 年收益",
-      volatility: "30 日波动率",
+      year: "近一年区间收益",
+      volatility: "最近 30 个交易日年化波动率",
       drawdown: "最大回撤",
       rsi: "RSI（14 日）",
     },
-    verify: "行情可能延迟或不完整，重大数据请以交易所或公司披露为准。",
+    verify:
+      "行情可能延迟或不完整；交易时段内最新日线与成交量可能尚未收盘。重大数据请以交易所或公司披露为准。",
   },
   ja: {
-    heroEyebrow: "実データ・リサーチ",
-    heroTitle: "デモではなく、実在する銘柄を選択。",
+    heroEyebrow: "株式リサーチ",
+    heroTitle: "上場銘柄を選び、確認可能なデータから始めます。",
     heroBody:
-      "米国株、中国A株、香港株を検索できます。1年分の遅延市場データから検証可能なケースを作り、何が判断を反転させるかを示します。",
+      "米国株、中国A株、香港株を検索できます。約1年分の遅延市場データからルールベースの初期ケースを作り、評価が変わる条件をテストします。",
     searchPlaceholder: "ティッカーまたは企業名 — AAPL、603901、Tencent",
     searchLabel: "銘柄を検索",
     marketsLabel: "株式市場",
@@ -175,9 +192,9 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
       hk: "香港",
     },
     quickTitle: "実在企業から始める",
-    realData: "実際の遅延市場データ",
-    noAccount: "アカウント・APIキー不要",
-    delayed: "出典と時刻を明示",
+    realData: "遅延市場データ",
+    noAccount: "Falsifi登録・市場データAPIキー不要",
+    delayed: "市場時刻と取得時刻を区別",
     searchHint: "企業名またはティッカーを入力してください。",
     empty: "一致する上場銘柄が見つかりません。",
     unavailable:
@@ -194,25 +211,30 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     changeStock: "銘柄を変更",
     importCase: "既存の Falsifi ケースを読み込む",
     overview: "市場スナップショット",
-    oneYearHistory: "調整後終値 · 1年",
+    history: {
+      adjusted: "調整後終値 · 1年",
+      close: "終値 · 1年",
+      unknown: "価格推移 · 1年",
+    },
     source: "出典",
+    marketTime: "市場データ時刻",
     fetched: "取得時刻",
     metrics: {
       month: "1か月リターン",
       quarter: "3か月リターン",
-      year: "1年リターン",
-      volatility: "30日ボラティリティ",
+      year: "利用可能な約1年のリターン",
+      volatility: "直近30取引日の年率換算ボラティリティ",
       drawdown: "最大ドローダウン",
       rsi: "RSI（14）",
     },
     verify:
-      "価格は遅延または不完全な場合があります。重要な数値は取引所・発行体で確認してください。",
+      "価格は遅延・欠損する場合があります。取引時間中の最新日足と出来高は暫定値の場合があります。重要な数値は取引所・発行体で確認してください。",
   },
   es: {
-    heroEyebrow: "Análisis con datos reales",
-    heroTitle: "Elige una acción real, no una demostración.",
+    heroEyebrow: "Análisis bursátil",
+    heroTitle: "Elige una acción cotizada y empieza con datos verificables.",
     heroBody:
-      "Busca acciones de EE. UU., China continental o Hong Kong. Falsifi carga un año de datos retrasados, crea un caso examinable y muestra qué lo haría cambiar.",
+      "Busca acciones de EE. UU., China continental o Hong Kong. Falsifi carga aproximadamente un año de datos retrasados, crea un caso inicial basado en reglas y prueba qué cambiaría su evaluación.",
     searchPlaceholder: "Ticker o empresa — AAPL, 603901, Tencent",
     searchLabel: "Buscar acciones",
     marketsLabel: "Mercados bursátiles",
@@ -223,9 +245,9 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
       hk: "Hong Kong",
     },
     quickTitle: "Empieza con una empresa real",
-    realData: "Datos reales con retraso",
-    noAccount: "Sin cuenta ni clave API",
-    delayed: "Fuente y hora visibles",
+    realData: "Datos de mercado con retraso",
+    noAccount: "Sin registro en Falsifi ni clave API de mercado",
+    delayed: "Hora de mercado y de consulta separadas",
     searchHint: "Escribe el nombre de una empresa o su ticker.",
     empty: "No se encontró una acción cotizada coincidente.",
     unavailable:
@@ -242,19 +264,24 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     changeStock: "Cambiar acción",
     importCase: "Importar un caso de Falsifi",
     overview: "Instantánea de mercado",
-    oneYearHistory: "Cierre ajustado · 1 año",
+    history: {
+      adjusted: "Cierre ajustado · 1 año",
+      close: "Precio de cierre · 1 año",
+      unknown: "Historial de precios · 1 año",
+    },
     source: "Fuente",
+    marketTime: "Hora del dato de mercado",
     fetched: "Obtenido",
     metrics: {
       month: "Rentabilidad 1 mes",
       quarter: "Rentabilidad 3 meses",
-      year: "Rentabilidad 1 año",
-      volatility: "Volatilidad 30 días",
+      year: "Rentabilidad del año disponible",
+      volatility: "Volatilidad anualizada · 30 sesiones",
       drawdown: "Caída máxima",
       rsi: "RSI (14)",
     },
     verify:
-      "Las cotizaciones pueden estar retrasadas o incompletas. Verifica las cifras relevantes con la bolsa o el emisor.",
+      "Las cotizaciones pueden estar retrasadas o incompletas. La última barra diaria y el volumen pueden ser provisionales antes del cierre. Verifica cifras relevantes con la bolsa o el emisor.",
   },
 };
 
@@ -327,10 +354,12 @@ export function StockPicker({
   locale,
   onSelect,
   onImport,
+  onOpenGuide,
 }: {
   locale: Locale;
   onSelect: (snapshot: MarketSnapshot) => void;
   onImport: () => void;
+  onOpenGuide: () => void;
 }) {
   const text = marketUi(locale);
   const [query, setQuery] = useState("");
@@ -404,6 +433,7 @@ export function StockPicker({
       const params = new URLSearchParams({
         symbol: stock.symbol,
         name: stock.name,
+        market: region,
       });
       const response = await fetch(`/api/stocks/quote?${params}`);
       if (!response.ok) {
@@ -465,6 +495,15 @@ export function StockPicker({
           </span>
           <span>{text.delayed}</span>
         </div>
+        <button
+          type="button"
+          className="picker-guide"
+          onClick={onOpenGuide}
+        >
+          <BookOpen size={15} />
+          {t(locale, "guide.pickerCta")}
+          <ArrowRight size={14} />
+        </button>
       </div>
 
       <div className="stock-search-panel">
@@ -654,12 +693,18 @@ export function MarketOverview({
     };
   }, [snapshot]);
   const metrics = snapshot.metrics;
+  const historyLabel =
+    snapshot.priceBasis === "adjusted"
+      ? text.history.adjusted
+      : snapshot.priceBasis === "close"
+        ? text.history.close
+        : text.history.unknown;
   const metricItems = [
     [text.metrics.month, formatPercent(metrics.monthReturn)],
     [text.metrics.quarter, formatPercent(metrics.quarterReturn)],
     [text.metrics.year, formatPercent(metrics.yearReturn)],
     [text.metrics.volatility, `${metrics.annualizedVolatility.toFixed(1)}%`],
-    [text.metrics.drawdown, `${metrics.maxDrawdown.toFixed(1)}%`],
+    [text.metrics.drawdown, `${Math.abs(metrics.maxDrawdown).toFixed(1)}%`],
     [text.metrics.rsi, metrics.rsi14.toFixed(1)],
   ];
   const changeClass = snapshot.changePercent >= 0 ? "positive" : "negative";
@@ -696,6 +741,13 @@ export function MarketOverview({
             <ExternalLink size={12} />
           </a>
           <small>
+            {text.marketTime}:{" "}
+            {new Intl.DateTimeFormat(locale, {
+              dateStyle: "medium",
+              timeStyle: "short",
+            }).format(new Date(snapshot.marketTime))}
+          </small>
+          <small>
             {text.fetched}:{" "}
             {new Intl.DateTimeFormat(locale, {
               dateStyle: "medium",
@@ -706,11 +758,11 @@ export function MarketOverview({
       </div>
 
       <div className={`market-history ${chart.positive ? "up" : "down"}`}>
-        <span>{text.oneYearHistory}</span>
+        <span>{historyLabel}</span>
         <svg
           viewBox={`0 0 ${chart.width} ${chart.height}`}
           role="img"
-          aria-label={`${snapshot.symbol} ${text.oneYearHistory}`}
+          aria-label={`${snapshot.symbol} ${historyLabel}`}
         >
           <defs>
             <linearGradient id={gradientId} x1="0" x2="0" y1="0" y2="1">

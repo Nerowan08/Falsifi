@@ -1,4 +1,4 @@
-# Public landscape and uniqueness audit
+# Public landscape review
 
 **Scan date:** July 30, 2026  
 **Scope:** publicly indexable open-source repositories and public product
@@ -8,14 +8,14 @@ counter-evidence, and research provenance.
 ## Short conclusion
 
 We found no public open-source project with the same integrated workflow as
-Falsifi v0.3:
+Falsifi v0.4:
 
 ```text
-provenance-aware evidence roots
-→ measured item and root ablation
-→ minimum evidence flip
-→ one- and two-variable assumption cliffs
-→ remove / degrade / contradict semantics
+source-aware related evidence groups
+→ item- and group-removal recalculation
+→ smallest tested assessment change
+→ one- and two-variable sensitivity analysis
+→ exclude / lower-confidence / reverse-direction modes
 → restorable SHA-256 local snapshots
 ```
 
@@ -24,32 +24,32 @@ does **not** support “world first,” “never done before,” or ownership of
 individual method. Private institutional systems, unpublished projects, and
 unindexed products cannot be verified.
 
-Confidence in the public/open-source landscape conclusion is approximately
-`0.8`. Confidence in any global first claim would be low.
+This is a bounded review of public material; its global completeness cannot be
+quantified. Confidence in any global-first claim would be low.
 
 ## Closest public projects
 
 | Project | Closest overlap | Difference visible in public materials |
 |---|---|---|
-| [Mira](https://github.com/byteseek/Mira) | Claim-level evidence logs, source registry, disconfirming evidence, expectation maps, decision logs, refresh conditions, translation provenance | No public implementation found for calculated minimum evidence flips, measured row ablation, or a numeric assumption cliff |
-| [FundOps](https://github.com/jhchang0407-lang/fundops) | Source-backed evidence, thesis health, versioned constitution, monitoring plans, superseding artifacts, SEC-driven refresh | No public minimum-flip search, ablation matrix, or numeric counterfactual frontier found |
-| [StockSense-AI](https://github.com/Spkap/StockSense-AI) | Bull/bear/skeptic workflow, claim-level counter-evidence, evidence grading, kill criteria, thesis history | No public evidence-root minimum flip, real deletion rerun, or content-addressed local snapshot found |
-| [Thesis Investment OS](https://github.com/youngseongshin/thesis-investment-os) | Thesis, evidence, action, prediction, and feedback separation; invalidation; local-first audit trail | No public numeric assumption cliff or evidence-subset flip search found |
-| [MingCang](https://github.com/Zeeechenn/MingCang) | Local-first A-share research cases, counter-evidence, debate, review, outcome-gated memory | No public deterministic thesis-robustness engine with minimum roots and a joint frontier found |
-| [ThesisLoop](https://thesisloop.ai/) | Cited insights, assumptions, counter-evidence, catalysts, monitoring, bull/base/bear mapping | No public minimum evidence flip, measured ablation, or SHA case fingerprint found |
-| [Chartloom Scenario Lab](https://www.chartloom.com/feature/scenario-lab) | Interactive growth and margin scenarios with immediate valuation changes | No provenance-aware evidence ledger or evidence-removal stress test found |
-| [Pantheon Research](https://github.com/0xjacobzhao-byte/pantheon-research-qwen-hackathon) | SHA-256 evidence packs, evidence lineage, model disagreement, human-review gates | No public thesis minimum-flip mechanism or assumption-frontier search found |
+| [Mira](https://github.com/byteseek/Mira) | Claim-level evidence logs, source registry, disconfirming evidence, expectation maps, decision logs, refresh conditions, translation provenance | No public implementation found for a calculated smallest evidence change, row-removal recalculation, or numeric one-variable threshold |
+| [FundOps](https://github.com/jhchang0407-lang/fundops) | Source-backed evidence, thesis health, versioned constitution, monitoring plans, superseding artifacts, SEC-driven refresh | No public smallest-change search, removal matrix, or numeric pairwise sensitivity search found |
+| [StockSense-AI](https://github.com/Spkap/StockSense-AI) | Bull/bear/skeptic workflow, claim-level counter-evidence, evidence grading, kill criteria, thesis history | No public related-group minimum-change search, deletion recalculation, or content-addressed local snapshot found |
+| [Thesis Investment OS](https://github.com/youngseongshin/thesis-investment-os) | Thesis, evidence, action, prediction, and feedback separation; invalidation; local-first audit trail | No public numeric one-variable threshold or evidence-subset change search found |
+| [MingCang](https://github.com/Zeeechenn/MingCang) | Local-first A-share research cases, counter-evidence, debate, review, outcome-gated memory | No public deterministic thesis-robustness engine with related-group removal and two-variable threshold search found |
+| [ThesisLoop](https://thesisloop.ai/) | Cited insights, assumptions, counter-evidence, catalysts, monitoring, bull/base/bear mapping | No public smallest evidence change, removal recalculation, or SHA case fingerprint found |
+| [Chartloom Scenario Lab](https://www.chartloom.com/feature/scenario-lab) | Interactive growth and margin scenarios with immediate valuation changes | No source-aware evidence list or evidence-removal stress test found |
+| [Pantheon Research](https://github.com/0xjacobzhao-byte/pantheon-research-qwen-hackathon) | SHA-256 evidence packs, evidence lineage, model disagreement, human-review gates | No public smallest-change mechanism or two-variable threshold search found |
 | [Horyzon Thesis Tracker](https://horyzonapp.com/investment-thesis-tracker/) | Records why an asset is owned, what would change the view, and review dates | Primarily a record and review workflow rather than a deterministic perturbation engine |
-| [AimyTrade](https://aimytrade.io/) | Markets a pre-trade thesis stress test intended to challenge conviction | Public materials do not expose Falsifi’s reproducible evidence-root, ablation, frontier, and local snapshot mechanics |
+| [AimyTrade](https://aimytrade.io/) | Markets a pre-trade thesis stress test intended to challenge conviction | Public materials do not expose Falsifi’s reproducible relationship grouping, removal recalculation, sensitivity search, and local snapshot mechanics |
 
 ## Capability matrix
 
 `●` visible native capability · `◐` partial or adjacent capability · `—` not
 found in the public material reviewed
 
-| Product | Thesis + evidence | Disconfirmation | Numeric scenarios | Minimum evidence flip | Measured ablation | Version trail | SHA content fingerprint |
+| Product | Thesis + evidence | Disconfirmation | Numeric scenarios | Smallest evidence change | Removal recalculation | Version trail | SHA content fingerprint |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| Falsifi v0.3 | ● | ● | ● | ● | ● | ● | ● |
+| Falsifi v0.4 | ● | ● | ● | ● | ● | ● | ● |
 | Mira | ● | ● | ◐ | — | — | ◐ | — |
 | FundOps | ● | ● | — | — | — | ● | — |
 | StockSense-AI | ● | ● | ◐ | — | — | ◐ | — |
@@ -76,48 +76,50 @@ Falsifi did not invent counterfactual explanation or feature removal:
 
 Therefore:
 
-- `minimum flip` is counterfactual explanation applied to an investment case;
-- `measured ablation` is removal-based explanation;
-- `assumption cliff` is threshold sensitivity analysis;
-- `joint flip frontier` is bounded pairwise counterfactual search; and
+- the smallest tested assessment change is a counterfactual explanation
+  applied to an investment case;
+- score change after exclusion is a removal-based explanation;
+- one-variable threshold search is sensitivity analysis;
+- two-variable threshold combinations are a bounded pairwise counterfactual
+  search; and
 - a SHA-256 snapshot is content addressing, not a trusted timestamp.
 
-The defensible innovation is the product integration, explicit search
-boundaries, evidence semantics, and interaction design.
+The defensible distinction is the product integration, explicit search
+boundaries, evidence handling modes, and interaction design.
 
-## What changed in v0.3
+## What is included in v0.4
 
 The audit identified three weaknesses that could otherwise make the product
 look more novel than it is.
 
-### 1. Evidence independence
+### 1. Evidence dependency grouping
 
-Repeated stories can originate from one filing, call, or data release. v0.3
+Repeated stories can originate from one filing, call, or data release. v0.4
 adds `originId`, `claimId`, and declared dependency edges; clusters related
-items; reports concentration and conflicts; and searches minimum flips over
-whole evidence roots.
+items; reports concentration and conflicts; and searches smallest changes over
+whole related evidence groups.
 
-This prevents a copied observation from automatically looking like an
-independent corroboration. It does not prove that unlinked evidence is truly
-independent.
+This makes shared inputs visible. It does not prove that unlinked evidence is
+independent, detect copied text, or automatically reduce the assigned score
+impact of related items.
 
-### 2. Joint flip frontier
+### 2. Two-variable threshold combinations
 
-One-variable-at-a-time cliffs can miss a realistic combination of two modest
-changes. v0.3 searches every assumption pair within declared bounds and a
-normalized `±2 typical-shock` range, returns non-dominated paths, and reports
+One-variable-at-a-time analysis can miss a combination of two modest
+changes. v0.4 searches every scenario-input pair within declared bounds and a
+normalized `±2 typical-shock` range, returns non-dominated combinations, and reports
 whether the search was exhaustive or sampled.
 
 This still does not infer correlations or economic feasibility.
 
-### 3. Stress semantics
+### 3. Evidence test modes
 
-Deleting evidence is not the same as observing the opposite. v0.3 calculates
+Deleting evidence is not the same as observing the opposite. v0.4 calculates
 three separate cases:
 
-- **Remove:** the observation is unavailable.
-- **Degrade:** its reliability is reduced.
-- **Contradict:** equally weighted evidence points in the opposite direction.
+- **Exclude:** the observation is unavailable.
+- **Lower confidence:** its confidence weight is multiplied by `0.5`.
+- **Reverse direction:** equally weighted evidence points in the opposite direction.
 
 The UI keeps these results separate to avoid turning missing information into
 false contrary information.
@@ -128,8 +130,8 @@ Reasonable:
 
 > Falsifi is an evidence-first investment-thesis stress lab. In our July 2026
 > public scan, we found no exact open-source equivalent to its integrated
-> provenance-root, minimum-flip, joint-frontier, and restorable-snapshot
-> workflow.
+> evidence-relationship, smallest-change, two-variable sensitivity, and
+> restorable-snapshot workflow.
 
 Not reasonable:
 
@@ -142,9 +144,9 @@ Not reasonable:
 
 ## 中文摘要
 
-截至本次公开检索，没有发现与 Falsifi v0.3 完全同构的开源项目。它最有辨识度
-的地方，是把“证据来源依赖审计、整根删项、最小翻转、双变量联合前沿、三种
-压力语义和可恢复本地快照”做成一条统一工作流。
+截至本次公开检索，没有发现与 Falsifi v0.4 完全同构的开源项目。它最有辨识度
+的地方，是把“证据依赖检查、按关联组剔除、改变判断的最小已测试条件、
+双因素敏感性分析、三种证据处理方式和可恢复本地快照”做成一条统一工作流。
 
 但这些单项都有公开先例，全球私有系统也无法核实。因此可以说“公开开源范围
 内未发现完全同构者”，不能说“世界首创”或“从来没人做过”。

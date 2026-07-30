@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Falsifi — Evidence-first Thesis Stress Lab",
+  title: "Falsifi — Source-linked Stock Thesis Stress Test",
   description:
-    "Audit evidence independence, find joint assumption cliffs, and learn what would flip an investment thesis. Open source and local first.",
+    "Build a source-linked stock research case, check evidence dependencies, and test which scenario inputs would change the current assessment.",
   other: {
     "codex-preview": "development",
   },

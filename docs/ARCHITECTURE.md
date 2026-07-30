@@ -6,8 +6,8 @@
 Multilingual browser UI
   ├── real-stock search and source-linked market snapshot
   ├── local case and evidence editor
-  ├── independence and source-shock audit
-  ├── assumption controls and flip-frontier views
+  ├── evidence dependency and source-type exclusion checks
+  ├── scenario controls and one- / two-variable sensitivity views
   ├── JSON import/export
   └── restorable SHA-256 snapshot history
         │
@@ -18,12 +18,12 @@ Same-origin market routes
   └── explicit cache, source, delay, and failure states
         │
 Deterministic TypeScript engine
-  ├── bounded scoring and item ablation
-  ├── provenance-root clustering
-  ├── item and independent-root minimum flips
+  ├── bounded scoring and item-removal recalculation
+  ├── source / claim / dependency relationship grouping
+  ├── smallest tested item and related-group changes
   ├── one- and two-variable counterfactual search
-  ├── remove / degrade / contradict semantics
-  └── stability and freshness diagnostics
+  ├── exclude / lower-confidence / reverse-direction modes
+  └── model-robustness and freshness diagnostics
         │
 Additional adapters
   └── SEC submissions and CompanyFacts (Node / GitHub Actions)
@@ -45,7 +45,7 @@ provenance fields:
 
 The runtime validator rejects self-references and dangling dependencies. Old v1
 case files without these fields continue to work, with each unlinked item
-treated as its own root.
+treated as its own related group.
 
 v0.4 adds an optional `marketSnapshot` with instrument metadata, fetch and
 market timestamps, normalized daily observations, calculated metrics, and a
@@ -53,9 +53,9 @@ source URL. Imported cases without a snapshot remain valid.
 
 ## Search boundaries
 
-- Item minimum flip: exhaustive through four evidence items.
-- Independent minimum flip: exhaustive through four evidence roots.
-- Joint frontier: every assumption pair, with a 100,000-state global budget.
+- Item-level smallest-change search: exhaustive through four evidence items.
+- Related-group minimum change: exhaustive through four evidence groups.
+- Two-variable search: every scenario-input pair, with a 100,000-state global budget.
 - Dense joint grids are sampled deterministically and marked non-exact.
 
 Search metadata is returned with every advanced result so the UI does not

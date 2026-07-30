@@ -12,6 +12,11 @@ service-level agreement and can be throttled, changed, or disabled upstream.
 The application accepts listed equities only and requires at least 200 valid
 daily observations before it labels or scores 200-day indicators. Missing
 volume remains unknown; it is never replaced with a neutral synthetic value.
+When every valid ordinary-close date also has an adjusted close, the adapter
+uses the adjusted series. Otherwise it uses the ordinary-close series for the
+entire window; it never mixes the two bases within one calculation. The UI
+labels that basis. The 20-session volume ratio is omitted unless all latest 20
+sessions have valid volume.
 
 This keyless adapter does **not** establish display or redistribution rights for
 a public commercial service. Before widening a deployment beyond personal use,
@@ -20,9 +25,10 @@ display, retention, and redistribution terms. Falsifi does not call this feed
 real-time data.
 
 All indicators generated from one returned price series share the same
-`originId`. The independence audit therefore counts that series as one evidence
-root instead of treating moving averages, RSI, returns, and drawdown as
-independent confirmation.
+`originId`. The evidence dependency check therefore places that series in one
+related evidence group instead of presenting moving averages, RSI, returns,
+and drawdown as separate information sources. Grouping reports the
+relationship; it does not automatically change the items’ assigned weights.
 
 ## SEC EDGAR (supported)
 

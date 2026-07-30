@@ -97,6 +97,7 @@
         "exchange": { "type": "string", "minLength": 1, "maxLength": 120 },
         "currency": { "type": "string", "maxLength": 12 },
         "instrumentType": { "const": "EQUITY" },
+        "priceBasis": { "enum": ["adjusted", "close"] },
         "price": { "type": "number", "exclusiveMinimum": 0 },
         "previousClose": { "type": "number", "exclusiveMinimum": 0 },
         "change": { "type": "number" },

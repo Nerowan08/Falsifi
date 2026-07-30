@@ -1,6 +1,13 @@
-import { parseYahooChart } from "@/lib/market";
+import {
+  inferMarketRegion,
+  isSupportedListedEquitySymbol,
+  MarketRegion,
+  parseYahooChart,
+} from "@/lib/market";
 
 const validSymbol = /^[A-Z0-9^=.-]{1,24}$/;
+const isRegion = (value: string): value is MarketRegion =>
+  ["all", "us", "cn", "hk"].includes(value);
 
 class UpstreamHttpError extends Error {
   constructor(readonly status: number) {
@@ -50,6 +57,8 @@ export async function GET(request: Request) {
     .normalize("NFKC")
     .trim()
     .slice(0, 300);
+  const rawRegion = requestUrl.searchParams.get("market") ?? "all";
+  const region: MarketRegion = isRegion(rawRegion) ? rawRegion : "all";
 
   if (!validSymbol.test(symbol)) {
     return errorResponse(
@@ -71,6 +80,21 @@ export async function GET(request: Request) {
       if (snapshot.instrumentType.toUpperCase() !== "EQUITY") {
         return errorResponse(
           "This workspace supports listed equities only.",
+          "UNSUPPORTED_INSTRUMENT",
+          400,
+        );
+      }
+      const snapshotRegion = inferMarketRegion(
+        snapshot.symbol,
+        snapshot.exchange,
+      );
+      if (
+        snapshotRegion === "other" ||
+        !isSupportedListedEquitySymbol(snapshot.symbol, snapshotRegion) ||
+        (region !== "all" && snapshotRegion !== region)
+      ) {
+        return errorResponse(
+          "This workspace supports U.S., mainland China, and Hong Kong listed equities only.",
           "UNSUPPORTED_INSTRUMENT",
           400,
         );

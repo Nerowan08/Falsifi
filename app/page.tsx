@@ -6,6 +6,7 @@ import {
   ArrowUpRight,
   BookOpen,
   Check,
+  CircleHelp,
   Copy,
   Download,
   ExternalLink,
@@ -25,12 +26,20 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import {
+  FormEvent,
+  type RefObject,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   MarketOverview,
   marketUi,
   StockPicker,
 } from "@/components/market-workspace";
+import { UserGuide } from "@/components/user-guide";
 import {
   demoLocalizedCopy,
   LOCALE_OPTIONS,
@@ -53,9 +62,19 @@ import {
   StressResult,
   ThesisCase,
 } from "@/lib/falsifi";
-import { buildMarketCase, relocalizeMarketCase } from "@/lib/market";
+import {
+  buildMarketCase,
+  normalizeMarketCase,
+  relocalizeMarketCase,
+} from "@/lib/market";
 
-type View = "stress" | "evidence" | "audit" | "history" | "method";
+type View =
+  | "stress"
+  | "evidence"
+  | "audit"
+  | "history"
+  | "method"
+  | "guide";
 
 type Snapshot = {
   id: string;
@@ -75,6 +94,7 @@ const CASE_STORAGE_KEY = "falsifi.case.v2";
 const LEGACY_CASE_STORAGE_KEY = "falsifi.case.v1";
 const SNAPSHOT_STORAGE_KEY = "falsifi.snapshots.v2";
 const LOCALE_STORAGE_KEY = "falsifi.locale.v1";
+const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
 
 const navItems: {
   id: View;
@@ -92,6 +112,12 @@ const postureKeys: Record<Posture, TranslationKey> = {
   Constructive: "posture.constructive",
   Balanced: "posture.balanced",
   Cautious: "posture.cautious",
+};
+
+const postureHelpKeys: Record<Posture, TranslationKey> = {
+  Constructive: "posture.constructiveHelp",
+  Balanced: "posture.balancedHelp",
+  Cautious: "posture.cautiousHelp",
 };
 
 const groupKeys: Record<EvidenceGroup, TranslationKey> = {
@@ -197,7 +223,9 @@ function AppHeader({
   onChangeView,
   onChangeLocale,
   onChangeStock,
+  onOpenGuide,
   onSnapshot,
+  guideButtonRef,
 }: {
   activeView: View;
   locale: Locale;
@@ -205,7 +233,9 @@ function AppHeader({
   onChangeView: (view: View) => void;
   onChangeLocale: (locale: Locale) => void;
   onChangeStock: () => void;
+  onOpenGuide: () => void;
   onSnapshot: () => void;
+  guideButtonRef: RefObject<HTMLButtonElement | null>;
 }) {
   return (
     <header className="app-header">
@@ -260,6 +290,18 @@ function AppHeader({
               <span className="ticker-chip">{thesisCase.ticker}</span>
             </>
           )}
+          <button
+            ref={guideButtonRef}
+            className={`button ghost guide-trigger ${
+              activeView === "guide" ? "active" : ""
+            }`}
+            onClick={onOpenGuide}
+            aria-current={activeView === "guide" ? "page" : undefined}
+            aria-label={t(locale, "guide.open")}
+          >
+            <CircleHelp size={15} />
+            <span>{t(locale, "guide.open")}</span>
+          </button>
           <label className="language-select">
             <Globe2 size={15} />
             <span className="sr-only">{t(locale, "aria.selectLanguage")}</span>
@@ -347,6 +389,9 @@ function MetricGrid({
         <strong className={`posture ${analysis.posture.toLowerCase()}`}>
           {t(locale, postureKeys[analysis.posture])}
         </strong>
+        <small className="metric-help">
+          {t(locale, postureHelpKeys[analysis.posture])}
+        </small>
       </article>
       <article>
         <span>{t(locale, "metrics.score")}</span>
@@ -354,6 +399,9 @@ function MetricGrid({
           {analysis.score.toFixed(1)}
           <small>/100</small>
         </strong>
+        <small className="metric-help">
+          {t(locale, "metrics.scoreHelp")}
+        </small>
       </article>
       <article>
         <span>{t(locale, "metrics.stability")}</span>
@@ -361,15 +409,23 @@ function MetricGrid({
           {analysis.stabilityScore}
           <small>/100</small>
         </strong>
+        <small className="metric-help">
+          {t(locale, "metrics.stabilityHelp")}
+        </small>
       </article>
       <article>
         <span>{t(locale, "metrics.independentRoots")}</span>
         <strong>
           {analysis.independenceAudit.independentRootCount}
-          <small>
-            /{analysis.independenceAudit.enabledEvidenceCount}
+          <small className="metric-note">
+            {t(locale, "audit.rawCount", {
+              count: analysis.independenceAudit.enabledEvidenceCount,
+            })}
           </small>
         </strong>
+        <small className="metric-help">
+          {t(locale, "metrics.rootsHelp")}
+        </small>
       </article>
     </section>
   );
@@ -408,7 +464,9 @@ function SensitivityChart({
   const currentX = x(analysis.driver.value);
   const currentY = y(analysis.score);
   const flip = analysis.assumptionFlip;
-  const flipX = flip ? x(flip.to) : null;
+  const flipInChart =
+    flip !== null && flip.to >= minX && flip.to <= maxX;
+  const flipX = flipInChart && flip ? x(flip.to) : null;
   const driverLabel = localizedAssumption(
     analysis.driver.id,
     analysis.driver.label,
@@ -490,7 +548,14 @@ function SensitivityChart({
         <text x={right} y="254" textAnchor="end" className="chart-axis">
           {t(locale, "common.score")} {analysis.score.toFixed(1)}
         </text>
-      </svg>
+        </svg>
+        {flip && !flipInChart && (
+          <p className="chart-range-note">
+            {t(locale, "stress.cliff.outsideChart", {
+              value: formatValue(flip.to, flip.unit),
+            })}
+          </p>
+        )}
     </div>
   );
 }
@@ -516,7 +581,17 @@ function FlipSummary({
           <h2>{t(locale, "stress.flip.description")}</h2>
         </div>
         <span className="proof-chip">
-          {independent.combinationsEvaluated.toLocaleString(locale)} Σ
+          {t(
+            locale,
+            independent.exhaustive
+              ? "stress.search.complete"
+              : "stress.search.groupLimit",
+            { count: independent.maxRootSetSize },
+          )}{" "}
+          ·{" "}
+          {t(locale, "stress.search.testedCombinations", {
+            count: independent.combinationsEvaluated.toLocaleString(locale),
+          })}
         </span>
       </div>
 
@@ -526,9 +601,7 @@ function FlipSummary({
             <strong>{independent.rootIds.length}</strong>
             <div>
               <span>
-                {t(locale, "audit.rootCount", {
-                  count: independent.rootIds.length,
-                })}
+                {t(locale, "metrics.independentRoots")}
               </span>
               <small>
                 {t(locale, "common.items", {
@@ -739,12 +812,28 @@ function StressView({
               <h2>{t(locale, "stress.frontier.description")}</h2>
             </div>
             <span className="proof-chip">
-              {analysis.jointFlipFrontier.evaluatedStates.toLocaleString(
+              {t(
                 locale,
+                analysis.jointFlipFrontier.exact
+                  ? "stress.search.completeGrid"
+                  : "stress.search.sampled",
               )}{" "}
-              Σ
+              ·{" "}
+              {t(locale, "stress.search.testedCombinations", {
+                count:
+                  analysis.jointFlipFrontier.evaluatedStates.toLocaleString(
+                    locale,
+                  ),
+              })}
             </span>
           </div>
+          <p className="search-scope-note">
+            {t(locale, "stress.frontier.scope")}{" "}
+            {t(locale, "stress.search.stateLimit", {
+              count:
+                analysis.jointFlipFrontier.maxStates.toLocaleString(locale),
+            })}
+          </p>
           <div className="frontier-list">
             {analysis.jointFlipFrontier.points.length ? (
               analysis.jointFlipFrontier.points.slice(0, 4).map((point, i) => (
@@ -777,6 +866,14 @@ function StressView({
                         {point.units[1]}
                       </em>
                     </strong>
+                    <small className="combination-scope">
+                      {t(
+                        locale,
+                        point.requiresBoth
+                          ? "stress.frontier.requiresBoth"
+                          : "stress.frontier.oneSufficient",
+                      )}
+                    </small>
                   </div>
                   <span className={`posture-tag ${point.resultingPosture.toLowerCase()}`}>
                     {t(locale, postureKeys[point.resultingPosture])} ·{" "}
@@ -820,6 +917,9 @@ function StressView({
                       {signed(outcome.delta)} ·{" "}
                       {t(locale, postureKeys[outcome.posture])}
                     </small>
+                    <p className="semantic-help">
+                      {t(locale, stressHelpKeys[mode])}
+                    </p>
                   </div>
                 );
               },
@@ -827,7 +927,9 @@ function StressView({
           </div>
           <p className="semantic-note">
             <Info size={14} />
-            {t(locale, "stress.semantics.removeHelp")}
+            {t(locale, "stress.semantics.scope", {
+              count: analysis.evidenceStress.evidenceIds.length,
+            })}
           </p>
         </article>
       </section>
@@ -978,8 +1080,28 @@ function EvidenceView({
                   </a>
                   <span>{t(locale, groupKeys[item.group])}</span>
                   <span>{formatDate(item.asOf, locale)}</span>
-                  {(item.originId || item.claimId) && (
-                    <code>{item.originId ?? item.claimId}</code>
+                  {item.relation === "derived" &&
+                  thesisCase.marketSnapshot ? (
+                    <span>
+                      {t(locale, "evidence.sameMarketDataset")}
+                    </span>
+                  ) : (
+                    <>
+                      {item.originId && (
+                        <span>
+                          {t(locale, "evidence.sourceGroupLabel", {
+                            id: item.originId,
+                          })}
+                        </span>
+                      )}
+                      {item.claimId && (
+                        <span>
+                          {t(locale, "evidence.claimGroupLabel", {
+                            id: item.claimId,
+                          })}
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               </div>
@@ -1070,14 +1192,17 @@ function AuditView({
           <small>{t(locale, "audit.dependencyWarning")}</small>
         </article>
         <article>
-          <span>HHI</span>
-          <strong>{Math.round(audit.concentrationHhi * 100)}</strong>
-          <small>{t(locale, "metrics.rootsHelp")}</small>
+          <span>{t(locale, "audit.concentration")}</span>
+          <strong>
+            {Math.round(audit.concentrationHhi * 100)}
+            <small>/100</small>
+          </strong>
+          <small>{t(locale, "audit.concentrationHelp")}</small>
         </article>
         <article>
-          <span>{t(locale, "evidence.column.asOf")}</span>
+          <span>{t(locale, "audit.stale")}</span>
           <strong>{audit.staleCount}</strong>
-          <small>90d+</small>
+          <small>{t(locale, "audit.staleHelp")}</small>
         </article>
       </section>
 
@@ -1089,7 +1214,9 @@ function AuditView({
               <h2>{t(locale, "audit.dependencyWarning")}</h2>
             </div>
             <span className="proof-chip">
-              {Math.round(audit.maximumRootShare * 100)}%
+              {t(locale, "audit.maximumGroupShare", {
+                value: `${Math.round(audit.maximumRootShare * 100)}%`,
+              })}
             </span>
           </div>
           <div className="root-list">
@@ -1100,12 +1227,22 @@ function AuditView({
                 )
                 .filter((item): item is EvidenceItem => Boolean(item));
               const first = items[0];
+              const declaredOrigin = root.originIds[0];
+              const declaredClaim = root.claimIds[0];
               const rootName =
-                root.originIds[0] ??
-                root.claimIds[0] ??
-                (first
-                  ? localizedEvidence(first, thesisCase, locale).source
-                  : root.id);
+                first?.relation === "derived" && thesisCase.marketSnapshot
+                  ? t(locale, "evidence.sameMarketDataset")
+                  : declaredOrigin
+                    ? t(locale, "evidence.sourceGroupLabel", {
+                        id: declaredOrigin,
+                      })
+                    : declaredClaim
+                      ? t(locale, "evidence.claimGroupLabel", {
+                          id: declaredClaim,
+                      })
+                    : first
+                      ? localizedEvidence(first, thesisCase, locale).source
+                      : root.id;
               return (
                 <div className="root-row" key={root.id}>
                   <span className="root-index">
@@ -1329,43 +1466,43 @@ function MethodView({ locale }: { locale: Locale }) {
     number: string;
     title: TranslationKey;
     body: TranslationKey;
-    formula: string;
+    formula: TranslationKey;
   }[] = [
     {
       number: "01",
       title: "method.score.title",
       body: "method.score.body",
-      formula: "base + Σ evidence + Σ assumptions",
+      formula: "method.formula.score",
     },
     {
       number: "02",
       title: "method.independence.title",
       body: "method.independence.body",
-      formula: "Source → Claim → Evidence root",
+      formula: "method.formula.dependencies",
     },
     {
       number: "03",
       title: "method.flip.title",
       body: "method.flip.body",
-      formula: "argmin |roots| : posture flips",
+      formula: "method.formula.groups",
     },
     {
       number: "04",
       title: "method.cliff.title",
       body: "method.cliff.body",
-      formula: "min |Δx| : posture(x + Δx) changes",
+      formula: "method.formula.oneVariable",
     },
     {
       number: "05",
       title: "method.frontier.title",
       body: "method.frontier.body",
-      formula: "min ‖Δx / typical shock‖₂",
+      formula: "method.formula.twoVariable",
     },
     {
       number: "06",
       title: "method.semantics.title",
       body: "method.semantics.body",
-      formula: "remove ≠ degrade ≠ contradict",
+      formula: "method.formula.modes",
     },
   ];
 
@@ -1383,7 +1520,7 @@ function MethodView({ locale }: { locale: Locale }) {
             <span>{card.number}</span>
             <h2>{t(locale, card.title)}</h2>
             <p>{t(locale, card.body)}</p>
-            <code>{card.formula}</code>
+            <code>{t(locale, card.formula)}</code>
           </article>
         ))}
       </section>
@@ -1418,6 +1555,29 @@ function EvidenceModal({
     initial?.direction ?? "contradicts",
   );
   const [error, setError] = useState("");
+  const firstFieldRef = useRef<HTMLInputElement>(null);
+  const returnFocusRef = useRef<HTMLElement | null>(null);
+  const closeRef = useRef(onClose);
+
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    returnFocusRef.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    firstFieldRef.current?.focus();
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") closeRef.current();
+    };
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      window.removeEventListener("keydown", closeOnEscape);
+      returnFocusRef.current?.focus();
+    };
+  }, []);
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -1430,8 +1590,8 @@ function EvidenceModal({
     const note = String(form.get("note") ?? "").trim();
     const originId = String(form.get("originId") ?? "").trim();
     const claimId = String(form.get("claimId") ?? "").trim();
-    const reliability = Number(form.get("reliability") ?? 75) / 100;
-    const impact = Number(form.get("impact") ?? 3);
+    const reliabilityPercent = Number(form.get("reliability"));
+    const impact = Number(form.get("impact"));
 
     if (!title) {
       setError(t(locale, "evidence.validation.titleRequired"));
@@ -1449,6 +1609,24 @@ function EvidenceModal({
       setError(t(locale, "evidence.validation.dateRequired"));
       return;
     }
+    if (!Number.isFinite(impact) || impact < 0.1 || impact > 100) {
+      setError(
+        t(locale, "evidence.validation.impactRange", {
+          min: 0.1,
+          max: 100,
+        }),
+      );
+      return;
+    }
+    if (
+      !Number.isFinite(reliabilityPercent) ||
+      reliabilityPercent < 0 ||
+      reliabilityPercent > 100
+    ) {
+      setError(t(locale, "evidence.validation.reliabilityRange"));
+      return;
+    }
+    const reliability = reliabilityPercent / 100;
 
     onSave({
       id: initial?.id ?? `ev-${Date.now()}`,
@@ -1505,6 +1683,7 @@ function EvidenceModal({
           <label className="field">
             <span>{t(locale, "evidence.form.title")}</span>
             <input
+              ref={firstFieldRef}
               name="title"
               required
               maxLength={500}
@@ -1589,6 +1768,7 @@ function EvidenceModal({
                 min="0.1"
                 max="100"
                 step="0.1"
+                required
                 defaultValue={initial?.impact ?? 3}
               />
             </label>
@@ -1600,6 +1780,7 @@ function EvidenceModal({
                 min="0"
                 max="100"
                 step="1"
+                required
                 defaultValue={
                   initial ? Math.round(initial.reliability * 100) : 75
                 }
@@ -1615,6 +1796,7 @@ function EvidenceModal({
                       key={value}
                       className={direction === value ? "active" : ""}
                       onClick={() => setDirection(value)}
+                      aria-pressed={direction === value}
                     >
                       {t(
                         locale,
@@ -1661,6 +1843,8 @@ function EvidenceModal({
 
 export default function HomePage() {
   const [activeView, setActiveView] = useState<View>("stress");
+  const [guideReturnView, setGuideReturnView] =
+    useState<Exclude<View, "guide">>("stress");
   const [thesisCase, setThesisCase] = useState<ThesisCase | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [locale, setLocale] = useState<Locale>("en");
@@ -1670,6 +1854,7 @@ export default function HomePage() {
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
+  const guideButtonRef = useRef<HTMLButtonElement>(null);
   const analysis = useMemo(
     () => (thesisCase ? runStressTest(thesisCase) : null),
     [thesisCase],
@@ -1697,7 +1882,9 @@ export default function HomePage() {
 
         if (storedCase) {
           const parsed = JSON.parse(storedCase);
-          if (isThesisCase(parsed) && !parsed.isDemo) setThesisCase(parsed);
+          if (isThesisCase(parsed) && !parsed.isDemo) {
+            setThesisCase(normalizeMarketCase(parsed));
+          }
           window.localStorage.removeItem(LEGACY_CASE_STORAGE_KEY);
         }
         if (storedSnapshots) {
@@ -1712,9 +1899,13 @@ export default function HomePage() {
           ),
         );
       } catch {
-        window.localStorage.removeItem(CASE_STORAGE_KEY);
-        window.localStorage.removeItem(LEGACY_CASE_STORAGE_KEY);
-        window.localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
+        try {
+          window.localStorage.removeItem(CASE_STORAGE_KEY);
+          window.localStorage.removeItem(LEGACY_CASE_STORAGE_KEY);
+          window.localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
+        } catch {
+          // Continue with an in-memory workspace when storage is unavailable.
+        }
       } finally {
         setHydrated(true);
       }
@@ -1726,7 +1917,11 @@ export default function HomePage() {
   useEffect(() => {
     document.documentElement.lang = locale;
     if (!hydrated) return;
-    window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    try {
+      window.localStorage.setItem(LOCALE_STORAGE_KEY, locale);
+    } catch {
+      // Language switching remains usable even when browser storage is blocked.
+    }
   }, [hydrated, locale]);
 
   useEffect(() => {
@@ -1832,9 +2027,19 @@ export default function HomePage() {
     if (!window.confirm(`${t(locale, "action.delete")} “${name}”?`)) return;
     setThesisCase({
       ...thesisCase,
-      evidence: thesisCase.evidence.filter(
-        (evidence) => evidence.id !== item.id,
-      ),
+      evidence: thesisCase.evidence
+        .filter((evidence) => evidence.id !== item.id)
+        .map((evidence) => {
+          if (!evidence.dependsOnIds?.includes(item.id)) return evidence;
+          const dependsOnIds = evidence.dependsOnIds.filter(
+            (dependencyId) => dependencyId !== item.id,
+          );
+          return {
+            ...evidence,
+            dependsOnIds:
+              dependsOnIds.length > 0 ? dependsOnIds : undefined,
+          };
+        }),
       lastUpdated: new Date().toISOString(),
     });
   };
@@ -1854,10 +2059,29 @@ export default function HomePage() {
 
   const importCase = async (file: File | undefined) => {
     if (!file) return;
+    if (file.size > MAX_IMPORT_BYTES) {
+      window.alert(
+        t(locale, "error.importTooLarge", { max: "2 MB" }),
+      );
+      if (importRef.current) importRef.current.value = "";
+      return;
+    }
     try {
       const parsed = JSON.parse(await file.text());
-      if (!isThesisCase(parsed)) throw new Error("Invalid case schema");
-      setThesisCase(parsed);
+      if (!isThesisCase(parsed) || parsed.isDemo) {
+        throw new Error("Invalid case schema");
+      }
+      if (
+        thesisCase &&
+        !window.confirm(
+          t(locale, "history.import.confirm", {
+            name: parsed.company,
+          }),
+        )
+      ) {
+        return;
+      }
+      setThesisCase(normalizeMarketCase(parsed));
       setSearchQuery("");
       setActiveView("stress");
     } catch {
@@ -1887,7 +2111,7 @@ export default function HomePage() {
   const changeStock = () => {
     if (
       thesisCase &&
-      !window.confirm(`${marketUi(locale).changeStock}?`)
+      !window.confirm(t(locale, "history.changeStockConfirm"))
     ) {
       return;
     }
@@ -1896,6 +2120,18 @@ export default function HomePage() {
     setEditingEvidence(null);
     setShowEvidenceModal(false);
     setActiveView("stress");
+  };
+
+  const openGuide = () => {
+    if (activeView !== "guide") {
+      setGuideReturnView(activeView);
+    }
+    setActiveView("guide");
+  };
+
+  const closeGuide = () => {
+    setActiveView(thesisCase ? guideReturnView : "stress");
+    window.requestAnimationFrame(() => guideButtonRef.current?.focus());
   };
 
   const restoreSnapshot = (snapshot: Snapshot) => {
@@ -1908,7 +2144,9 @@ export default function HomePage() {
     ) {
       return;
     }
-    setThesisCase(structuredClone(snapshot.caseState));
+    setThesisCase(
+      normalizeMarketCase(structuredClone(snapshot.caseState)),
+    );
     setSearchQuery("");
     setActiveView("stress");
   };
@@ -1930,18 +2168,29 @@ export default function HomePage() {
         onChangeView={setActiveView}
         onChangeLocale={changeLocale}
         onChangeStock={changeStock}
+        onOpenGuide={openGuide}
         onSnapshot={createSnapshot}
+        guideButtonRef={guideButtonRef}
       />
 
       <main
         id="main-content"
-        className={`page ${thesisCase ? "" : "picker-page"}`}
+        className={`page ${
+          !thesisCase && activeView !== "guide" ? "picker-page" : ""
+        }`}
       >
-        {!thesisCase || !analysis ? (
+        {activeView === "guide" ? (
+          <UserGuide
+            locale={locale}
+            hasCase={Boolean(thesisCase)}
+            onClose={closeGuide}
+          />
+        ) : !thesisCase || !analysis ? (
           <StockPicker
             locale={locale}
             onSelect={selectStock}
             onImport={() => importRef.current?.click()}
+            onOpenGuide={openGuide}
           />
         ) : (
           <>
@@ -1999,7 +2248,12 @@ export default function HomePage() {
         <span>
           <ShieldCheck size={13} />
           {thesisCase
-            ? t(locale, thesisCase.isDemo ? "app.demoCase" : "app.localCase")
+            ? thesisCase.marketSnapshot
+              ? marketUi(locale).realData
+              : t(
+                  locale,
+                  thesisCase.isDemo ? "app.demoCase" : "app.localCase",
+                )
             : marketUi(locale).realData}{" "}
           ·{" "}
           {t(locale, "method.disclaimer.body")}

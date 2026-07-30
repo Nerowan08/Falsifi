@@ -36,8 +36,8 @@ const copy: Record<
     labels: {
       trend200: string;
       cross: string;
-      momentum3m: string;
-      momentum1y: string;
+      momentum3m: (basis: MarketSnapshot["priceBasis"]) => string;
+      momentum1y: (basis: MarketSnapshot["priceBasis"]) => string;
       volatility: string;
       drawdown: string;
       rsi: string;
@@ -50,8 +50,14 @@ const copy: Record<
     notes: {
       trend200: (value: number) => string;
       cross: (above: boolean) => string;
-      momentum3m: (value: number) => string;
-      momentum1y: (value: number) => string;
+      momentum3m: (
+        value: number,
+        basis: MarketSnapshot["priceBasis"],
+      ) => string;
+      momentum1y: (
+        value: number,
+        basis: MarketSnapshot["priceBasis"],
+      ) => string;
       volatility: (value: number) => string;
       drawdown: (value: number) => string;
       rsi: (value: number) => string;
@@ -61,18 +67,28 @@ const copy: Record<
 > = {
   en: {
     thesis: (name) =>
-      `This case tests whether ${name}'s current price trend, momentum, and risk profile remain resilient over the next 12 months.`,
-    horizon: "12 months",
-    source: "Yahoo Finance delayed market data (experimental adapter)",
+      `Using only the available past year of delayed market data, this case tests how sensitive the current technical assessment of ${name} is to changes in trend, momentum, and price-risk inputs. It does not forecast returns.`,
+    horizon: "Historical window · about 1 year",
+    source: "Yahoo Finance market data (experimental integration; may be delayed)",
     labels: {
       trend200: "Price position versus the 200-day average",
       cross: "50-day versus 200-day trend structure",
-      momentum3m: "Three-month price momentum",
-      momentum1y: "One-year price momentum",
+      momentum3m: (basis) =>
+        basis === "adjusted"
+          ? "Three-month adjusted-close momentum"
+          : basis === "close"
+            ? "Three-month close-price momentum"
+            : "Three-month price momentum",
+      momentum1y: (basis) =>
+        basis === "adjusted"
+          ? "Available one-year adjusted-close return"
+          : basis === "close"
+            ? "Available one-year close-price return"
+            : "Available one-year price return",
       volatility: "Thirty-day annualized volatility",
       drawdown: "Largest drawdown in the last year",
       rsi: "Fourteen-day relative strength",
-      volume: "Latest volume confirmation",
+      volume: "Latest volume versus its 20-session average",
       assumptionMomentum: "Three-month momentum",
       assumptionTrend: "Distance from 200-day average",
       assumptionVolatility: "Annualized volatility",
@@ -83,14 +99,14 @@ const copy: Record<
         `The latest close is ${formatSigned(value)}% from its 200-day moving average.`,
       cross: (above) =>
         `The 50-day moving average is ${above ? "above" : "below"} the 200-day moving average.`,
-      momentum3m: (value) =>
-        `The adjusted close changed ${formatSigned(value)}% over roughly 63 trading sessions.`,
-      momentum1y: (value) =>
-        `The adjusted close changed ${formatSigned(value)}% across the available one-year window.`,
+      momentum3m: (value, basis) =>
+        `The ${basis === "adjusted" ? "adjusted close" : basis === "close" ? "close" : "price"} changed ${formatSigned(value)}% over roughly 63 trading sessions.`,
+      momentum1y: (value, basis) =>
+        `The ${basis === "adjusted" ? "adjusted close" : basis === "close" ? "close" : "price"} changed ${formatSigned(value)}% across the available one-year window.`,
       volatility: (value) =>
         `Annualized volatility from the latest 30 daily returns is ${formatNumber(value)}%.`,
       drawdown: (value) =>
-        `The largest peak-to-trough decline in the available window is ${formatNumber(value)}%.`,
+        `The largest peak-to-trough loss in the available window is ${formatNumber(Math.abs(value))}%.`,
       rsi: (value) =>
         `The 14-session RSI is ${formatNumber(value)}; this is a momentum diagnostic, not a forecast.`,
       volume: (ratio, change) =>
@@ -99,18 +115,28 @@ const copy: Record<
   },
   "zh-CN": {
     thesis: (name) =>
-      `本案例检验 ${name} 当前的价格趋势、动量与风险结构，能否在未来 12 个月内保持韧性。`,
-    horizon: "12 个月",
-    source: "Yahoo Finance 延迟行情（实验性适配器）",
+      `本案例仅使用可用的近一年延迟行情，测试 ${name} 当前技术面判断对趋势、动量和价格风险参数变化的敏感度；不预测收益。`,
+    horizon: "历史窗口 · 约 1 年",
+    source: "Yahoo Finance 行情数据（实验性接入，可能延迟）",
     labels: {
       trend200: "股价相对 200 日均线的位置",
       cross: "50 日与 200 日趋势结构",
-      momentum3m: "三个月价格动量",
-      momentum1y: "一年价格动量",
+      momentum3m: (basis) =>
+        basis === "adjusted"
+          ? "三个月复权收盘价动量"
+          : basis === "close"
+            ? "三个月收盘价动量"
+            : "三个月价格动量",
+      momentum1y: (basis) =>
+        basis === "adjusted"
+          ? "近一年复权收盘价涨跌幅"
+          : basis === "close"
+            ? "近一年收盘价涨跌幅"
+            : "近一年价格涨跌幅",
       volatility: "30 日年化波动率",
       drawdown: "过去一年最大回撤",
       rsi: "14 日相对强弱指标",
-      volume: "最新成交量确认",
+      volume: "最新成交量相对 20 日均量",
       assumptionMomentum: "三个月动量",
       assumptionTrend: "偏离 200 日均线",
       assumptionVolatility: "年化波动率",
@@ -121,14 +147,14 @@ const copy: Record<
         `最新收盘价较 200 日移动平均线偏离 ${formatSigned(value)}%。`,
       cross: (above) =>
         `50 日移动平均线位于 200 日移动平均线${above ? "上方" : "下方"}。`,
-      momentum3m: (value) =>
-        `约 63 个交易日内，复权收盘价变动 ${formatSigned(value)}%。`,
-      momentum1y: (value) =>
-        `在当前可用的一年窗口内，复权收盘价变动 ${formatSigned(value)}%。`,
+      momentum3m: (value, basis) =>
+        `约 63 个交易日内，${basis === "adjusted" ? "复权收盘价" : basis === "close" ? "收盘价" : "价格"}变动 ${formatSigned(value)}%。`,
+      momentum1y: (value, basis) =>
+        `在当前可用的一年窗口内，${basis === "adjusted" ? "复权收盘价" : basis === "close" ? "收盘价" : "价格"}变动 ${formatSigned(value)}%。`,
       volatility: (value) =>
         `按最近 30 个日收益率计算的年化波动率为 ${formatNumber(value)}%。`,
       drawdown: (value) =>
-        `当前数据窗口内最大的峰谷跌幅为 ${formatNumber(value)}%。`,
+        `当前数据窗口内最大的峰谷跌幅为 ${formatNumber(Math.abs(value))}%。`,
       rsi: (value) =>
         `14 个交易日 RSI 为 ${formatNumber(value)}；它是动量诊断，不是预测。`,
       volume: (ratio, change) =>
@@ -137,18 +163,28 @@ const copy: Record<
   },
   ja: {
     thesis: (name) =>
-      `このケースは、${name} の現在の価格トレンド、モメンタム、リスク構造が今後 12 か月も維持できるかを検証します。`,
-    horizon: "12か月",
-    source: "Yahoo Finance の遅延市場データ（実験的アダプター）",
+      `利用可能な過去約1年の遅延市場データだけを使い、${name} の現在のテクニカル評価がトレンド、モメンタム、価格リスク入力の変化にどれだけ敏感かを検証します。将来リターンは予測しません。`,
+    horizon: "過去データ · 約1年",
+    source: "Yahoo Finance市場データ（実験的な接続・遅延の可能性あり）",
     labels: {
       trend200: "200日移動平均に対する価格位置",
       cross: "50日・200日トレンド構造",
-      momentum3m: "3か月価格モメンタム",
-      momentum1y: "1年間の価格モメンタム",
+      momentum3m: (basis) =>
+        basis === "adjusted"
+          ? "3か月の調整後終値モメンタム"
+          : basis === "close"
+            ? "3か月の終値モメンタム"
+            : "3か月価格モメンタム",
+      momentum1y: (basis) =>
+        basis === "adjusted"
+          ? "利用可能な約1年の調整後終値リターン"
+          : basis === "close"
+            ? "利用可能な約1年の終値リターン"
+            : "利用可能な約1年の価格リターン",
       volatility: "30日年率換算ボラティリティ",
       drawdown: "過去1年の最大ドローダウン",
       rsi: "14日相対力指数",
-      volume: "直近出来高の確認",
+      volume: "直近出来高と20日平均の比較",
       assumptionMomentum: "3か月モメンタム",
       assumptionTrend: "200日平均からの乖離",
       assumptionVolatility: "年率換算ボラティリティ",
@@ -159,14 +195,14 @@ const copy: Record<
         `直近終値は200日移動平均から ${formatSigned(value)}% 乖離しています。`,
       cross: (above) =>
         `50日移動平均は200日移動平均の${above ? "上" : "下"}にあります。`,
-      momentum3m: (value) =>
-        `約63取引日で調整後終値は ${formatSigned(value)}% 変化しました。`,
-      momentum1y: (value) =>
-        `利用可能な1年間で調整後終値は ${formatSigned(value)}% 変化しました。`,
+      momentum3m: (value, basis) =>
+        `約63取引日で${basis === "adjusted" ? "調整後終値" : basis === "close" ? "終値" : "価格"}は ${formatSigned(value)}% 変化しました。`,
+      momentum1y: (value, basis) =>
+        `利用可能な1年間で${basis === "adjusted" ? "調整後終値" : basis === "close" ? "終値" : "価格"}は ${formatSigned(value)}% 変化しました。`,
       volatility: (value) =>
         `直近30日リターンによる年率換算ボラティリティは ${formatNumber(value)}% です。`,
       drawdown: (value) =>
-        `利用可能期間の最大ピーク・トゥ・トラフ下落率は ${formatNumber(value)}% です。`,
+        `利用可能期間の最大ピーク・トゥ・トラフ下落幅は ${formatNumber(Math.abs(value))}% です。`,
       rsi: (value) =>
         `14日RSIは ${formatNumber(value)}。これはモメンタム診断であり予測ではありません。`,
       volume: (ratio, change) =>
@@ -175,18 +211,28 @@ const copy: Record<
   },
   es: {
     thesis: (name) =>
-      `Este caso prueba si la tendencia, el impulso y el perfil de riesgo actuales de ${name} pueden resistir durante los próximos 12 meses.`,
-    horizon: "12 meses",
-    source: "Datos retrasados de Yahoo Finance (adaptador experimental)",
+      `Usando solo aproximadamente un año de datos de mercado retrasados, este caso prueba la sensibilidad de la evaluación técnica actual de ${name} a cambios de tendencia, impulso y riesgo de precio. No pronostica rentabilidades.`,
+    horizon: "Ventana histórica · aproximadamente 1 año",
+    source: "Datos de Yahoo Finance (integración experimental; pueden tener retraso)",
     labels: {
       trend200: "Precio frente a la media de 200 días",
       cross: "Estructura de tendencia de 50 y 200 días",
-      momentum3m: "Impulso del precio a tres meses",
-      momentum1y: "Impulso del precio a un año",
+      momentum3m: (basis) =>
+        basis === "adjusted"
+          ? "Impulso del cierre ajustado a tres meses"
+          : basis === "close"
+            ? "Impulso del cierre a tres meses"
+            : "Impulso del precio a tres meses",
+      momentum1y: (basis) =>
+        basis === "adjusted"
+          ? "Rentabilidad del cierre ajustado en el año disponible"
+          : basis === "close"
+            ? "Rentabilidad del cierre en el año disponible"
+            : "Rentabilidad del precio en el año disponible",
       volatility: "Volatilidad anualizada de 30 días",
       drawdown: "Máxima caída del último año",
       rsi: "Fuerza relativa de 14 días",
-      volume: "Confirmación del volumen reciente",
+      volume: "Volumen reciente frente a su media de 20 sesiones",
       assumptionMomentum: "Impulso a tres meses",
       assumptionTrend: "Distancia a la media de 200 días",
       assumptionVolatility: "Volatilidad anualizada",
@@ -197,14 +243,14 @@ const copy: Record<
         `El último cierre está a ${formatSigned(value)}% de su media móvil de 200 días.`,
       cross: (above) =>
         `La media de 50 días está ${above ? "por encima" : "por debajo"} de la media de 200 días.`,
-      momentum3m: (value) =>
-        `El cierre ajustado cambió ${formatSigned(value)}% en unas 63 sesiones.`,
-      momentum1y: (value) =>
-        `El cierre ajustado cambió ${formatSigned(value)}% durante el año disponible.`,
+      momentum3m: (value, basis) =>
+        `El ${basis === "adjusted" ? "cierre ajustado" : basis === "close" ? "cierre" : "precio"} cambió ${formatSigned(value)}% en unas 63 sesiones.`,
+      momentum1y: (value, basis) =>
+        `El ${basis === "adjusted" ? "cierre ajustado" : basis === "close" ? "cierre" : "precio"} cambió ${formatSigned(value)}% durante el año disponible.`,
       volatility: (value) =>
         `La volatilidad anualizada de los últimos 30 rendimientos diarios es ${formatNumber(value)}%.`,
       drawdown: (value) =>
-        `La mayor caída desde un máximo en la ventana disponible es ${formatNumber(value)}%.`,
+        `La mayor pérdida desde un máximo hasta un mínimo posterior es ${formatNumber(Math.abs(value))}%.`,
       rsi: (value) =>
         `El RSI de 14 sesiones es ${formatNumber(value)}; es un diagnóstico, no un pronóstico.`,
       volume: (ratio, change) =>
@@ -263,16 +309,30 @@ const movingAverage = (values: number[], sessions: number) =>
 
 const calculateRsi = (values: number[], sessions = 14) => {
   if (values.length < sessions + 1) return 50;
-  const slice = values.slice(-(sessions + 1));
-  let gains = 0;
-  let losses = 0;
-  for (let index = 1; index < slice.length; index += 1) {
-    const delta = slice[index] - slice[index - 1];
-    if (delta >= 0) gains += delta;
-    else losses += Math.abs(delta);
+  let averageGain = 0;
+  let averageLoss = 0;
+
+  for (let index = 1; index <= sessions; index += 1) {
+    const delta = values[index] - values[index - 1];
+    if (delta >= 0) averageGain += delta;
+    else averageLoss += Math.abs(delta);
   }
-  if (losses === 0) return gains === 0 ? 50 : 100;
-  const relativeStrength = gains / losses;
+
+  averageGain /= sessions;
+  averageLoss /= sessions;
+
+  for (let index = sessions + 1; index < values.length; index += 1) {
+    const delta = values[index] - values[index - 1];
+    const gain = Math.max(delta, 0);
+    const loss = Math.max(-delta, 0);
+    averageGain =
+      (averageGain * (sessions - 1) + gain) / sessions;
+    averageLoss =
+      (averageLoss * (sessions - 1) + loss) / sessions;
+  }
+
+  if (averageLoss === 0) return averageGain === 0 ? 50 : 100;
+  const relativeStrength = averageGain / averageLoss;
   return 100 - 100 / (1 + relativeStrength);
 };
 
@@ -299,9 +359,15 @@ export function calculateMarketMetrics(
   }
 
   const closes = history.map((point) => point.close);
-  const volumes = history
-    .map((point) => point.volume)
-    .filter((value): value is number => value !== null && value >= 0);
+  const recentVolumeWindow = history.slice(-20).map((point) => point.volume);
+  const hasCompleteVolumeWindow =
+    recentVolumeWindow.length === 20 &&
+    recentVolumeWindow.every(
+      (value): value is number => value !== null && value >= 0,
+    );
+  const volumes = hasCompleteVolumeWindow
+    ? (recentVolumeWindow as number[])
+    : [];
   const latest = closes.at(-1) ?? 0;
   const previous = closes.at(-2) ?? latest;
   const dailyReturns = closes.slice(1).map((value, index) =>
@@ -311,7 +377,7 @@ export function calculateMarketMetrics(
   const sma20 = movingAverage(closes, 20);
   const sma50 = movingAverage(closes, 50);
   const sma200 = movingAverage(closes, 200);
-  const averageVolume20 = average(volumes.slice(-20));
+  const averageVolume20 = average(volumes);
   const latestVolume = history.at(-1)?.volume ?? null;
 
   return {
@@ -360,18 +426,32 @@ export function parseYahooChart(
     : [];
   const volumes = Array.isArray(quote.volume) ? quote.volume : [];
 
-  const history: MarketPoint[] = [];
-  for (let index = 0; index < timestamps.length; index += 1) {
-    const timestamp = finite(timestamps[index]);
-    const adjustedClose = finite(adjustedCloses[index]);
-    const close = adjustedClose ?? finite(quoteCloses[index]);
-    if (timestamp === null || close === null || close <= 0) continue;
-    history.push({
-      timestamp: Math.round(timestamp),
-      close: round(close, 4),
-      volume: finite(volumes[index]),
-    });
-  }
+  const buildHistory = (series: unknown[]) => {
+    const points: MarketPoint[] = [];
+    for (let index = 0; index < timestamps.length; index += 1) {
+      const timestamp = finite(timestamps[index]);
+      const close = finite(series[index]);
+      if (timestamp === null || close === null || close <= 0) continue;
+      points.push({
+        timestamp: Math.round(timestamp),
+        close: round(close, 4),
+        volume: finite(volumes[index]),
+      });
+    }
+    return points;
+  };
+  const adjustedHistory = buildHistory(adjustedCloses);
+  const closeHistory = buildHistory(quoteCloses);
+  const adjustedHasSameCoverage =
+    adjustedHistory.length === closeHistory.length &&
+    adjustedHistory.every(
+      (point, index) => point.timestamp === closeHistory[index]?.timestamp,
+    );
+  const useAdjusted =
+    adjustedHistory.length >= 200 &&
+    (closeHistory.length < 200 || adjustedHasSameCoverage);
+  const history = useAdjusted ? adjustedHistory : closeHistory;
+  const priceBasis = useAdjusted ? "adjusted" : "close";
 
   if (history.length < 200) {
     throw new Error(
@@ -381,14 +461,25 @@ export function parseYahooChart(
 
   const symbol = stringValue(meta.symbol).toUpperCase();
   if (!symbol) throw new Error("The market response did not include a symbol.");
-  const price =
-    finite(meta.regularMarketPrice) ??
-    history.at(-1)?.close ??
-    0;
-  const previousClose =
-    finite(meta.previousClose) ??
-    history.at(-2)?.close ??
-    price;
+  const metaPrice = finite(meta.regularMarketPrice);
+  const metaPreviousClose =
+    finite(meta.previousClose) ?? finite(meta.regularMarketPreviousClose);
+  const rawPrice = closeHistory.at(-1)?.close;
+  const rawPreviousClose = closeHistory.at(-2)?.close;
+  const hasRawQuotePair =
+    rawPrice !== undefined && rawPreviousClose !== undefined;
+  const hasMetaQuotePair =
+    metaPrice !== null && metaPreviousClose !== null;
+  const price = hasMetaQuotePair
+    ? metaPrice
+    : hasRawQuotePair
+      ? (metaPrice ?? rawPrice)
+      : (history.at(-1)?.close ?? 0);
+  const previousClose = hasMetaQuotePair
+    ? metaPreviousClose
+    : hasRawQuotePair
+      ? (metaPreviousClose ?? rawPreviousClose)
+      : (history.at(-2)?.close ?? price);
   const marketTime =
     finite(meta.regularMarketTime) ?? history.at(-1)?.timestamp ?? 0;
   const name =
@@ -406,7 +497,8 @@ export function parseYahooChart(
       stringValue(meta.fullExchangeName) ||
       stringValue(meta.exchangeName, "Unknown exchange"),
     currency: stringValue(meta.currency, ""),
-    instrumentType: stringValue(meta.instrumentType, "EQUITY"),
+    instrumentType: stringValue(meta.instrumentType, "UNKNOWN").toUpperCase(),
+    priceBasis,
     price: round(price, 4),
     previousClose: round(previousClose, 4),
     change: round(price - previousClose, 4),
@@ -436,9 +528,9 @@ export function normalizeSymbolInput(
   }
   if ((region === "cn" || region === "all") && /^\d{6}$/.test(value)) {
     if (/^(43|83|87|88|92)/.test(value)) return `${value}.BJ`;
-    if (/^[569]/.test(value)) return `${value}.SS`;
-    if (/^[0123]/.test(value)) return `${value}.SZ`;
-    if (/^[478]/.test(value)) return `${value}.BJ`;
+    if (/^(600|601|603|605|688|689)/.test(value)) return `${value}.SS`;
+    if (/^(000|001|002|003|300|301)/.test(value)) return `${value}.SZ`;
+    return "";
   }
   return /^[A-Z0-9^=-]{1,24}$/.test(value) ? value : "";
 }
@@ -455,17 +547,54 @@ export function inferMarketRegion(
   symbol: string,
   exchange = "",
 ): StockSearchResult["region"] {
-  const upper = `${symbol} ${exchange}`.toUpperCase();
-  if (/\.(SS|SZ|BJ)\b|SHANGHAI|SHENZHEN|BEIJING/.test(upper)) return "cn";
-  if (/\.HK\b|HONG KONG|HKG/.test(upper)) return "hk";
+  const upperSymbol = symbol.toUpperCase().trim();
+  const upperExchange = exchange.toUpperCase().trim();
+  if (/\.(SS|SZ|BJ)$/.test(upperSymbol)) return "cn";
+  if (/\.HK$/.test(upperSymbol)) return "hk";
+  if (/\.[A-Z0-9]{1,6}$/.test(upperSymbol)) return "other";
   if (
-    /NASDAQ|NYSE|AMEX|NMS|NYQ|ASE|PCX|NGM|NCM|BATS|BTS|PNK/.test(
-      upper,
+    /^(?:SHANGHAI(?: STOCK EXCHANGE)?|SHENZHEN(?: STOCK EXCHANGE)?|BEIJING(?: STOCK EXCHANGE)?|SSE|SHH|SHZ|BSE)$/.test(
+      upperExchange,
+    )
+  ) {
+    return "cn";
+  }
+  if (
+    /^(?:HONG KONG(?: STOCK EXCHANGE)?|HKSE|HKG)$/.test(upperExchange)
+  ) {
+    return "hk";
+  }
+  if (
+    /^(?:NASDAQ(?:GS|GM|CM)?|NASDAQ (?:GLOBAL SELECT|GLOBAL|CAPITAL) MARKET|NYSE|NYSE ARCA|NYSE AMERICAN|NEW YORK STOCK EXCHANGE|AMEX|NMS|NYQ|ASE|PCX|NGM|NCM|BATS|BTS|CBOE BZX)$/.test(
+      upperExchange,
     )
   ) {
     return "us";
   }
+  if (
+    !exchange &&
+    /^[A-Z][A-Z0-9^=]{0,5}$/.test(upperSymbol)
+  ) {
+    return "us";
+  }
   return "other";
+}
+
+export function isSupportedListedEquitySymbol(
+  symbol: string,
+  region: StockSearchResult["region"],
+) {
+  const upper = symbol.toUpperCase();
+  if (region === "cn") {
+    return (
+      /^(?:600|601|603|605|688|689)\d{3}\.SS$/.test(upper) ||
+      /^(?:000|001|002|003|300|301)\d{3}\.SZ$/.test(upper) ||
+      /^(?:43|83|87|88|92)\d{4}\.BJ$/.test(upper)
+    );
+  }
+  if (region === "hk") return /^\d{4,5}\.HK$/.test(upper);
+  if (region === "us") return !/\.(?:SS|SZ|BJ|HK)$/.test(upper);
+  return false;
 }
 
 export function isStockSearchResult(
@@ -509,6 +638,8 @@ export function parseYahooSearch(
     }
     const exchange = stringValue(item.exchange);
     const inferredRegion = inferMarketRegion(symbol, exchange);
+    if (inferredRegion === "other") continue;
+    if (!isSupportedListedEquitySymbol(symbol, inferredRegion)) continue;
     if (region !== "all" && inferredRegion !== region) continue;
     seen.add(symbol);
     results.push({
@@ -552,7 +683,7 @@ export function buildMarketCase(
   const volumePositive =
     latestVolumeRatio !== null &&
     latestVolumeRatio >= 1 &&
-    snapshot.changePercent >= 0;
+    metrics.dayReturn >= 0;
 
   const makeEvidence = (
     id: string,
@@ -616,20 +747,20 @@ export function buildMarketCase(
       ),
       makeEvidence(
         "market-momentum-quarter",
-        text.labels.momentum3m,
+        text.labels.momentum3m(snapshot.priceBasis),
         metrics.quarterReturn >= 0 ? "supports" : "contradicts",
         evidenceImpact(metrics.quarterReturn, 0.12),
         0.82,
-        text.notes.momentum3m(metrics.quarterReturn),
+        text.notes.momentum3m(metrics.quarterReturn, snapshot.priceBasis),
         "medium-term-momentum",
       ),
       makeEvidence(
         "market-momentum-year",
-        text.labels.momentum1y,
+        text.labels.momentum1y(snapshot.priceBasis),
         metrics.yearReturn >= 0 ? "supports" : "contradicts",
         evidenceImpact(metrics.yearReturn, 0.08),
         0.8,
-        text.notes.momentum1y(metrics.yearReturn),
+        text.notes.momentum1y(metrics.yearReturn, snapshot.priceBasis),
         "long-term-momentum",
       ),
       makeEvidence(
@@ -665,7 +796,7 @@ export function buildMarketCase(
         volumePositive ? "supports" : "contradicts",
         2.4,
         0.68,
-        text.notes.volume(latestVolumeRatio ?? 0, snapshot.changePercent),
+        text.notes.volume(latestVolumeRatio ?? 0, metrics.dayReturn),
         "volume-confirmation",
       ),
     ].filter(
@@ -715,17 +846,48 @@ export function buildMarketCase(
       {
         id: "market-drawdown",
         label: text.labels.assumptionDrawdown,
-        value: clamp(metrics.maxDrawdown, -100, 0),
-        baseline: clamp(metrics.maxDrawdown, -100, 0),
-        min: -100,
-        max: 0,
+        value: clamp(Math.abs(metrics.maxDrawdown), 0, 100),
+        baseline: clamp(Math.abs(metrics.maxDrawdown), 0, 100),
+        min: 0,
+        max: 100,
         step: 1,
         unit: "%",
         impactPerUnit: 0.2,
-        direction: 1,
+        direction: -1,
         typicalShock: 12,
       },
     ],
+  };
+}
+
+export function normalizeMarketCase(thesisCase: ThesisCase): ThesisCase {
+  if (!thesisCase.marketSnapshot) return thesisCase;
+  const drawdown = thesisCase.assumptions.find(
+    (item) => item.id === "market-drawdown",
+  );
+  if (
+    !drawdown ||
+    (drawdown.min >= 0 &&
+      drawdown.max > 0 &&
+      drawdown.direction === -1)
+  ) {
+    return thesisCase;
+  }
+
+  return {
+    ...thesisCase,
+    assumptions: thesisCase.assumptions.map((item) =>
+      item.id === "market-drawdown"
+        ? {
+            ...item,
+            value: clamp(Math.abs(item.value), 0, 100),
+            baseline: clamp(Math.abs(item.baseline), 0, 100),
+            min: 0,
+            max: 100,
+            direction: -1,
+          }
+        : item,
+    ),
   };
 }
 
@@ -733,11 +895,12 @@ export function relocalizeMarketCase(
   thesisCase: ThesisCase,
   locale: Locale,
 ): ThesisCase {
-  if (!thesisCase.marketSnapshot) return thesisCase;
+  const normalizedCase = normalizeMarketCase(thesisCase);
+  if (!normalizedCase.marketSnapshot) return normalizedCase;
 
-  const localized = buildMarketCase(thesisCase.marketSnapshot, locale);
+  const localized = buildMarketCase(normalizedCase.marketSnapshot, locale);
   const variants = (Object.keys(copy) as Locale[]).map((item) =>
-    buildMarketCase(thesisCase.marketSnapshot as MarketSnapshot, item),
+    buildMarketCase(normalizedCase.marketSnapshot as MarketSnapshot, item),
   );
   const localizedEvidence = new Map(
     localized.evidence.map((item) => [item.id, item]),
@@ -747,14 +910,14 @@ export function relocalizeMarketCase(
   );
 
   return {
-    ...thesisCase,
-    thesis: variants.some((item) => item.thesis === thesisCase.thesis)
+    ...normalizedCase,
+    thesis: variants.some((item) => item.thesis === normalizedCase.thesis)
       ? localized.thesis
-      : thesisCase.thesis,
-    horizon: variants.some((item) => item.horizon === thesisCase.horizon)
+      : normalizedCase.thesis,
+    horizon: variants.some((item) => item.horizon === normalizedCase.horizon)
       ? localized.horizon
-      : thesisCase.horizon,
-    evidence: thesisCase.evidence.map((item) => {
+      : normalizedCase.horizon,
+    evidence: normalizedCase.evidence.map((item) => {
       const translation = localizedEvidence.get(item.id);
       if (
         !translation ||
@@ -787,7 +950,7 @@ export function relocalizeMarketCase(
           : item.source,
       };
     }),
-    assumptions: thesisCase.assumptions.map((item) => {
+    assumptions: normalizedCase.assumptions.map((item) => {
       const translation = localizedAssumptions.get(item.id);
       const priorLabels = variants
         .map((variant) =>

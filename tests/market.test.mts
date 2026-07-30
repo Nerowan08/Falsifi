@@ -8,11 +8,15 @@ import {
 } from "../lib/falsifi.ts";
 import {
   buildMarketCase,
+  calculateMarketMetrics,
+  inferMarketRegion,
+  normalizeMarketCase,
   normalizeSymbolInput,
   parseYahooChart,
   parseYahooSearch,
   relocalizeMarketCase,
 } from "../lib/market.ts";
+import type { MarketPoint } from "../lib/falsifi.ts";
 
 const START = 1_720_000_000;
 const closes = Array.from({ length: 260 }, (_, index) =>
@@ -57,6 +61,7 @@ test("parses a real-market chart response into a bounded snapshot", () => {
   assert.equal(snapshot.symbol, "TEST");
   assert.equal(snapshot.name, "Test Company");
   assert.equal(snapshot.history.length, 260);
+  assert.equal(snapshot.priceBasis, "adjusted");
   assert.ok(snapshot.price > 0);
   assert.equal(snapshot.previousClose, closes.at(-2));
   assert.notEqual(snapshot.previousClose, closes[0]);
@@ -64,6 +69,89 @@ test("parses a real-market chart response into a bounded snapshot", () => {
   assert.ok(snapshot.metrics.yearReturn > 0);
   assert.ok(snapshot.metrics.rsi14 >= 0);
   assert.ok(snapshot.metrics.rsi14 <= 100);
+});
+
+test("uses one price basis for the entire history", () => {
+  const payload = structuredClone(chartPayload);
+  const adjusted = closes.map((value) => value * 0.5) as Array<number | null>;
+  adjusted[42] = null;
+  payload.chart.result[0].indicators.adjclose[0].adjclose =
+    adjusted as number[];
+
+  const snapshot = parseYahooChart(payload);
+
+  assert.equal(snapshot.priceBasis, "close");
+  assert.equal(snapshot.history.length, closes.length);
+  assert.equal(snapshot.history[42].close, closes[42]);
+  const thesisCase = buildMarketCase(snapshot, "zh-CN");
+  const oneYearEvidence = thesisCase.evidence.find(
+    (item) => item.id === "market-momentum-year",
+  );
+  assert.ok(oneYearEvidence);
+  assert.equal(oneYearEvidence.title.includes("复权"), false);
+  assert.equal(oneYearEvidence.note.includes("复权"), false);
+});
+
+test("keeps headline quote changes on the ordinary-close basis", () => {
+  const payload = structuredClone(chartPayload);
+  payload.chart.result[0].indicators.adjclose[0].adjclose = closes.map(
+    (value) => value * 0.5,
+  );
+  delete (payload.chart.result[0].meta as Record<string, unknown>).previousClose;
+
+  const snapshot = parseYahooChart(payload);
+
+  assert.equal(snapshot.priceBasis, "adjusted");
+  assert.equal(snapshot.history.at(-1)?.close, (closes.at(-1) ?? 0) * 0.5);
+  assert.equal(snapshot.previousClose, closes.at(-2));
+  assert.equal(
+    snapshot.change,
+    Number(((closes.at(-1) ?? 0) - (closes.at(-2) ?? 0)).toFixed(4)),
+  );
+});
+
+test("does not infer a missing instrument type", () => {
+  const payload = structuredClone(chartPayload);
+  delete (payload.chart.result[0].meta as Record<string, unknown>).instrumentType;
+
+  const snapshot = parseYahooChart(payload);
+
+  assert.equal(snapshot.instrumentType, "UNKNOWN");
+  assert.equal(isMarketSnapshot(snapshot), false);
+});
+
+test("calculates Wilder RSI from the standard 14-session seed", () => {
+  const exampleCloses = [
+    44.34, 44.09, 44.15, 43.61, 44.33, 44.83, 45.1, 45.42, 45.84,
+    46.08, 45.89, 46.03, 45.61, 46.28, 46.28,
+  ];
+  const history: MarketPoint[] = exampleCloses.map((close, index) => ({
+    timestamp: START + index * 86_400,
+    close,
+    volume: null,
+  }));
+
+  assert.equal(calculateMarketMetrics(history).rsi14, 70.46);
+});
+
+test("keeps maximum drawdown negative internally for rule calculations", () => {
+  const history: MarketPoint[] = [100, 120, 90, 108].map((close, index) => ({
+    timestamp: START + index * 86_400,
+    close,
+    volume: null,
+  }));
+
+  assert.equal(calculateMarketMetrics(history).maxDrawdown, -25);
+});
+
+test("does not backfill missing recent volume with older observations", () => {
+  const history: MarketPoint[] = closes.map((close, index) => ({
+    timestamp: timestamps[index],
+    close,
+    volume: index === closes.length - 10 ? null : volumes[index],
+  }));
+
+  assert.equal(calculateMarketMetrics(history).volumeRatio20, null);
 });
 
 test("builds a valid non-demo case from market data", () => {
@@ -76,7 +164,42 @@ test("builds a valid non-demo case from market data", () => {
   assert.equal(thesisCase.marketSnapshot?.symbol, "TEST");
   assert.equal(thesisCase.evidence.length, 8);
   assert.equal(thesisCase.assumptions.length, 4);
+  const drawdown = thesisCase.assumptions.find(
+    (item) => item.id === "market-drawdown",
+  );
+  assert.ok(drawdown);
+  assert.ok(drawdown.value >= 0);
+  assert.equal(drawdown.direction, -1);
   assert.equal(analysis.independenceAudit.independentRootCount, 1);
+});
+
+test("migrates legacy negative drawdown inputs without changing the score", () => {
+  const current = buildMarketCase(parseYahooChart(chartPayload), "en");
+  const legacy = structuredClone(current);
+  const legacyDrawdown = legacy.assumptions.find(
+    (item) => item.id === "market-drawdown",
+  );
+  assert.ok(legacyDrawdown);
+  legacyDrawdown.value *= -1;
+  legacyDrawdown.baseline *= -1;
+  legacyDrawdown.min = -100;
+  legacyDrawdown.max = 0;
+  legacyDrawdown.direction = 1;
+  const before = runStressTest(legacy).score;
+
+  const migrated = normalizeMarketCase(legacy);
+  const migratedAgain = normalizeMarketCase(migrated);
+  const migratedDrawdown = migrated.assumptions.find(
+    (item) => item.id === "market-drawdown",
+  );
+
+  assert.ok(migratedDrawdown);
+  assert.equal(migratedDrawdown.min, 0);
+  assert.equal(migratedDrawdown.max, 100);
+  assert.equal(migratedDrawdown.direction, -1);
+  assert.equal(runStressTest(migrated).score, before);
+  assert.deepEqual(migratedAgain, migrated);
+  assert.equal(isThesisCase(migrated), true);
 });
 
 test("omits volume evidence when the provider has no volume series", () => {
@@ -138,6 +261,18 @@ test("normalizes common U.S., A-share, and Hong Kong symbols", () => {
   assert.equal(normalizeSymbolInput("002441", "all"), "002441.SZ");
   assert.equal(normalizeSymbolInput("430047", "cn"), "430047.BJ");
   assert.equal(normalizeSymbolInput("700", "hk"), "0700.HK");
+  assert.equal(normalizeSymbolInput("900901", "cn"), "");
+  assert.equal(normalizeSymbolInput("200002", "cn"), "");
+});
+
+test("does not classify unsupported or similarly named exchanges as U.S. listings", () => {
+  assert.equal(inferMarketRegion("AAPL", "NasdaqGS"), "us");
+  assert.equal(inferMarketRegion("VOD.L", "LSE"), "other");
+  assert.equal(inferMarketRegion("SHOP.TO", "Toronto"), "other");
+  assert.equal(inferMarketRegion("ERIC-B.ST", "Nasdaq Stockholm"), "other");
+  assert.equal(inferMarketRegion("TEST", "PNK"), "other");
+  assert.equal(inferMarketRegion("HKG"), "us");
+  assert.equal(inferMarketRegion("0700.HK", "HKG"), "hk");
 });
 
 test("filters Yahoo search results by market and instrument type", () => {
@@ -168,6 +303,18 @@ test("filters Yahoo search results by market and instrument type", () => {
         shortname: "SPDR S&P 500 ETF",
         quoteType: "ETF",
         exchange: "PCX",
+      },
+      {
+        symbol: "ERIC-B.ST",
+        longname: "Telefonaktiebolaget LM Ericsson",
+        quoteType: "EQUITY",
+        exchange: "Nasdaq Stockholm",
+      },
+      {
+        symbol: "TEST",
+        longname: "Test OTC",
+        quoteType: "EQUITY",
+        exchange: "PNK",
       },
     ],
   };

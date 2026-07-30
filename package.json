@@ -1,7 +1,7 @@
 {
   "name": "falsifi",
   "version": "0.4.0",
-  "description": "An evidence-first, multilingual stress lab that finds what would flip an investment thesis.",
+  "description": "A multilingual, source-linked stock thesis stress-testing workspace.",
   "license": "MIT",
   "private": true,
   "engines": {
