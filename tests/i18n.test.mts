@@ -13,6 +13,7 @@ test("user-facing source does not reintroduce retired internal jargon", async ()
   const sources = await Promise.all(
     [
       "app/page.tsx",
+      "components/falsify-workspace.tsx",
       "components/market-workspace.tsx",
       "components/user-guide.tsx",
       "lib/i18n.ts",
@@ -42,14 +43,16 @@ test("user-facing source does not reintroduce retired internal jargon", async ()
   }
 });
 
-test("the four-language guide states the exact default score boundaries", async () => {
+test("the four-language guide explains the single source-group task", async () => {
   const guide = await readFile(
     new URL("../components/user-guide.tsx", import.meta.url),
     "utf8",
   );
 
-  assert.match(guide, /58 or higher/);
-  assert.match(guide, /58 分及以上/);
-  assert.match(guide, /58以上/);
-  assert.match(guide, /58 o más/);
+  assert.match(guide, /groups by source/);
+  assert.match(guide, /按来源归组/);
+  assert.match(guide, /出典ごとに/);
+  assert.match(guide, /agrupan por fuente/);
+  assert.match(guide, /canonical URL/i);
+  assert.doesNotMatch(guide, /shared source or claim metadata/i);
 });
