@@ -81,5 +81,24 @@ test("the main workflow leaves every action under user control", async () => {
   assert.match(page, /onFindEvidence=\{\(\) => setShowMaterialFinder\(true\)\}/);
   assert.match(finder, /useState<Set<string>>\(new Set\(\)\)/);
   assert.match(finder, /Nothing is added until you select and confirm it/);
+  assert.doesNotMatch(finder, /onResolveCompanyName/);
+  assert.doesNotMatch(page, /onResolveCompanyName/);
   assert.match(editor, /mode: ResearchPlanEditorMode/);
+});
+
+test("the material finder names its A-share source in every language", async () => {
+  const [finder, guide] = await Promise.all(
+    [
+      "components/material-finder.tsx",
+      "components/user-guide.tsx",
+    ].map((path) => readFile(new URL(`../${path}`, import.meta.url), "utf8")),
+  );
+
+  assert.match(finder, /CNINFO/);
+  assert.match(finder, /巨潮资讯/);
+  assert.match(finder, /公司公告/);
+  assert.match(guide, /exact-ticker CNINFO filings/);
+  assert.match(guide, /巨潮资讯的公司公告/);
+  assert.match(guide, /CNINFO開示/);
+  assert.match(guide, /documentos de CNINFO/);
 });
