@@ -112,7 +112,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Find public sources",
           body:
-            "Click the button to search for the selected company. Nothing is selected or added automatically. You can change the search terms without sending your claim.",
+            "Click the button to search the selected company. A-shares include exact-ticker CNINFO filings; Yahoo Finance adds public-page results. Nothing is selected or added automatically.",
         },
         {
           title: "Open the page before using it",
@@ -176,7 +176,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "A user cannot split the same canonical URL into several groups by entering different labels.",
         "Different links are grouped only when a stored source identity or explicit same-source relationship connects them.",
         "Falsifi does not crawl every page, compare full article text, or guarantee that it has discovered every syndication chain.",
-        "Public-source search uses Yahoo Finance and is not a complete filing or news archive. Coverage can be thin for mainland China and Hong Kong stocks.",
+        "A-share search includes exact-ticker CNINFO filings and supplemental Yahoo results. Neither source is a complete archive, and every candidate still needs review.",
         "More source groups do not prove the investment thesis true.",
         "Delayed market data is background only and is not counted as user material.",
       ],
@@ -250,12 +250,12 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
     evidence: {
       nav: "添加材料",
       title: "只填需要的信息",
-      intro: "搜索可以省时间，但在你打开网页核对前，结果一律标为“未核实”。",
+      intro: "搜索可以省时间，但在你查看原文前，结果一律标为“待核对”。",
       items: [
         {
           title: "让工具找材料",
           body:
-            "点击按钮后，工具会搜索当前公司。不会自动勾选，也不会自动加入。你可以改搜索词，系统不会发送你的判断。",
+            "点击后，A 股会先查巨潮资讯的公司公告，再补充 Yahoo Finance 的公开新闻。不会自动勾选或加入，也不会发送你的判断。",
         },
         {
           title: "先打开网页核对",
@@ -317,7 +317,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "修改材料名称，不会把同一个链接拆成多组。",
         "不同链接只有在你标记为来自同一来源时才会归组。",
         "Falsifi 不会抓取并比较所有文章全文，也不能保证发现互联网上全部转载链。",
-        "公开材料搜索使用 Yahoo Finance，不是完整公告库或新闻库；A 股和港股的结果可能较少。",
+        "A 股会按股票代码查询巨潮资讯的公司公告，并用 Yahoo Finance 补充新闻。两者都不是完整资料库，加入前仍需核对。",
         "来源组更多，不代表投资判断正确。",
         "延迟行情只是背景，不会算作你添加的材料。",
       ],
@@ -458,7 +458,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "異なるラベルで同じURLを複数群に分割できません。",
         "異なるリンクは記録済みの共通ソース・主張・関係がある場合のみまとめます。",
         "全記事本文をクロールせず、全転載関係の発見を保証しません。",
-        "公開資料検索は Yahoo Finance を使用し、完全な開示・ニュースアーカイブではありません。中国A株・香港株は結果が少ない場合があります。",
+        "中国A株では、銘柄コードに一致するCNINFO開示とYahoo Financeの補足結果を検索します。どちらも完全なアーカイブではなく、追加前の確認が必要です。",
         "構造完成は仮説の正しさを証明しません。",
         "遅延市場データは背景のみで、証拠要件を満たしません。",
       ],
@@ -598,7 +598,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "No se puede dividir la misma URL usando etiquetas diferentes.",
         "Enlaces distintos solo se agrupan mediante una identidad de fuente o una relación explícita de misma fuente.",
         "No rastrea todo el texto web ni garantiza descubrir todas las republicaciones.",
-        "La búsqueda usa Yahoo Finance y no es un archivo completo de noticias o documentos. La cobertura puede ser limitada para acciones chinas y de Hong Kong.",
+        "Para acciones A, la búsqueda incluye documentos de CNINFO que coinciden con el ticker y resultados complementarios de Yahoo Finance. Ninguna fuente es un archivo completo y todo candidato debe revisarse.",
         "Una estructura completa no prueba que la tesis sea cierta.",
         "Los datos retrasados de mercado son contexto y no cumplen los requisitos de evidencia.",
       ],
