@@ -79,7 +79,7 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
     heroEyebrow: "Source groups",
     heroTitle: "See where your stock research really comes from.",
     heroBody:
-      "Choose a stock. Then add a claim or material in any order.",
+      "Choose a stock. Let the tool find candidate pages, or add your own link.",
     searchPlaceholder: "Ticker or company name — e.g. AAPL, 603901, Tencent",
     searchLabel: "Choose a stock",
     productBoundary: "No price prediction · No buy/sell signal · No sign-up",
@@ -134,7 +134,7 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
   "zh-CN": {
     heroEyebrow: "材料来源检查",
     heroTitle: "把重复来源的股票材料归到一起",
-    heroBody: "选择股票后，按需写判断或添加材料。",
+    heroBody: "选择股票，让工具找材料，或自己贴链接。",
     searchPlaceholder: "股票代码或公司名称，例如 AAPL、603901、腾讯",
     searchLabel: "选择股票",
     productBoundary: "不预测 · 不荐股 · 无需注册",
@@ -188,7 +188,7 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
   ja: {
     heroEyebrow: "資料の出典整理",
     heroTitle: "同じ出典の株式資料をまとめます",
-    heroBody: "まず銘柄を選びます。その後は、仮説と資料を好きな順番で追加できます。",
+    heroBody: "銘柄を選び、候補ページを探すか、自分でリンクを追加します。",
     searchPlaceholder: "ティッカーまたは企業名 — AAPL、603901、Tencent",
     searchLabel: "銘柄を選ぶ",
     productBoundary: "株価予測なし · 売買推奨なし · 登録不要",
@@ -243,7 +243,7 @@ const MARKET_COPY: Record<Locale, MarketCopy> = {
   es: {
     heroEyebrow: "Fuentes del material",
     heroTitle: "Agrupa el material bursátil que viene de la misma fuente",
-    heroBody: "Primero elige una acción. Después añade la tesis y el material en el orden que prefieras.",
+    heroBody: "Elige una acción y busca páginas candidatas o añade tu propio enlace.",
     searchPlaceholder: "Ticker o empresa — AAPL, 603901, Tencent",
     searchLabel: "Elige una acción",
     productBoundary: "Sin precio objetivo · Sin señal de compra/venta · Sin cuenta",
