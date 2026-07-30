@@ -5,6 +5,7 @@
 ```text
 Multilingual browser UI
   ├── real-stock search and clearly labeled market context
+  ├── user-invoked public-page candidates with explicit confirmation
   ├── research claim, invalidation condition, purpose, and review date
   ├── readiness checks and next-research-action summary
   ├── local evidence editor and related-evidence-group audit
@@ -15,6 +16,7 @@ Multilingual browser UI
         │
 Same-origin market routes
   ├── symbol validation and market normalization
+  ├── bounded public-page candidate search
   ├── bounded upstream fetch with a secondary host
   ├── normalized one-year price history
   └── explicit cache, source, delay, and failure states
@@ -68,6 +70,11 @@ v0.6 adds optional fields used by the focused workflow:
 - `sameSourceAsIds`: explicit same-source relationships;
 - `verification`: `original`, `reviewed`, or `unverified`; and
 - `provenance`: `user` or `system-market`.
+
+v0.7 adds `unclassified` as an evidence direction. Public-page candidates use
+this value after the user accepts them, so discovery cannot silently classify
+a page as supporting or weakening a claim. Unclassified material contributes
+zero to the legacy score while remaining visible in source grouping.
 
 The runtime validator rejects self-references and dangling dependencies. Old v1
 case files without these fields continue to work. Canonical URL matching still
@@ -145,6 +152,8 @@ language never rewrites evidence, notes, sources, or exported JSON.
 ## Trust boundary
 
 - UI state and user-entered research remain in the browser.
+- Material search sends only the visible search terms to Yahoo Finance. It does
+  not append the saved claim.
 - API keys are never accepted in browser code.
 - The SEC adapter runs in Node or GitHub Actions.
 - The current keyless market adapter is explicitly experimental and suitable
