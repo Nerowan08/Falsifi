@@ -1,22 +1,17 @@
 "use client";
 
 import {
-  Archive,
   ArrowDownRight,
   ArrowUpRight,
-  BookOpen,
   Check,
   CircleHelp,
   Copy,
   Download,
   ExternalLink,
-  FileText,
-  FlaskConical,
   Globe2,
   History,
   Import,
   Info,
-  Layers3,
   Link2,
   Plus,
   RefreshCcw,
@@ -39,6 +34,7 @@ import {
   marketUi,
   StockPicker,
 } from "@/components/market-workspace";
+import { FalsifyWorkspace } from "@/components/falsify-workspace";
 import {
   ResearchActionSummary,
   ResearchPlanModal,
@@ -58,6 +54,7 @@ import {
   EvidenceGroup,
   EvidenceItem,
   EvidenceStressMode,
+  canonicalEvidenceSource,
   isHttpUrl,
   isMarketSnapshot,
   isThesisCase,
@@ -69,10 +66,11 @@ import {
   ThesisCase,
 } from "@/lib/falsifi";
 import {
-  buildMarketCase,
+  buildResearchCase,
   normalizeMarketCase,
   refreshMarketCase,
   relocalizeMarketCase,
+  type StockSearchResult,
 } from "@/lib/market";
 import {
   assessResearchReadiness,
@@ -107,18 +105,6 @@ const LEGACY_CASE_STORAGE_KEY = "falsifi.case.v1";
 const SNAPSHOT_STORAGE_KEY = "falsifi.snapshots.v2";
 const LOCALE_STORAGE_KEY = "falsifi.locale.v1";
 const MAX_IMPORT_BYTES = 2 * 1024 * 1024;
-
-const navItems: {
-  id: View;
-  key: TranslationKey;
-  icon: typeof FlaskConical;
-}[] = [
-  { id: "stress", key: "nav.stress", icon: FlaskConical },
-  { id: "evidence", key: "nav.evidence", icon: FileText },
-  { id: "audit", key: "nav.audit", icon: Layers3 },
-  { id: "history", key: "nav.history", icon: Archive },
-  { id: "method", key: "nav.method", icon: BookOpen },
-];
 
 const postureKeys: Record<Posture, TranslationKey> = {
   Constructive: "posture.constructive",
@@ -232,21 +218,19 @@ function AppHeader({
   activeView,
   locale,
   thesisCase,
-  onChangeView,
+  onHome,
   onChangeLocale,
   onChangeStock,
   onOpenGuide,
-  onSnapshot,
   guideButtonRef,
 }: {
   activeView: View;
   locale: Locale;
   thesisCase: ThesisCase | null;
-  onChangeView: (view: View) => void;
+  onHome: () => void;
   onChangeLocale: (locale: Locale) => void;
   onChangeStock: () => void;
   onOpenGuide: () => void;
-  onSnapshot: () => void;
   guideButtonRef: RefObject<HTMLButtonElement | null>;
 }) {
   return (
@@ -257,9 +241,7 @@ function AppHeader({
       <div className="header-inner">
         <button
           className="brand"
-          onClick={() =>
-            thesisCase ? onChangeView("stress") : onChangeStock()
-          }
+          onClick={onHome}
           aria-label={t(locale, "app.name")}
         >
           <span className="brand-symbol" aria-hidden="true">
@@ -272,22 +254,6 @@ function AppHeader({
             <small>{t(locale, "app.tagline")}</small>
           </span>
         </button>
-
-        {thesisCase && (
-          <nav className="main-nav" aria-label={t(locale, "nav.label")}>
-            {navItems.map(({ id, key, icon: Icon }) => (
-              <button
-                key={id}
-                className={activeView === id ? "active" : ""}
-                onClick={() => onChangeView(id)}
-                aria-current={activeView === id ? "page" : undefined}
-              >
-                <Icon size={15} strokeWidth={1.8} />
-                {t(locale, key)}
-              </button>
-            ))}
-          </nav>
-        )}
 
         <div className="header-actions">
           {thesisCase && (
@@ -331,15 +297,6 @@ function AppHeader({
               ))}
             </select>
           </label>
-          {thesisCase && (
-            <button
-              className="button secondary header-save"
-              onClick={onSnapshot}
-            >
-              <History size={15} />
-              <span>{t(locale, "history.snapshot.save")}</span>
-            </button>
-          )}
         </div>
       </div>
     </header>
@@ -680,7 +637,7 @@ function FlipSummary({
   );
 }
 
-function StressView({
+export function StressView({
   thesisCase,
   setThesisCase,
   analysis,
@@ -1636,24 +1593,138 @@ type EvidenceDefaults = {
 };
 
 const defaultOriginId = (sourceUrl: string) => {
-  const url = new URL(sourceUrl);
-  const path = url.pathname.replace(/\/+$/, "") || "/";
-  return `source:${url.hostname.toLowerCase()}${path}`.slice(0, 120);
+  return `source:${canonicalEvidenceSource(sourceUrl)}`.slice(0, 120);
+};
+
+const SIMPLE_EVIDENCE_COPY: Record<
+  Locale,
+  {
+    relationship: string;
+    relationshipHelp: string;
+    noRelationship: string;
+    details: string;
+    importance: string;
+    importanceOptions: Record<"pivotal" | "material" | "context", string>;
+    verification: string;
+    verificationPrompt: string;
+    verificationRequired: string;
+    verificationOptions: Record<
+      "original" | "reviewed" | "unverified",
+      string
+    >;
+  }
+> = {
+  en: {
+    relationship: "Does this repeat the same underlying source?",
+    relationshipHelp:
+      "Choose another item only when both ultimately trace to the same document, dataset, interview, or republication chain.",
+    noRelationship: "No known relationship",
+    details: "Optional classification details",
+    importance: "Role in your thesis",
+    importanceOptions: {
+      pivotal: "Pivotal — the claim depends on it",
+      material: "Important — it could change the claim",
+      context: "Context — useful background only",
+    },
+    verification: "How you checked it",
+    verificationPrompt: "Select how you checked this material",
+    verificationRequired:
+      "Select how you checked this material before saving it.",
+    verificationOptions: {
+      original: "Read the original document",
+      reviewed: "Checked a reliable secondary source",
+      unverified: "Not independently checked yet",
+    },
+  },
+  "zh-CN": {
+    relationship: "这项材料是否重复了已有材料的同一底层来源？",
+    relationshipHelp:
+      "只有在两项材料最终来自同一文件、数据集、采访或转载链时才选择已有材料。",
+    noRelationship: "暂未发现关联",
+    details: "可选分类信息",
+    importance: "它在判断中的作用",
+    importanceOptions: {
+      pivotal: "关键：没有它就难以支持判断",
+      material: "重要：它可能明显改变判断",
+      context: "背景：只提供补充信息",
+    },
+    verification: "你如何核查它",
+    verificationPrompt: "请选择你对这项材料的核查方式",
+    verificationRequired: "保存前请选择你对这项材料的核查方式。",
+    verificationOptions: {
+      original: "已阅读原始文件",
+      reviewed: "已核对可靠二手来源",
+      unverified: "尚未独立核查",
+    },
+  },
+  ja: {
+    relationship: "既存資料と同じ底層ソースを繰り返していますか？",
+    relationshipHelp:
+      "同じ文書、データセット、インタビュー、転載経路に由来する場合のみ選択してください。",
+    noRelationship: "既知の関連なし",
+    details: "任意の分類情報",
+    importance: "仮説での役割",
+    importanceOptions: {
+      pivotal: "中核：仮説がこれに依存",
+      material: "重要：仮説を大きく変え得る",
+      context: "背景：補足情報のみ",
+    },
+    verification: "確認方法",
+    verificationPrompt: "この資料の確認方法を選択",
+    verificationRequired: "保存する前に確認方法を選択してください。",
+    verificationOptions: {
+      original: "原資料を確認済み",
+      reviewed: "信頼できる二次資料を確認",
+      unverified: "未確認",
+    },
+  },
+  es: {
+    relationship: "¿Repite la misma fuente subyacente?",
+    relationshipHelp:
+      "Elige otro elemento solo si ambos proceden del mismo documento, conjunto de datos, entrevista o cadena de republicación.",
+    noRelationship: "Sin relación conocida",
+    details: "Clasificación opcional",
+    importance: "Papel en tu tesis",
+    importanceOptions: {
+      pivotal: "Esencial — la tesis depende de ello",
+      material: "Importante — podría cambiar la tesis",
+      context: "Contexto — solo información de fondo",
+    },
+    verification: "Cómo lo comprobaste",
+    verificationPrompt: "Selecciona cómo comprobaste este material",
+    verificationRequired:
+      "Selecciona cómo comprobaste este material antes de guardarlo.",
+    verificationOptions: {
+      original: "Leí el documento original",
+      reviewed: "Revisé una fuente secundaria fiable",
+      unverified: "Aún no lo verifiqué",
+    },
+  },
 };
 
 function EvidenceModal({
   locale,
   initial,
   defaults,
+  evidenceItems,
   onClose,
   onSave,
 }: {
   locale: Locale;
   initial: EvidenceItem | null;
   defaults?: EvidenceDefaults;
+  evidenceItems: EvidenceItem[];
   onClose: () => void;
   onSave: (item: EvidenceItem) => void;
 }) {
+  const simpleCopy = SIMPLE_EVIDENCE_COPY[locale];
+  const initialImportance =
+    (initial?.impact ?? 3) >= 5
+      ? "pivotal"
+      : (initial?.impact ?? 3) <= 1
+        ? "context"
+        : "material";
+  const initialVerification = initial?.verification ?? "";
   const [direction, setDirection] = useState<EvidenceDirection>(
     initial?.direction ?? defaults?.direction ?? "contradicts",
   );
@@ -1691,10 +1762,16 @@ function EvidenceModal({
     const asOf = String(form.get("asOf") ?? "").trim();
     const group = String(form.get("group") ?? "") as EvidenceGroup;
     const note = String(form.get("note") ?? "").trim();
-    const originId = String(form.get("originId") ?? "").trim();
-    const claimId = String(form.get("claimId") ?? "").trim();
-    const reliabilityPercent = Number(form.get("reliability"));
-    const impact = Number(form.get("impact"));
+    const relatedToId = String(form.get("relatedToId") ?? "").trim();
+    const importance = String(form.get("importance") ?? "material") as
+      | "pivotal"
+      | "material"
+      | "context";
+    const verification = String(form.get("verification") ?? "") as
+      | "original"
+      | "reviewed"
+      | "unverified"
+      | "";
 
     if (!title) {
       setError(t(locale, "evidence.validation.titleRequired"));
@@ -1712,24 +1789,26 @@ function EvidenceModal({
       setError(t(locale, "evidence.validation.dateRequired"));
       return;
     }
-    if (!Number.isFinite(impact) || impact < 0.1 || impact > 100) {
-      setError(
-        t(locale, "evidence.validation.impactRange", {
-          min: 0.1,
-          max: 100,
-        }),
-      );
-      return;
-    }
     if (
-      !Number.isFinite(reliabilityPercent) ||
-      reliabilityPercent < 0 ||
-      reliabilityPercent > 100
+      !["original", "reviewed", "unverified"].includes(verification)
     ) {
-      setError(t(locale, "evidence.validation.reliabilityRange"));
+      setError(simpleCopy.verificationRequired);
       return;
     }
-    const reliability = reliabilityPercent / 100;
+    const selectedVerification = verification as
+      | "original"
+      | "reviewed"
+      | "unverified";
+    const impactByImportance = {
+      pivotal: 6,
+      material: 3,
+      context: 1,
+    } as const;
+    const reliabilityByVerification = {
+      original: 1,
+      reviewed: 0.75,
+      unverified: 0.4,
+    } as const;
 
     onSave({
       id: initial?.id ?? `ev-${Date.now()}`,
@@ -1739,14 +1818,18 @@ function EvidenceModal({
       asOf,
       group,
       direction,
-      impact,
-      reliability,
+      impact: impactByImportance[importance] ?? 3,
+      reliability:
+        reliabilityByVerification[selectedVerification] ?? 0.75,
       note,
       enabled: initial?.enabled ?? true,
-      originId: originId || defaultOriginId(sourceUrl),
-      claimId: claimId || undefined,
+      originId: defaultOriginId(sourceUrl),
+      claimId: initial?.claimId,
       dependsOnIds: initial?.dependsOnIds,
+      sameSourceAsIds: relatedToId ? [relatedToId] : undefined,
       relation: initial?.relation ?? "direct",
+      verification: selectedVerification,
+      provenance: initial?.provenance ?? "user",
     });
   };
 
@@ -1810,7 +1893,7 @@ function EvidenceModal({
               <select
                 name="group"
                 defaultValue={
-                  initial?.group ?? defaults?.group ?? "Official filing"
+                  initial?.group ?? defaults?.group ?? "External estimate"
                 }
               >
                 {(Object.keys(groupKeys) as EvidenceGroup[]).map((group) => (
@@ -1845,79 +1928,51 @@ function EvidenceModal({
               />
             </label>
           </div>
-          <div className="form-grid">
-            <label className="field">
-              <span>{t(locale, "evidence.form.originId")}</span>
-              <input
-                name="originId"
-                maxLength={120}
-                defaultValue={initial?.originId}
-                placeholder="origin-q2-filing"
-              />
-              <small>{t(locale, "evidence.form.originHelp")}</small>
-            </label>
-            <label className="field">
-              <span>{t(locale, "evidence.form.claimId")}</span>
-              <input
-                name="claimId"
-                maxLength={120}
-                defaultValue={initial?.claimId}
-                placeholder="claim-demand"
-              />
-              <small>{t(locale, "evidence.form.claimHelp")}</small>
-            </label>
-          </div>
-          <div className="form-grid triple">
-            <label className="field">
-              <span>{t(locale, "evidence.form.impact")}</span>
-              <input
-                name="impact"
-                type="number"
-                min="0.1"
-                max="100"
-                step="0.1"
-                required
-                defaultValue={initial?.impact ?? 3}
-              />
-            </label>
-            <label className="field">
-              <span>{t(locale, "evidence.form.reliability")}</span>
-              <input
-                name="reliability"
-                type="number"
-                min="0"
-                max="100"
-                step="1"
-                required
-                defaultValue={
-                  initial ? Math.round(initial.reliability * 100) : 75
-                }
-              />
-            </label>
-            <fieldset className="field">
-              <legend>{t(locale, "evidence.form.direction")}</legend>
-              <div className="segmented">
-                {(["supports", "contradicts"] as EvidenceDirection[]).map(
-                  (value) => (
-                    <button
-                      type="button"
-                      key={value}
-                      className={direction === value ? "active" : ""}
-                      onClick={() => setDirection(value)}
-                      aria-pressed={direction === value}
-                    >
-                      {t(
-                        locale,
-                        value === "supports"
-                          ? "common.supports"
-                          : "common.contradicts",
-                      )}
-                    </button>
-                  ),
-                )}
-              </div>
-            </fieldset>
-          </div>
+          <fieldset className="field">
+            <legend>{t(locale, "evidence.form.direction")}</legend>
+            <div className="segmented">
+              {(["supports", "contradicts"] as EvidenceDirection[]).map(
+                (value) => (
+                  <button
+                    type="button"
+                    key={value}
+                    className={direction === value ? "active" : ""}
+                    onClick={() => setDirection(value)}
+                    aria-pressed={direction === value}
+                  >
+                    {t(
+                      locale,
+                      value === "supports"
+                        ? "common.supports"
+                        : "common.contradicts",
+                    )}
+                  </button>
+                ),
+              )}
+            </div>
+          </fieldset>
+          <label className="field">
+            <span>{simpleCopy.relationship}</span>
+            <select
+              name="relatedToId"
+              defaultValue={initial?.sameSourceAsIds?.[0] ?? ""}
+            >
+              <option value="">{simpleCopy.noRelationship}</option>
+              {evidenceItems
+                .filter(
+                  (item) =>
+                    item.id !== initial?.id &&
+                    item.relation !== "derived" &&
+                    item.provenance !== "system-market",
+                )
+                .map((item) => (
+                  <option value={item.id} key={item.id}>
+                    {item.title}
+                  </option>
+                ))}
+            </select>
+            <small>{simpleCopy.relationshipHelp}</small>
+          </label>
           <label className="field">
             <span>{t(locale, "evidence.form.note")}</span>
             <textarea
@@ -1928,6 +1983,45 @@ function EvidenceModal({
               placeholder={t(locale, "evidence.form.notePlaceholder")}
             />
           </label>
+          <label className="field">
+            <span>{simpleCopy.verification}</span>
+            <select
+              name="verification"
+              defaultValue={initialVerification}
+              required
+            >
+              <option value="" disabled>
+                {simpleCopy.verificationPrompt}
+              </option>
+              {(
+                ["original", "reviewed", "unverified"] as const
+              ).map((value) => (
+                <option value={value} key={value}>
+                  {simpleCopy.verificationOptions[value]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <details className="evidence-entry-details">
+            <summary>{simpleCopy.details}</summary>
+            <div>
+              <label className="field">
+                <span>{simpleCopy.importance}</span>
+                <select
+                  name="importance"
+                  defaultValue={initialImportance}
+                >
+                  {(
+                    ["pivotal", "material", "context"] as const
+                  ).map((value) => (
+                    <option value={value} key={value}>
+                      {simpleCopy.importanceOptions[value]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+          </details>
           {error && <p className="form-error">{error}</p>}
           <div className="modal-actions">
             <button type="button" className="button ghost" onClick={onClose}>
@@ -2112,7 +2206,7 @@ export default function HomePage() {
     setEditingEvidence(null);
     setEvidenceDefaults(undefined);
     setShowEvidenceModal(false);
-    setActiveView("evidence");
+    setActiveView("stress");
   };
 
   const openAddEvidence = (defaults?: EvidenceDefaults) => {
@@ -2148,14 +2242,28 @@ export default function HomePage() {
       evidence: thesisCase.evidence
         .filter((evidence) => evidence.id !== item.id)
         .map((evidence) => {
-          if (!evidence.dependsOnIds?.includes(item.id)) return evidence;
-          const dependsOnIds = evidence.dependsOnIds.filter(
+          if (
+            !evidence.dependsOnIds?.includes(item.id) &&
+            !evidence.sameSourceAsIds?.includes(item.id)
+          ) {
+            return evidence;
+          }
+          const dependsOnIds = evidence.dependsOnIds?.filter(
             (dependencyId) => dependencyId !== item.id,
+          );
+          const sameSourceAsIds = evidence.sameSourceAsIds?.filter(
+            (relatedId) => relatedId !== item.id,
           );
           return {
             ...evidence,
             dependsOnIds:
-              dependsOnIds.length > 0 ? dependsOnIds : undefined,
+              dependsOnIds && dependsOnIds.length > 0
+                ? dependsOnIds
+                : undefined,
+            sameSourceAsIds:
+              sameSourceAsIds && sameSourceAsIds.length > 0
+                ? sameSourceAsIds
+                : undefined,
           };
         }),
       lastUpdated: new Date().toISOString(),
@@ -2219,6 +2327,9 @@ export default function HomePage() {
     researchPlan: NonNullable<ThesisCase["researchPlan"]>;
   }) => {
     if (!thesisCase) return;
+    const hasManualEvidence = thesisCase.evidence.some(
+      (item) => item.relation !== "derived",
+    );
     setThesisCase({
       ...thesisCase,
       thesis,
@@ -2227,6 +2338,14 @@ export default function HomePage() {
       lastUpdated: new Date().toISOString(),
     });
     setShowResearchPlanModal(false);
+    if (!hasManualEvidence) {
+      setEditingEvidence(null);
+      setEvidenceDefaults({
+        group: "Official filing",
+        direction: "supports",
+      });
+      setShowEvidenceModal(true);
+    }
   };
 
   const refreshCurrentMarket = async () => {
@@ -2271,7 +2390,6 @@ export default function HomePage() {
       return;
     }
 
-    setActiveView("evidence");
     if (action === "add-primary-source") {
       openAddEvidence({
         group: "Official filing",
@@ -2290,13 +2408,35 @@ export default function HomePage() {
     }
   };
 
-  const selectStock = (snapshot: MarketSnapshot) => {
-    setThesisCase(buildMarketCase(snapshot, locale));
+  const selectStock = (
+    stock: StockSearchResult,
+    thesisDraft: string,
+    snapshot?: MarketSnapshot,
+  ) => {
+    const starterCase = buildResearchCase(stock, locale, snapshot);
+    const horizon: Record<Locale, string> = {
+      en: "12 months",
+      "zh-CN": "12 个月",
+      ja: "12か月",
+      es: "12 meses",
+    };
+    setThesisCase({
+      ...starterCase,
+      thesis: thesisDraft.trim(),
+      horizon: horizon[locale],
+      researchPlan: {
+        purpose: "new-research",
+        thesisConfirmed: true,
+        invalidationCriteria: "",
+        nextReviewDate: "",
+      },
+      lastUpdated: new Date().toISOString(),
+    });
     setSearchQuery("");
     setEditingEvidence(null);
     setEvidenceDefaults(undefined);
     setShowEvidenceModal(false);
-    setShowResearchPlanModal(false);
+    setShowResearchPlanModal(true);
     setActiveView("stress");
   };
 
@@ -2368,11 +2508,10 @@ export default function HomePage() {
         activeView={activeView}
         locale={locale}
         thesisCase={thesisCase}
-        onChangeView={setActiveView}
+        onHome={() => setActiveView("stress")}
         onChangeLocale={changeLocale}
         onChangeStock={changeStock}
         onOpenGuide={openGuide}
-        onSnapshot={() => void createSnapshot()}
         guideButtonRef={guideButtonRef}
       />
 
@@ -2393,23 +2532,25 @@ export default function HomePage() {
             locale={locale}
             onSelect={selectStock}
             onImport={() => importRef.current?.click()}
-            onOpenGuide={openGuide}
           />
         ) : (
           <>
             {activeView === "stress" && (
-              <StressView
+              <FalsifyWorkspace
                 thesisCase={thesisCase}
-                setThesisCase={(value) => setThesisCase(value)}
-                analysis={analysis}
-                locale={locale}
                 readiness={readiness}
-                previousCase={caseSnapshots[0]?.caseState}
+                locale={locale}
                 refreshing={refreshingMarket}
-                onRefresh={() => void refreshCurrentMarket()}
                 onEditPlan={() => setShowResearchPlanModal(true)}
                 onNextAction={handleReadinessAction}
-                onSaveBaseline={() => void createSnapshot(true)}
+                onAddEvidence={() => openAddEvidence()}
+                onEditEvidence={(item) => {
+                  setEditingEvidence(item);
+                  setEvidenceDefaults(undefined);
+                  setShowEvidenceModal(true);
+                }}
+                onRefresh={() => void refreshCurrentMarket()}
+                onSaveReview={() => void createSnapshot(true)}
               />
             )}
             {activeView === "evidence" && (
@@ -2485,6 +2626,9 @@ export default function HomePage() {
           locale={locale}
           initial={editingEvidence}
           defaults={evidenceDefaults}
+          evidenceItems={thesisCase.evidence.filter(
+            (item) => item.relation !== "derived",
+          )}
           onClose={() => {
             setEditingEvidence(null);
             setEvidenceDefaults(undefined);
