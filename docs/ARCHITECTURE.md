@@ -152,8 +152,10 @@ language never rewrites evidence, notes, sources, or exported JSON.
 ## Trust boundary
 
 - UI state and user-entered research remain in the browser.
-- Material search sends only the visible search terms to Yahoo Finance. It does
-  not append the saved claim.
+- For A-shares, material search sends the exact ticker to CNINFO and accepts
+  only exact-code filing results from fixed CNINFO hosts.
+- The company identity and visible search terms are sent to Yahoo Finance for
+  supplemental results. The saved claim is never appended.
 - API keys are never accepted in browser code.
 - The SEC adapter runs in Node or GitHub Actions.
 - The current keyless market adapter is explicitly experimental and suitable
