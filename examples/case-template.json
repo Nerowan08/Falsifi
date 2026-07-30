@@ -10,7 +10,7 @@
   "constructiveThreshold": 60,
   "cautiousThreshold": 40,
   "lastUpdated": "2026-07-29T00:00:00.000Z",
-  "modelVersion": "Falsifi 0.3.0",
+  "modelVersion": "Falsifi 0.4.0",
   "evidence": [
     {
       "id": "evidence-1",

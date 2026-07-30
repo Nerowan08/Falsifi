@@ -3,11 +3,26 @@
 The MIT license covers Falsifi code only. It does not sublicense market data,
 news, filings, estimates, or other third-party content.
 
-## Default: synthetic demo
+## Default deployed adapter: Yahoo Finance chart/search
 
-The public demo contains a fictional company and synthetic observations. It is
-designed to exercise every product feature without implying that the figures
-are live or accurate for a real security.
+The current owner-only deployment uses Yahoo Finance’s undocumented chart and
+search endpoints to retrieve delayed daily market history for personal
+evaluation. The UI labels the source and retrieval time. The adapter has no
+service-level agreement and can be throttled, changed, or disabled upstream.
+The application accepts listed equities only and requires at least 200 valid
+daily observations before it labels or scores 200-day indicators. Missing
+volume remains unknown; it is never replaced with a neutral synthetic value.
+
+This keyless adapter does **not** establish display or redistribution rights for
+a public commercial service. Before widening a deployment beyond personal use,
+replace it with a licensed provider and document that provider’s delay,
+display, retention, and redistribution terms. Falsifi does not call this feed
+real-time data.
+
+All indicators generated from one returned price series share the same
+`originId`. The independence audit therefore counts that series as one evidence
+root instead of treating moving averages, RSI, returns, and drawdown as
+independent confirmation.
 
 ## SEC EDGAR (supported)
 
@@ -34,12 +49,10 @@ Official macro adapters can be built on:
 
 These are not required by the current MVP.
 
-## Price and news feeds
+## Licensed price feeds for public deployment
 
-The public repository deliberately avoids an embedded unofficial or
-redistributed quote feed.
-
-If a contributor adds Alpha Vantage, Massive, Twelve Data, or another vendor,
+If a contributor adds EODHD, Twelve Data, Alpha Vantage, Massive, or another
+licensed vendor,
 the adapter must:
 
 1. require the user’s own key;
@@ -49,10 +62,9 @@ the adapter must:
 4. expose delay, freshness, retention, and missing-data states;
 5. never log secrets.
 
-## Explicitly excluded defaults
+## Explicitly excluded fallbacks
 
 - HKEX website scraping
-- unofficial Yahoo Finance endpoints
 - unofficial Eastmoney/Sina endpoints
 - shared maintainer keys used to power a public product
 

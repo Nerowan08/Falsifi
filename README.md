@@ -9,6 +9,8 @@ tests how it breaks, and preserves the exact state for later review.
 [简体中文](./README.zh-CN.md) · [Methodology](./docs/METHODOLOGY.md) ·
 [Uniqueness audit](./docs/UNIQUENESS.md) · [Data sources](./DATA_SOURCES.md)
 
+Live app: [thesis-trace.nerowan22.chatgpt.site](https://thesis-trace.nerowan22.chatgpt.site)
+
 ## Why this exists
 
 Most AI stock tools ask, “What should I buy?”
@@ -19,8 +21,17 @@ change that would make this research posture flip?”
 The result is a debugger for investor reasoning—not an oracle, probability
 model, or trading system.
 
-## What v0.3 includes
+## What v0.4 includes
 
+- **Real stock entry point** — search or enter U.S., mainland China, and Hong
+  Kong symbols instead of landing in a fictional demo.
+- **Source-linked market snapshot** — loads one year of delayed daily prices,
+  shows retrieval time and provenance, and calculates returns, volatility,
+  drawdown, RSI, moving averages, and volume confirmation when volume is
+  available. Analysis requires at least 200 valid daily observations.
+- **Inspectable case generation** — converts those market observations into a
+  non-demo stress case. Every generated item remains editable and cites its
+  upstream series.
 - **Evidence independence audit** — groups items that share an origin, claim,
   or declared dependency so repetition is not mistaken for corroboration.
 - **Minimum independent flip** — removes whole evidence roots and finds the
@@ -41,10 +52,10 @@ model, or trading system.
 - **Restorable SHA-256 snapshots** — freezes canonical case JSON for local
   version comparison. This is a content fingerprint, not a trusted timestamp.
 - **Four interface languages** — English, Simplified Chinese, Japanese, and
-  Spanish. The fixed demo is localized; user-authored research is never
-  silently translated.
+  Spanish. Generated case text follows the selected language; user-authored
+  research is never silently translated.
 - **Local-first workspace** — no telemetry, database, brokerage connection, or
-  paid API is required.
+  user account is required. A network request is required to load market data.
 
 ## Quick start
 
@@ -59,6 +70,7 @@ Quality gates:
 
 ```bash
 npm run lint
+npm run typecheck
 npm test
 ```
 
@@ -68,15 +80,25 @@ Production Worker build:
 npm run build
 ```
 
-## Use your own case
+## Analyze a real stock
 
-The app works entirely in the browser:
+1. Choose U.S., A-share, Hong Kong, or all markets.
+2. Search by company name or enter a ticker such as `AAPL`, `603901`,
+   `002441`, or `0700.HK`.
+3. Select the company. Falsifi retrieves delayed daily history and builds the
+   initial case. Only listed equities with at least 200 valid daily
+   observations are accepted; ETFs, indexes, futures, FX, and crypto are
+   rejected.
+4. Add official filings, management disclosures, or independent estimates in
+   **Evidence**. Market-derived observations intentionally share one
+   provenance root, so one price feed is never presented as independent
+   corroboration.
+5. Stress assumptions, save a snapshot, or export the complete case JSON.
 
-1. Open **History** and export the demo case.
-2. Replace the synthetic company, evidence, assumptions, and thresholds.
-3. Add `originId`, `claimId`, or `dependsOnIds` when observations are not
-   independent.
-4. Import the edited JSON and verify the original sources.
+The built-in Yahoo Finance chart/search adapter is undocumented and intended
+for personal or self-hosted evaluation. It can be delayed, throttled, or
+changed upstream. A licensed provider is required before operating a public
+commercial data service. See [Data sources](./DATA_SOURCES.md).
 
 The machine-readable schema is
 [`data/case.schema.json`](./data/case.schema.json). A starter case is in
@@ -119,10 +141,12 @@ exchange websites or redistribute vendor feeds.
 ## Repository map
 
 ```text
-app/                    Multilingual local-first web product
+app/                    Multilingual product and same-origin market routes
+components/             Real-stock picker and market snapshot UI
 lib/falsifi.ts          Deterministic stress-testing engine
-lib/i18n.ts             Four-language UI and synthetic-demo copy
-lib/demo.ts             Clearly marked synthetic case
+lib/i18n.ts             Four-language core UI
+lib/market.ts           Market normalization, metrics, and case generation
+lib/demo.ts             Synthetic engine test fixture (not the landing page)
 data/                   JSON schema
 examples/               Importable case template
 scripts/fetch-sec.mjs   Optional official SEC adapter
@@ -167,5 +191,5 @@ responsibility. See [`SECURITY.md`](./SECURITY.md) and
 Falsifi is an educational research and decision-journaling tool. It does not
 provide investment advice, recommendations, forecasts, suitability assessment,
 or trade execution. Scores are user-defined research constructs, not objective
-odds. Data can be delayed, incomplete, or synthetic. Verify primary sources.
-Investing involves risk, including loss of principal.
+odds. Market data can be delayed, incomplete, adjusted, or unavailable. Verify
+primary sources. Investing involves risk, including loss of principal.

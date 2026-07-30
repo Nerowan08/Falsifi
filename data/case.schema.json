@@ -71,6 +71,108 @@
       "maxLength": 120,
       "pattern": "\\S"
     },
+    "marketSnapshot": {
+      "type": "object",
+      "required": [
+        "provider",
+        "symbol",
+        "name",
+        "exchange",
+        "currency",
+        "instrumentType",
+        "price",
+        "previousClose",
+        "change",
+        "changePercent",
+        "marketTime",
+        "fetchedAt",
+        "sourceUrl",
+        "history",
+        "metrics"
+      ],
+      "properties": {
+        "provider": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "symbol": { "type": "string", "minLength": 1, "maxLength": 24 },
+        "name": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "exchange": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "currency": { "type": "string", "maxLength": 12 },
+        "instrumentType": { "const": "EQUITY" },
+        "price": { "type": "number", "exclusiveMinimum": 0 },
+        "previousClose": { "type": "number", "exclusiveMinimum": 0 },
+        "change": { "type": "number" },
+        "changePercent": { "type": "number" },
+        "marketTime": { "type": "string", "format": "date-time" },
+        "fetchedAt": { "type": "string", "format": "date-time" },
+        "sourceUrl": {
+          "type": "string",
+          "format": "uri",
+          "maxLength": 2048,
+          "pattern": "^https?://"
+        },
+        "history": {
+          "type": "array",
+          "minItems": 200,
+          "maxItems": 400,
+          "items": {
+            "type": "object",
+            "required": ["timestamp", "close", "volume"],
+            "properties": {
+              "timestamp": { "type": "integer", "minimum": 1 },
+              "close": { "type": "number", "exclusiveMinimum": 0 },
+              "volume": {
+                "type": ["number", "null"],
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "metrics": {
+          "type": "object",
+          "required": [
+            "dayReturn",
+            "monthReturn",
+            "quarterReturn",
+            "yearReturn",
+            "annualizedVolatility",
+            "maxDrawdown",
+            "rsi14",
+            "sma20",
+            "sma50",
+            "sma200",
+            "distanceFromSma200",
+            "high52Week",
+            "low52Week",
+            "volumeRatio20"
+          ],
+          "properties": {
+            "dayReturn": { "type": "number", "minimum": -100 },
+            "monthReturn": { "type": "number", "minimum": -100 },
+            "quarterReturn": { "type": "number", "minimum": -100 },
+            "yearReturn": { "type": "number", "minimum": -100 },
+            "annualizedVolatility": { "type": "number", "minimum": 0 },
+            "maxDrawdown": {
+              "type": "number",
+              "minimum": -100,
+              "maximum": 0
+            },
+            "rsi14": { "type": "number", "minimum": 0, "maximum": 100 },
+            "sma20": { "type": "number", "exclusiveMinimum": 0 },
+            "sma50": { "type": "number", "exclusiveMinimum": 0 },
+            "sma200": { "type": "number", "exclusiveMinimum": 0 },
+            "distanceFromSma200": { "type": "number", "minimum": -100 },
+            "high52Week": { "type": "number", "exclusiveMinimum": 0 },
+            "low52Week": { "type": "number", "exclusiveMinimum": 0 },
+            "volumeRatio20": {
+              "type": ["number", "null"],
+              "minimum": 0
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
     "evidence": {
       "type": "array",
       "maxItems": 40,

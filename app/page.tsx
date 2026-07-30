@@ -26,7 +26,11 @@ import {
   X,
 } from "lucide-react";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
-import { DEMO_CASE } from "@/lib/demo";
+import {
+  MarketOverview,
+  marketUi,
+  StockPicker,
+} from "@/components/market-workspace";
 import {
   demoLocalizedCopy,
   LOCALE_OPTIONS,
@@ -42,12 +46,14 @@ import {
   EvidenceStressMode,
   isHttpUrl,
   isThesisCase,
+  MarketSnapshot,
   Posture,
   runStressTest,
   sha256,
   StressResult,
   ThesisCase,
 } from "@/lib/falsifi";
+import { buildMarketCase, relocalizeMarketCase } from "@/lib/market";
 
 type View = "stress" | "evidence" | "audit" | "history" | "method";
 
@@ -65,7 +71,8 @@ type Snapshot = {
   caseState: ThesisCase;
 };
 
-const CASE_STORAGE_KEY = "falsifi.case.v1";
+const CASE_STORAGE_KEY = "falsifi.case.v2";
+const LEGACY_CASE_STORAGE_KEY = "falsifi.case.v1";
 const SNAPSHOT_STORAGE_KEY = "falsifi.snapshots.v2";
 const LOCALE_STORAGE_KEY = "falsifi.locale.v1";
 
@@ -189,13 +196,15 @@ function AppHeader({
   thesisCase,
   onChangeView,
   onChangeLocale,
+  onChangeStock,
   onSnapshot,
 }: {
   activeView: View;
   locale: Locale;
-  thesisCase: ThesisCase;
+  thesisCase: ThesisCase | null;
   onChangeView: (view: View) => void;
   onChangeLocale: (locale: Locale) => void;
+  onChangeStock: () => void;
   onSnapshot: () => void;
 }) {
   return (
@@ -206,7 +215,9 @@ function AppHeader({
       <div className="header-inner">
         <button
           className="brand"
-          onClick={() => onChangeView("stress")}
+          onClick={() =>
+            thesisCase ? onChangeView("stress") : onChangeStock()
+          }
           aria-label={t(locale, "app.name")}
         >
           <span className="brand-symbol" aria-hidden="true">
@@ -220,22 +231,35 @@ function AppHeader({
           </span>
         </button>
 
-        <nav className="main-nav" aria-label={t(locale, "nav.label")}>
-          {navItems.map(({ id, key, icon: Icon }) => (
-            <button
-              key={id}
-              className={activeView === id ? "active" : ""}
-              onClick={() => onChangeView(id)}
-              aria-current={activeView === id ? "page" : undefined}
-            >
-              <Icon size={15} strokeWidth={1.8} />
-              {t(locale, key)}
-            </button>
-          ))}
-        </nav>
+        {thesisCase && (
+          <nav className="main-nav" aria-label={t(locale, "nav.label")}>
+            {navItems.map(({ id, key, icon: Icon }) => (
+              <button
+                key={id}
+                className={activeView === id ? "active" : ""}
+                onClick={() => onChangeView(id)}
+                aria-current={activeView === id ? "page" : undefined}
+              >
+                <Icon size={15} strokeWidth={1.8} />
+                {t(locale, key)}
+              </button>
+            ))}
+          </nav>
+        )}
 
         <div className="header-actions">
-          <span className="ticker-chip">{thesisCase.ticker}</span>
+          {thesisCase && (
+            <>
+              <button
+                className="button ghost change-stock"
+                onClick={onChangeStock}
+              >
+                <Search size={14} />
+                {marketUi(locale).changeStock}
+              </button>
+              <span className="ticker-chip">{thesisCase.ticker}</span>
+            </>
+          )}
           <label className="language-select">
             <Globe2 size={15} />
             <span className="sr-only">{t(locale, "aria.selectLanguage")}</span>
@@ -253,10 +277,15 @@ function AppHeader({
               ))}
             </select>
           </label>
-          <button className="button secondary header-save" onClick={onSnapshot}>
-            <History size={15} />
-            <span>{t(locale, "history.snapshot.save")}</span>
-          </button>
+          {thesisCase && (
+            <button
+              className="button secondary header-save"
+              onClick={onSnapshot}
+            >
+              <History size={15} />
+              <span>{t(locale, "history.snapshot.save")}</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
@@ -277,10 +306,12 @@ function CaseIntro({
         <div className="case-meta">
           <span className="status-badge">
             <i />
-            {t(
-              locale,
-              thesisCase.isDemo ? "app.demoCase" : "app.localCase",
-            )}
+            {thesisCase.marketSnapshot
+              ? marketUi(locale).realData
+              : t(
+                  locale,
+                  thesisCase.isDemo ? "app.demoCase" : "app.localCase",
+                )}
           </span>
           <span>{copy.horizon}</span>
           <span>
@@ -588,6 +619,12 @@ function StressView({
   return (
     <>
       <CaseIntro thesisCase={thesisCase} locale={locale} />
+      {thesisCase.marketSnapshot && (
+        <MarketOverview
+          snapshot={thesisCase.marketSnapshot}
+          locale={locale}
+        />
+      )}
       <MetricGrid analysis={analysis} locale={locale} />
 
       <section className="primary-grid">
@@ -1209,8 +1246,8 @@ function HistoryView({
           {t(locale, "history.import.action")}
         </button>
         <button className="button ghost danger" onClick={onReset}>
-          <RefreshCcw size={14} />
-          {t(locale, "stress.resetCase")}
+          <Search size={14} />
+          {marketUi(locale).changeStock}
         </button>
       </section>
 
@@ -1624,9 +1661,7 @@ function EvidenceModal({
 
 export default function HomePage() {
   const [activeView, setActiveView] = useState<View>("stress");
-  const [thesisCase, setThesisCase] = useState<ThesisCase>(
-    structuredClone(DEMO_CASE),
-  );
+  const [thesisCase, setThesisCase] = useState<ThesisCase | null>(null);
   const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
   const [locale, setLocale] = useState<Locale>("en");
   const [searchQuery, setSearchQuery] = useState("");
@@ -1635,27 +1670,35 @@ export default function HomePage() {
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
-  const analysis = useMemo(() => runStressTest(thesisCase), [thesisCase]);
+  const analysis = useMemo(
+    () => (thesisCase ? runStressTest(thesisCase) : null),
+    [thesisCase],
+  );
+  const caseSnapshots = useMemo(
+    () =>
+      thesisCase
+        ? snapshots.filter(
+            (snapshot) =>
+              snapshot.caseState.ticker === thesisCase.ticker,
+          )
+        : [],
+    [snapshots, thesisCase],
+  );
 
   useEffect(() => {
     const loadStoredState = window.setTimeout(() => {
       try {
-        const storedCase = window.localStorage.getItem(CASE_STORAGE_KEY);
+        const storedCase =
+          window.localStorage.getItem(CASE_STORAGE_KEY) ??
+          window.localStorage.getItem(LEGACY_CASE_STORAGE_KEY);
         const storedSnapshots =
           window.localStorage.getItem(SNAPSHOT_STORAGE_KEY);
         const storedLocale = window.localStorage.getItem(LOCALE_STORAGE_KEY);
 
         if (storedCase) {
           const parsed = JSON.parse(storedCase);
-          if (isThesisCase(parsed)) {
-            const shouldUpgradeDemo =
-              parsed.isDemo &&
-              parsed.id === DEMO_CASE.id &&
-              parsed.modelVersion !== DEMO_CASE.modelVersion;
-            setThesisCase(
-              shouldUpgradeDemo ? structuredClone(DEMO_CASE) : parsed,
-            );
-          }
+          if (isThesisCase(parsed) && !parsed.isDemo) setThesisCase(parsed);
+          window.localStorage.removeItem(LEGACY_CASE_STORAGE_KEY);
         }
         if (storedSnapshots) {
           const parsed = JSON.parse(storedSnapshots);
@@ -1670,6 +1713,7 @@ export default function HomePage() {
         );
       } catch {
         window.localStorage.removeItem(CASE_STORAGE_KEY);
+        window.localStorage.removeItem(LEGACY_CASE_STORAGE_KEY);
         window.localStorage.removeItem(SNAPSHOT_STORAGE_KEY);
       } finally {
         setHydrated(true);
@@ -1687,14 +1731,27 @@ export default function HomePage() {
 
   useEffect(() => {
     if (!hydrated) return;
-    window.localStorage.setItem(CASE_STORAGE_KEY, JSON.stringify(thesisCase));
-    window.localStorage.setItem(
-      SNAPSHOT_STORAGE_KEY,
-      JSON.stringify(snapshots),
-    );
+    try {
+      if (thesisCase) {
+        window.localStorage.setItem(
+          CASE_STORAGE_KEY,
+          JSON.stringify(thesisCase),
+        );
+      } else {
+        window.localStorage.removeItem(CASE_STORAGE_KEY);
+      }
+      window.localStorage.setItem(
+        SNAPSHOT_STORAGE_KEY,
+        JSON.stringify(snapshots),
+      );
+    } catch {
+      // The active in-memory workspace remains usable when storage is blocked
+      // or its browser quota is exhausted.
+    }
   }, [hydrated, snapshots, thesisCase]);
 
   const createSnapshot = async () => {
+    if (!thesisCase || !analysis) return;
     const hash = await sha256(thesisCase);
     const now = new Date().toISOString();
     setSnapshots((current) =>
@@ -1710,7 +1767,10 @@ export default function HomePage() {
             .length,
           label: `${thesisCase.ticker} · ${formatDate(now, locale)}`,
           modelVersion: thesisCase.modelVersion,
-          parentHash: current[0]?.hash,
+          parentHash: current.find(
+            (snapshot) =>
+              snapshot.caseState.ticker === thesisCase.ticker,
+          )?.hash,
           caseState: structuredClone(thesisCase),
         },
         ...current,
@@ -1720,6 +1780,7 @@ export default function HomePage() {
   };
 
   const saveEvidence = (item: EvidenceItem) => {
+    if (!thesisCase) return;
     const exists = thesisCase.evidence.some(
       (evidence) => evidence.id === item.id,
     );
@@ -1743,6 +1804,7 @@ export default function HomePage() {
   };
 
   const openAddEvidence = () => {
+    if (!thesisCase) return;
     if (thesisCase.evidence.length >= 40) {
       window.alert(t(locale, "error.evidenceLimit"));
       return;
@@ -1752,6 +1814,7 @@ export default function HomePage() {
   };
 
   const toggleEvidence = (item: EvidenceItem) => {
+    if (!thesisCase) return;
     setThesisCase({
       ...thesisCase,
       evidence: thesisCase.evidence.map((evidence) =>
@@ -1764,6 +1827,7 @@ export default function HomePage() {
   };
 
   const deleteEvidence = (item: EvidenceItem) => {
+    if (!thesisCase) return;
     const name = localizedEvidence(item, thesisCase, locale).title;
     if (!window.confirm(`${t(locale, "action.delete")} “${name}”?`)) return;
     setThesisCase({
@@ -1776,6 +1840,7 @@ export default function HomePage() {
   };
 
   const exportCase = () => {
+    if (!thesisCase) return;
     const blob = new Blob([JSON.stringify(thesisCase, null, 2)], {
       type: "application/json",
     });
@@ -1802,11 +1867,34 @@ export default function HomePage() {
     }
   };
 
-  const resetDemo = () => {
-    if (!window.confirm(t(locale, "stress.resetCase"))) return;
-    setThesisCase(structuredClone(DEMO_CASE));
-    setSnapshots([]);
+  const selectStock = (snapshot: MarketSnapshot) => {
+    setThesisCase(buildMarketCase(snapshot, locale));
     setSearchQuery("");
+    setEditingEvidence(null);
+    setShowEvidenceModal(false);
+    setActiveView("stress");
+  };
+
+  const changeLocale = (nextLocale: Locale) => {
+    setLocale(nextLocale);
+    setThesisCase((current) =>
+      current?.marketSnapshot
+        ? relocalizeMarketCase(current, nextLocale)
+        : current,
+    );
+  };
+
+  const changeStock = () => {
+    if (
+      thesisCase &&
+      !window.confirm(`${marketUi(locale).changeStock}?`)
+    ) {
+      return;
+    }
+    setThesisCase(null);
+    setSearchQuery("");
+    setEditingEvidence(null);
+    setShowEvidenceModal(false);
     setActiveView("stress");
   };
 
@@ -1840,63 +1928,80 @@ export default function HomePage() {
         locale={locale}
         thesisCase={thesisCase}
         onChangeView={setActiveView}
-        onChangeLocale={setLocale}
+        onChangeLocale={changeLocale}
+        onChangeStock={changeStock}
         onSnapshot={createSnapshot}
       />
 
-      <main id="main-content" className="page">
-        {activeView === "stress" && (
-          <StressView
-            thesisCase={thesisCase}
-            setThesisCase={setThesisCase}
-            analysis={analysis}
+      <main
+        id="main-content"
+        className={`page ${thesisCase ? "" : "picker-page"}`}
+      >
+        {!thesisCase || !analysis ? (
+          <StockPicker
             locale={locale}
-          />
-        )}
-        {activeView === "evidence" && (
-          <EvidenceView
-            thesisCase={thesisCase}
-            analysis={analysis}
-            locale={locale}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onAdd={openAddEvidence}
-            onEdit={(item) => {
-              setEditingEvidence(item);
-              setShowEvidenceModal(true);
-            }}
-            onDelete={deleteEvidence}
-            onToggle={toggleEvidence}
-          />
-        )}
-        {activeView === "audit" && (
-          <AuditView
-            thesisCase={thesisCase}
-            analysis={analysis}
-            locale={locale}
-          />
-        )}
-        {activeView === "history" && (
-          <HistoryView
-            thesisCase={thesisCase}
-            analysis={analysis}
-            snapshots={snapshots}
-            locale={locale}
-            onSnapshot={createSnapshot}
-            onRestore={restoreSnapshot}
-            onExport={exportCase}
+            onSelect={selectStock}
             onImport={() => importRef.current?.click()}
-            onReset={resetDemo}
-            onCopy={copyText}
           />
+        ) : (
+          <>
+            {activeView === "stress" && (
+              <StressView
+                thesisCase={thesisCase}
+                setThesisCase={(value) => setThesisCase(value)}
+                analysis={analysis}
+                locale={locale}
+              />
+            )}
+            {activeView === "evidence" && (
+              <EvidenceView
+                thesisCase={thesisCase}
+                analysis={analysis}
+                locale={locale}
+                searchQuery={searchQuery}
+                setSearchQuery={setSearchQuery}
+                onAdd={openAddEvidence}
+                onEdit={(item) => {
+                  setEditingEvidence(item);
+                  setShowEvidenceModal(true);
+                }}
+                onDelete={deleteEvidence}
+                onToggle={toggleEvidence}
+              />
+            )}
+            {activeView === "audit" && (
+              <AuditView
+                thesisCase={thesisCase}
+                analysis={analysis}
+                locale={locale}
+              />
+            )}
+            {activeView === "history" && (
+              <HistoryView
+                thesisCase={thesisCase}
+                analysis={analysis}
+                snapshots={caseSnapshots}
+                locale={locale}
+                onSnapshot={createSnapshot}
+                onRestore={restoreSnapshot}
+                onExport={exportCase}
+                onImport={() => importRef.current?.click()}
+                onReset={changeStock}
+                onCopy={copyText}
+              />
+            )}
+            {activeView === "method" && <MethodView locale={locale} />}
+          </>
         )}
-        {activeView === "method" && <MethodView locale={locale} />}
       </main>
 
       <footer className="app-footer">
         <span>
           <ShieldCheck size={13} />
-          {t(locale, thesisCase.isDemo ? "app.demoCase" : "app.localCase")} ·{" "}
+          {thesisCase
+            ? t(locale, thesisCase.isDemo ? "app.demoCase" : "app.localCase")
+            : marketUi(locale).realData}{" "}
+          ·{" "}
           {t(locale, "method.disclaimer.body")}
         </span>
         <span>{t(locale, "app.openSourceLocal")}</span>
@@ -1910,7 +2015,7 @@ export default function HomePage() {
         onChange={(event) => importCase(event.target.files?.[0])}
       />
 
-      {showEvidenceModal && (
+      {showEvidenceModal && thesisCase && (
         <EvidenceModal
           locale={locale}
           initial={editingEvidence}

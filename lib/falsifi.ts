@@ -13,6 +13,47 @@ export type EvidenceGroup =
   | "Market data"
   | "External estimate";
 
+export type MarketPoint = {
+  timestamp: number;
+  close: number;
+  volume: number | null;
+};
+
+export type MarketMetricSet = {
+  dayReturn: number;
+  monthReturn: number;
+  quarterReturn: number;
+  yearReturn: number;
+  annualizedVolatility: number;
+  maxDrawdown: number;
+  rsi14: number;
+  sma20: number;
+  sma50: number;
+  sma200: number;
+  distanceFromSma200: number;
+  high52Week: number;
+  low52Week: number;
+  volumeRatio20: number | null;
+};
+
+export type MarketSnapshot = {
+  provider: string;
+  symbol: string;
+  name: string;
+  exchange: string;
+  currency: string;
+  instrumentType: string;
+  price: number;
+  previousClose: number;
+  change: number;
+  changePercent: number;
+  marketTime: string;
+  fetchedAt: string;
+  sourceUrl: string;
+  history: MarketPoint[];
+  metrics: MarketMetricSet;
+};
+
 export type EvidenceItem = {
   id: string;
   title: string;
@@ -58,6 +99,7 @@ export type ThesisCase = {
   cautiousThreshold: number;
   lastUpdated: string;
   modelVersion: string;
+  marketSnapshot?: MarketSnapshot;
   evidence: EvidenceItem[];
   assumptions: Assumption[];
 };
@@ -1232,6 +1274,101 @@ function isAssumption(value: unknown): value is Assumption {
   );
 }
 
+const marketMetricKeys: (keyof Omit<
+  MarketMetricSet,
+  "volumeRatio20"
+>)[] = [
+  "dayReturn",
+  "monthReturn",
+  "quarterReturn",
+  "yearReturn",
+  "annualizedVolatility",
+  "maxDrawdown",
+  "rsi14",
+  "sma20",
+  "sma50",
+  "sma200",
+  "distanceFromSma200",
+  "high52Week",
+  "low52Week",
+];
+
+export function isMarketSnapshot(value: unknown): value is MarketSnapshot {
+  if (!isRecord(value) || !isRecord(value.metrics)) return false;
+  const metrics = value.metrics;
+  if (
+    !isNonEmptyString(value.provider, 120) ||
+    !isNonEmptyString(value.symbol, 24) ||
+    !isNonEmptyString(value.name, 300) ||
+    !isNonEmptyString(value.exchange, 120) ||
+    typeof value.currency !== "string" ||
+    value.currency.length > 12 ||
+    value.instrumentType !== "EQUITY" ||
+    !isFiniteNumber(value.price) ||
+    value.price <= 0 ||
+    !isFiniteNumber(value.previousClose) ||
+    value.previousClose <= 0 ||
+    !isFiniteNumber(value.change) ||
+    !isFiniteNumber(value.changePercent) ||
+    !isNonEmptyString(value.marketTime, 64) ||
+    Number.isNaN(Date.parse(value.marketTime as string)) ||
+    !isNonEmptyString(value.fetchedAt, 64) ||
+    Number.isNaN(Date.parse(value.fetchedAt as string)) ||
+    !isHttpUrl(value.sourceUrl) ||
+    !Array.isArray(value.history) ||
+    value.history.length < 200 ||
+    value.history.length > 400 ||
+    !marketMetricKeys.every((key) => isFiniteNumber(metrics[key])) ||
+    (metrics.volumeRatio20 !== null &&
+      !isFiniteNumber(metrics.volumeRatio20))
+  ) {
+    return false;
+  }
+
+  const boundedMetrics = metrics as unknown as MarketMetricSet;
+  if (
+    boundedMetrics.dayReturn < -100 ||
+    boundedMetrics.monthReturn < -100 ||
+    boundedMetrics.quarterReturn < -100 ||
+    boundedMetrics.yearReturn < -100 ||
+    boundedMetrics.annualizedVolatility < 0 ||
+    boundedMetrics.maxDrawdown < -100 ||
+    boundedMetrics.maxDrawdown > 0 ||
+    boundedMetrics.rsi14 < 0 ||
+    boundedMetrics.rsi14 > 100 ||
+    boundedMetrics.sma20 <= 0 ||
+    boundedMetrics.sma50 <= 0 ||
+    boundedMetrics.sma200 <= 0 ||
+    boundedMetrics.distanceFromSma200 < -100 ||
+    boundedMetrics.high52Week <= 0 ||
+    boundedMetrics.low52Week <= 0 ||
+    boundedMetrics.high52Week < boundedMetrics.low52Week ||
+    (boundedMetrics.volumeRatio20 !== null &&
+      boundedMetrics.volumeRatio20 < 0)
+  ) {
+    return false;
+  }
+
+  let previousTimestamp = 0;
+  for (const point of value.history) {
+    if (
+      !isRecord(point) ||
+      !isFiniteNumber(point.timestamp) ||
+      !Number.isSafeInteger(point.timestamp) ||
+      point.timestamp <= previousTimestamp ||
+      !isFiniteNumber(point.close) ||
+      point.close <= 0 ||
+      (point.volume !== null &&
+        (!isFiniteNumber(point.volume) || point.volume < 0))
+    ) {
+      return false;
+    }
+    previousTimestamp = point.timestamp as number;
+  }
+
+  return true;
+}
+
 export function isThesisCase(value: unknown): value is ThesisCase {
   if (!isRecord(value)) return false;
   if (
@@ -1263,6 +1400,9 @@ export function isThesisCase(value: unknown): value is ThesisCase {
     value.cautiousThreshold < 0 ||
     value.constructiveThreshold > 100 ||
     value.cautiousThreshold >= value.constructiveThreshold ||
+    (value.marketSnapshot !== undefined &&
+      (!isMarketSnapshot(value.marketSnapshot) ||
+        value.marketSnapshot.symbol !== value.ticker)) ||
     !value.evidence.every(isEvidenceItem) ||
     !value.assumptions.every(isAssumption)
   ) {
