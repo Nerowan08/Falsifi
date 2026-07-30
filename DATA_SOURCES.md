@@ -10,8 +10,10 @@ search endpoints to retrieve delayed daily market history for personal
 evaluation. The UI labels the source and retrieval time. The adapter has no
 service-level agreement and can be throttled, changed, or disabled upstream.
 The application accepts listed equities only and requires at least 200 valid
-daily observations before it labels or scores 200-day indicators. Missing
-volume remains unknown; it is never replaced with a neutral synthetic value.
+daily observations before it labels or scores 200-day indicators. Short or
+unavailable history removes optional market context but never blocks the
+source-group workflow. Missing volume remains unknown; it is never replaced
+with a neutral synthetic value.
 When every valid ordinary-close date also has an adjusted close, the adapter
 uses the adjusted series. Otherwise it uses the ordinary-close series for the
 entire window; it never mixes the two bases within one calculation. The UI
@@ -25,17 +27,15 @@ display, retention, and redistribution terms. Falsifi does not call this feed
 real-time data.
 
 The four directional trend and momentum observations generated from one
-returned price series share the same `originId`. The evidence dependency check
-therefore places them in one related evidence group instead of presenting
-moving averages and returns as separate information sources. Volatility,
-drawdown, RSI, and volume remain descriptive market context or scenario inputs;
-Falsifi does not assign them a universal supporting or weakening direction. In
-v0.5, duplicate source-and-claim items are averaged first, then the remaining
-argument units inside one related evidence group are averaged before groups are
-added. Grouping therefore supports both dependency auditing and protection
-against same-source duplicate scoring. It does not prove that separate groups
-are statistically independent or detect a relationship the user failed to
-declare.
+returned price series are marked `provenance: system-market` and share one
+`originId`. They remain optional market context and never satisfy the
+user-evidence readiness checks. Volatility, drawdown, RSI, and volume are also
+descriptive market context or scenario inputs; Falsifi does not assign them a
+universal supporting or weakening direction. The legacy model engine bounds
+each related group to at most one strongest supporting and one strongest
+challenging contribution, so repeated rows cannot multiply one group’s
+influence. This does not prove statistical independence or discover an
+undeclared relationship.
 
 ## SEC EDGAR (supported)
 
