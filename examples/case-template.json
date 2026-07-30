@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 1,
+  "id": "replace-me",
+  "company": "Your Company",
+  "ticker": "TICKER",
+  "isDemo": false,
+  "thesis": "Write one falsifiable sentence describing what must be true.",
+  "horizon": "12 months",
+  "baseScore": 50,
+  "constructiveThreshold": 60,
+  "cautiousThreshold": 40,
+  "lastUpdated": "2026-07-29T00:00:00.000Z",
+  "modelVersion": "Falsifi 0.3.0",
+  "evidence": [
+    {
+      "id": "evidence-1",
+      "title": "A source-backed observation",
+      "source": "Primary source",
+      "sourceUrl": "https://example.com",
+      "asOf": "2026-07-29",
+      "group": "Official filing",
+      "direction": "supports",
+      "impact": 4,
+      "reliability": 0.9,
+      "note": "Explain what this says, what it does not say, and any caveats.",
+      "enabled": true,
+      "originId": "primary-source-1",
+      "claimId": "claim-1",
+      "relation": "direct"
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "growth",
+      "label": "Organic revenue growth",
+      "value": 10,
+      "baseline": 10,
+      "min": 0,
+      "max": 20,
+      "step": 0.5,
+      "unit": "pp",
+      "impactPerUnit": 2,
+      "direction": 1,
+      "typicalShock": 5
+    }
+  ]
+}
