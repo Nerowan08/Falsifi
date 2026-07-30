@@ -61,20 +61,25 @@ test("the four-language guide explains the single source-group task", async () =
 });
 
 test("the main workflow leaves every action under user control", async () => {
-  const [page, workspace, editor] = await Promise.all(
+  const [page, workspace, finder, editor] = await Promise.all(
     [
       "app/page.tsx",
       "components/falsify-workspace.tsx",
+      "components/material-finder.tsx",
       "components/research-action.tsx",
     ].map((path) => readFile(new URL(`../${path}`, import.meta.url), "utf8")),
   );
 
   assert.match(workspace, /onEditClaim/);
   assert.match(workspace, /onAddEvidence/);
+  assert.match(workspace, /onFindEvidence/);
   assert.match(workspace, /onEditReview/);
   assert.match(workspace, /onSaveReview/);
   assert.doesNotMatch(workspace, /readiness\.nextAction/);
   assert.doesNotMatch(workspace, /focus-steps/);
   assert.doesNotMatch(page, /setShowResearchPlanModal\(true\)/);
+  assert.match(page, /onFindEvidence=\{\(\) => setShowMaterialFinder\(true\)\}/);
+  assert.match(finder, /useState<Set<string>>\(new Set\(\)\)/);
+  assert.match(finder, /Nothing is added until you select and confirm it/);
   assert.match(editor, /mode: ResearchPlanEditorMode/);
 });
