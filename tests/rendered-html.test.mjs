@@ -33,7 +33,7 @@ test("renders development preview metadata", async () => {
   assert.match(html, developmentPreviewMeta);
   assert.match(
     html,
-    /How many source groups are behind your stock thesis\?/,
+    /See where your stock research really comes from\./,
   );
   assert.match(html, /User guide/);
   assert.doesNotMatch(html, /Northstar Cloud/);
