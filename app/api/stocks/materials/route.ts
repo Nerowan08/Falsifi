@@ -1,7 +1,13 @@
 import {
+  mergeMaterialCandidatesInOrder,
   mergeMaterialCandidates,
+  parseCninfoMaterialCandidates,
   parseYahooMaterialCandidates,
 } from "@/lib/materials";
+import {
+  fetchCninfoAnnouncements,
+  resolveCninfoSecurity,
+} from "@/lib/cninfo";
 import {
   inferMarketRegion,
   type MarketRegion,
@@ -27,6 +33,7 @@ const yahooLocale = (locale: string, market: MarketRegion) => {
 async function fetchYahooNews(
   query: string,
   locale: { lang: string; region: string },
+  timeoutMs = 7_000,
 ) {
   let lastError: unknown;
   for (const host of [
@@ -47,7 +54,7 @@ async function fetchYahooNews(
           "user-agent":
             "Falsifi/0.7 (+https://github.com/Nerowan08/Falsifi)",
         },
-        signal: AbortSignal.timeout(7_000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
       if (!response.ok) {
         throw new Error(`Public source search returned ${response.status}.`);
@@ -116,18 +123,69 @@ export async function GET(request: Request) {
   const terms = Array.from(
     new Set([query, symbol].filter((term) => term.trim().length > 0)),
   ).slice(0, 2);
-  const settled = await Promise.allSettled(
+  const yahooRequest = Promise.allSettled(
     terms.flatMap((term) =>
-      localeVariants.map((variant) => fetchYahooNews(term, variant)),
+      localeVariants.map((variant) =>
+        fetchYahooNews(
+          term,
+          variant,
+          market === "cn" ? 3_500 : 7_000,
+        ),
+      ),
     ),
   );
+  const cninfoRequest =
+    market === "cn"
+      ? (async () => {
+          try {
+            const security = await resolveCninfoSecurity(symbol);
+            if (!security) {
+              return {
+                candidates: [] as ReturnType<
+                  typeof parseCninfoMaterialCandidates
+                >,
+                resolvedCompanyName: null as string | null,
+                available: false,
+              };
+            }
+            const payload = await fetchCninfoAnnouncements(security);
+            return {
+              candidates: parseCninfoMaterialCandidates(payload, {
+                symbol,
+                companyName: security.name,
+                limit: 12,
+              }),
+              resolvedCompanyName: security.name,
+              available: true,
+            };
+          } catch {
+            return {
+              candidates: [] as ReturnType<
+                typeof parseCninfoMaterialCandidates
+              >,
+              resolvedCompanyName: null as string | null,
+              available: false,
+            };
+          }
+        })()
+      : Promise.resolve({
+          candidates: [] as ReturnType<
+            typeof parseCninfoMaterialCandidates
+          >,
+          resolvedCompanyName: null as string | null,
+          available: false,
+        });
+  const [settled, cninfoResult] = await Promise.all([
+    yahooRequest,
+    cninfoRequest,
+  ]);
   const successfulPayloads = settled
     .filter(
       (result): result is PromiseFulfilledResult<unknown> =>
         result.status === "fulfilled",
     )
     .map((result) => result.value);
-  const candidates = mergeMaterialCandidates(
+  const yahooCandidates = mergeMaterialCandidates(
     successfulPayloads.map((payload) =>
       parseYahooMaterialCandidates(payload, {
         symbol,
@@ -137,19 +195,31 @@ export async function GET(request: Request) {
     ),
     12,
   );
+  const candidates =
+    market === "cn"
+      ? mergeMaterialCandidatesInOrder(
+          [cninfoResult.candidates.slice(0, 8), yahooCandidates],
+          12,
+        )
+      : yahooCandidates;
+  const providers = [
+    ...(cninfoResult.available ? ["CNINFO"] : []),
+    ...(successfulPayloads.length > 0 ? ["Yahoo Finance"] : []),
+  ];
 
   return Response.json(
     {
       candidates,
-      provider: "Yahoo Finance",
+      providers,
       providerStatus:
-        successfulPayloads.length > 0 ? "ok" : "unavailable",
+        providers.length > 0 ? "ok" : "unavailable",
+      resolvedCompanyName: cninfoResult.resolvedCompanyName,
       searchedAt: new Date().toISOString(),
     },
     {
       headers: {
         "cache-control":
-          successfulPayloads.length > 0
+          providers.length > 0
             ? "public, max-age=60, s-maxage=300, stale-while-revalidate=900"
             : "no-store",
       },
