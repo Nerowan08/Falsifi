@@ -1,6 +1,7 @@
 import {
-  buildEvidenceRoots,
-  type EvidenceItem,
+  buildSourceGroups,
+  isUserAddedEvidence,
+  isVerifiedEvidence,
   type ThesisCase,
 } from "./falsifi.ts";
 
@@ -43,15 +44,21 @@ export type ResearchReadiness = {
   counterEvidenceCount: number;
 };
 
-const isManualEvidence = (item: EvidenceItem) =>
-  item.enabled && item.relation !== "derived";
-
-const hasReviewDate = (value: string | undefined) =>
-  Boolean(
-    value &&
-      /^\d{4}-\d{2}-\d{2}$/.test(value) &&
-      Number.isFinite(Date.parse(`${value}T00:00:00.000Z`)),
-  );
+const hasReviewDate = (
+  value: string | undefined,
+  caseUpdatedAt: string,
+) => {
+  if (
+    !value ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(value) ||
+    !Number.isFinite(Date.parse(`${value}T00:00:00.000Z`))
+  ) {
+    return false;
+  }
+  const updatedDate = new Date(caseUpdatedAt);
+  if (Number.isNaN(updatedDate.getTime())) return false;
+  return value >= updatedDate.toISOString().slice(0, 10);
+};
 
 /**
  * A transparent completeness gate, not another predictive score.
@@ -65,13 +72,21 @@ export function assessResearchReadiness(
   thesisCase: ThesisCase,
 ): ResearchReadiness {
   const enabledEvidence = thesisCase.evidence.filter((item) => item.enabled);
-  const manualEvidence = enabledEvidence.filter(isManualEvidence);
-  const roots = buildEvidenceRoots(thesisCase);
+  const manualEvidence = enabledEvidence.filter((item) =>
+    isUserAddedEvidence(thesisCase, item),
+  );
+  const verifiedEvidence = manualEvidence.filter(isVerifiedEvidence);
+  const roots = buildSourceGroups({
+    ...thesisCase,
+    evidence: verifiedEvidence,
+  });
   const plan = thesisCase.researchPlan;
-  const primarySourceCount = manualEvidence.filter(
-    (item) => item.group === "Official filing",
+  const primarySourceCount = verifiedEvidence.filter(
+    (item) =>
+      item.group === "Official filing" &&
+      item.verification === "original",
   ).length;
-  const counterEvidenceCount = manualEvidence.filter(
+  const counterEvidenceCount = verifiedEvidence.filter(
     (item) => item.direction === "contradicts",
   ).length;
 
@@ -97,11 +112,18 @@ export function assessResearchReadiness(
     },
     {
       id: "source-diversity",
-      complete: roots.length >= 3 && manualEvidence.length >= 2,
+      // A second source group is the smallest meaningful diversity check.
+      // We deliberately avoid a higher "magic number": the primary output
+      // reports the exact group count so the user can judge sufficiency for
+      // their own claim.
+      complete: roots.length >= 2,
     },
     {
       id: "review-date",
-      complete: hasReviewDate(plan?.nextReviewDate),
+      complete: hasReviewDate(
+        plan?.nextReviewDate,
+        thesisCase.lastUpdated,
+      ),
     },
   ];
 
