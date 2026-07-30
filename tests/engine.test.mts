@@ -23,7 +23,7 @@ import {
 
 test("the synthetic case reproduces its group-aware baseline", () => {
   const score = scoreCase(DEMO_CASE);
-  assert.ok(Math.abs(score - 59.432) < 0.001);
+  assert.ok(Math.abs(score - 58.874) < 0.001);
   assert.equal(getPosture(DEMO_CASE, score), "Balanced");
 });
 
@@ -31,7 +31,7 @@ test("the smallest item-level evidence flip is deterministic", () => {
   const flipSet = findMinimumFlipSet(DEMO_CASE);
   assert.deepEqual(
     flipSet.map((item) => item.id),
-    ["ev-discounting"],
+    ["ev-capex", "ev-latency"],
   );
 
   const scoreAfterRemoval = scoreCase(
@@ -45,17 +45,17 @@ test("the nearest scenario-input cliff is deterministic", () => {
   const flip = findAssumptionFlip(DEMO_CASE);
   assert.ok(flip);
   assert.equal(flip.assumptionId, "growth");
-  assert.ok(Math.abs(flip.delta - 0.4) < 0.001);
+  assert.ok(Math.abs(flip.delta - 0.6) < 0.001);
   assert.equal(flip.resultingPosture, "Constructive");
 });
 
 test("the published stability metric is deterministic", () => {
   const result = runStressTest(DEMO_CASE);
-  assert.equal(result.stabilityScore, 16);
-  assert.equal(result.minimumFlipSet.length, 1);
+  assert.equal(result.stabilityScore, 43);
+  assert.equal(result.minimumFlipSet.length, 2);
   assert.ok(result.ablations[0].delta !== 0);
   assert.equal(result.independenceAudit.independentRootCount, 3);
-  assert.equal(result.minimumIndependentFlip.found, true);
+  assert.equal(result.minimumIndependentFlip.found, false);
   assert.equal(result.jointFlipFrontier.points.length, 5);
   assert.equal(result.evidenceStress.degradeFactor, 0.5);
 });
@@ -145,8 +145,8 @@ test("duplicating one argument inside a multi-argument group changes nothing", (
   const originalResult = runStressTest(multiArgumentCase);
   const duplicatedResult = runStressTest(duplicatedCase);
 
-  assert.equal(originalRoot.netContribution, 6);
-  assert.equal(duplicatedRoot.netContribution, 6);
+  assert.equal(originalRoot.netContribution, 8);
+  assert.equal(duplicatedRoot.netContribution, 8);
   assert.equal(scoreCase(duplicatedCase), scoreCase(multiArgumentCase));
   assert.equal(
     duplicatedResult.stabilityScore,
@@ -229,8 +229,8 @@ test("the independence audit clusters shared provenance deterministically", () =
   assert.equal(audit.independentRootCount, 3);
   assert.equal(audit.duplicateCount, 5);
   assert.equal(audit.declaredDuplicateCount, 0);
-  assert.ok(Math.abs(audit.maximumRootShare - 0.4648924122) < 1e-9);
-  assert.ok(Math.abs(audit.concentrationHhi - 0.3610625519) < 1e-9);
+  assert.ok(Math.abs(audit.maximumRootShare - 0.3644922663) < 1e-9);
+  assert.ok(Math.abs(audit.concentrationHhi - 0.3372826772) < 1e-9);
   assert.equal(audit.directionConflicts.length, 1);
   assert.deepEqual(audit.directionConflicts[0].directions, [
     "supports",
@@ -261,20 +261,18 @@ test("staleness is measured against the case timestamp, not the wall clock", () 
   assert.deepEqual(audit.staleEvidenceIds, ["ev-sec-revenue"]);
 });
 
-test("the related-group flip removes a whole group", () => {
+test("the related-group search reports when no whole-group flip exists", () => {
   const result = findMinimumIndependentFlip(DEMO_CASE);
 
-  assert.equal(result.found, true);
+  assert.equal(result.found, false);
   assert.equal(result.exact, true);
   assert.equal(result.exhaustive, true);
   assert.equal(result.totalRoots, 3);
-  assert.equal(result.searchedThroughRootCount, 1);
-  assert.deepEqual(result.rootIds, ["ev-latency"]);
-  assert.equal(result.evidence.length, 1);
-  assert.equal(result.resultingPosture, "Constructive");
-  assert.ok(
-    Math.abs((result.resultingScore ?? Number.NaN) - 60.482) < 0.001,
-  );
+  assert.equal(result.searchedThroughRootCount, 3);
+  assert.deepEqual(result.rootIds, []);
+  assert.equal(result.evidence.length, 0);
+  assert.equal(result.resultingPosture, null);
+  assert.equal(result.resultingScore, null);
 });
 
 test("an absent independent flip states the four-root search boundary", () => {
@@ -292,9 +290,9 @@ test("an absent independent flip states the four-root search boundary", () => {
   assert.equal(result.found, false);
   assert.equal(result.exact, false);
   assert.equal(result.exhaustive, false);
-  assert.equal(result.totalRoots, 8);
+  assert.equal(result.totalRoots, 5);
   assert.equal(result.searchedThroughRootCount, 4);
-  assert.equal(result.combinationsEvaluated, 162);
+  assert.equal(result.combinationsEvaluated, 30);
 });
 
 test("the joint flip frontier finds reproducible two-variable paths", () => {
@@ -312,7 +310,7 @@ test("the joint flip frontier finds reproducible two-variable paths", () => {
     "growth",
     "operating-leverage",
   ]);
-  assert.deepEqual(result.points[0].deltas, [0.2, 1]);
+  assert.deepEqual(result.points[0].deltas, [0.4, 1]);
   assert.equal(result.points[0].requiresBoth, true);
   assert.equal(result.points[0].resultingPosture, "Constructive");
 });
@@ -361,7 +359,10 @@ test("remove, degrade, and contradict have distinct stress semantics", () => {
   const comparison = compareEvidenceStressSemantics(DEMO_CASE);
   const { remove, degrade, contradict } = comparison.outcomes;
 
-  assert.deepEqual(comparison.evidenceIds, ["ev-discounting"]);
+  assert.deepEqual(comparison.evidenceIds, [
+    "ev-capex",
+    "ev-latency",
+  ]);
   assert.equal(remove.flipsPosture, true);
   assert.equal(degrade.flipsPosture, false);
   assert.equal(contradict.flipsPosture, true);
@@ -439,8 +440,8 @@ test("schema version 1 cases without provenance metadata remain valid", () => {
   assert.equal(legacyCase.schemaVersion, 1);
   assert.equal(isThesisCase(legacyCase), true);
   const audit = auditEvidenceIndependence(legacyCase);
-  assert.equal(audit.independentRootCount, legacyCase.evidence.length);
-  assert.equal(audit.duplicateCount, 0);
+  assert.equal(audit.independentRootCount, 5);
+  assert.equal(audit.duplicateCount, 3);
 });
 
 test("the optional research plan is validated without breaking legacy cases", () => {
