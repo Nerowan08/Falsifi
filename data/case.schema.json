@@ -251,7 +251,9 @@
               "External estimate"
             ]
           },
-          "direction": { "enum": ["supports", "contradicts"] },
+          "direction": {
+            "enum": ["supports", "contradicts", "unclassified"]
+          },
           "impact": {
             "type": "number",
             "exclusiveMinimum": 0,
