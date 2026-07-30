@@ -50,9 +50,31 @@ test("the four-language guide explains the single source-group task", async () =
   );
 
   assert.match(guide, /groups by source/);
-  assert.match(guide, /按来源归组/);
-  assert.match(guide, /出典ごとに/);
-  assert.match(guide, /agrupan por fuente/);
+  assert.match(guide, /来源组/);
+  assert.match(guide, /出典グループ/);
+  assert.match(guide, /grupos de fuentes/);
   assert.match(guide, /canonical URL/i);
   assert.doesNotMatch(guide, /shared source or claim metadata/i);
+  assert.doesNotMatch(guide, /按顺序完成/);
+  assert.doesNotMatch(guide, /各段階で主要操作は一つだけ/);
+  assert.doesNotMatch(guide, /Cada etapa presenta una sola acción principal/);
+});
+
+test("the main workflow leaves every action under user control", async () => {
+  const [page, workspace, editor] = await Promise.all(
+    [
+      "app/page.tsx",
+      "components/falsify-workspace.tsx",
+      "components/research-action.tsx",
+    ].map((path) => readFile(new URL(`../${path}`, import.meta.url), "utf8")),
+  );
+
+  assert.match(workspace, /onEditClaim/);
+  assert.match(workspace, /onAddEvidence/);
+  assert.match(workspace, /onEditReview/);
+  assert.match(workspace, /onSaveReview/);
+  assert.doesNotMatch(workspace, /readiness\.nextAction/);
+  assert.doesNotMatch(workspace, /focus-steps/);
+  assert.doesNotMatch(page, /setShowResearchPlanModal\(true\)/);
+  assert.match(editor, /mode: ResearchPlanEditorMode/);
 });
