@@ -2,15 +2,14 @@
 
 > **See how your stock-thesis material groups by source.**
 
-Falsifi is an open-source source-group checker for stock theses. Give it
-one listed stock, one concrete claim, and the material behind that claim. It
-groups matching canonical URLs and explicit same-source relationships, then
-reports:
+Falsifi is an open-source tool for sorting stock-research material by source.
+Pick a listed stock and add the material you used. Writing a claim is optional.
+Falsifi groups matching links and items that you mark as coming from the same
+source. It then shows:
 
 1. how many user-added materials are in the record;
 2. how many source groups the current record identifies;
-3. which items collapse into an existing group; and
-4. the one missing research action to complete next.
+3. which items are grouped together.
 
 It does **not** predict returns, calculate target prices, recommend trades, or
 prove a thesis true.
@@ -28,85 +27,81 @@ Eight articles can still trace to one source when all eight repeat the same
 filing, dataset, interview, or republication chain. Link count is not source
 diversity.
 
-Falsifi turns that problem into one reproducible workflow:
+Falsifi keeps the job small:
 
 ```text
-choose one stock + write one claim
-→ define what would weaken it
-→ add original and contrary material
-→ group matching URLs and declared same-source material
-→ show the source groups identified in the current record
-→ identify the next missing research action
+your material
+→ matching links and user-confirmed relationships
+→ source groups
 ```
 
-The first screen contains one stock field, one thesis field, and one primary
-button. Market charts, rule scores, scenario sliders, dependency pages, and
-history are not part of the primary product path.
+There is no required research sequence. After opening a workspace, the user
+chooses whether to add material, edit the claim, or inspect the source groups.
+Market data and optional review notes do not control the grouping result.
 
 ## What v0.6 changes
 
 - **One clear landing-page task.** Falsifi no longer presents itself as a
   general stock-analysis dashboard.
-- **One action per state.** The workflow moves through claim definition,
-  evidence entry, and evidence-diversity review.
-- **Primary output without subjective scores.** The main card reports material
-  count, connected source groups, grouped items, and the next gap. User-entered
-  0–100 impact and confidence numbers are no longer required in the normal form.
-- **Canonical-URL enforcement.** Tracking parameters, fragments, host casing,
-  and trailing slashes cannot make the same document appear independent.
-  User labels may join more material but cannot split an identical canonical
-  URL into multiple groups.
-- **User evidence only.** Automatic price observations remain optional delayed
-  market context and cannot satisfy original-source, contrary-evidence, or
-  source-diversity requirements. Missing or short price history never blocks
-  the evidence workflow.
-- **Simpler evidence entry.** Users record the fact, publisher, link, date,
-  direction, how they checked it, and whether it shares an underlying source
-  with another item. Unverified material remains visible but cannot complete
-  review-readiness checks. Optional qualitative importance replaces arbitrary
-  percentages.
+- **The user chooses what to do.** Adding material, editing the claim, and
+  reviewing groups are available without a forced sequence or automatic
+  follow-up dialog.
+- **A clear output without subjective scores.** The main view reports material
+  count, source-group count, and grouped items. It does not need user-entered
+  0–100 impact or confidence numbers.
+- **Matching links stay together.** Common tracking parameters, page fragments,
+  host casing, and trailing slashes cannot make the same link look like several
+  sources. Users may group more items together, but cannot split a matching
+  link into several groups.
+- **User material only.** Automatic price observations remain optional market
+  context and do not count as user-added material. Missing price history never
+  blocks source grouping.
+- **Simple material entry.** Users add a title and link, then may record the
+  publisher, date, review status, and a same-source relationship.
+  Unchecked material remains clearly labeled.
 - **Progressive disclosure.** The claim, source relationships, and compact
-  market context appear in a single vertical record. Secondary information is
-  collapsed by default.
+  market context appear in one record. Secondary information stays out of the
+  way.
 - **Four languages and a rewritten guide.** English, Simplified Chinese,
   Japanese, and Spanish now explain the same focused task and its limits.
 
-## Accurate grouping rules
+## When material is grouped
 
 Falsifi forms connected source groups from:
 
-- the same canonical HTTP(S) URL;
+- HTTP(S) links that match after common tracking parts are removed;
 - a shared stored source identifier;
-- an explicit same-source relationship to another evidence item.
+- a same-source relationship added by the user.
 
 A shared factual claim or logical dependency does not merge two sources:
 independent publishers can report the same fact.
 
-The canonical URL removes common tracking parameters and fragments, normalizes
-the host, preserves meaningful query parameters, and normalizes the trailing
-slash. Different links are **not** automatically declared independent, and the
-tool does not claim to find every syndication chain on the internet.
+Before comparing links, Falsifi removes common tracking parameters and page
+fragments, makes host names consistent, and handles trailing slashes. It keeps
+query parameters that may point to different documents. Different links are
+**not** automatically declared independent, and the tool does not claim to
+find every copied or republished article on the internet.
 
 Example:
 
 ```text
-8 manually added copies of the same canonical URL
+8 manually added copies of the same link
 → 8 user-added materials
 → 1 source group
 → 7 items grouped with another item
 ```
 
-## Use it
+## Basic use
 
-1. Search a U.S., mainland China, or Hong Kong listed equity.
-2. Write one specific stock thesis.
-3. Record an observable condition that would weaken it and a future review
-   date.
-4. Add an issuer or regulatory original document that you read.
-5. Add a credible fact that challenges the thesis.
-6. Connect material that traces to the same document, dataset, interview, or
-   republication chain.
-7. Read the source-group count and complete the single suggested next action.
+- Search a U.S., mainland China, or Hong Kong listed equity.
+- Add the material you want to organize, in any order.
+- Write a claim if it helps you keep the material in context.
+- If two items come from the same document, dataset, interview, or
+  republication chain, link them.
+- Review the groups and edit any relationship that is wrong.
+
+Review dates, invalidation conditions, and contrary material can be useful, but
+they are optional and do not block source grouping.
 
 Delayed Yahoo Finance data supplies only compact market context. The adapter is
 undocumented and suitable for personal or self-hosted evaluation, not a public
@@ -140,32 +135,30 @@ npm run build
 ```text
 app/                         Product route and same-origin market endpoints
 components/market-workspace  Focused stock-and-thesis entry
-components/falsify-workspace Single evidence-card workflow
+components/falsify-workspace User-controlled source-group workspace
 components/user-guide        Four-language practical guide
 lib/evidence-audit.ts        Weight-free primary evidence-structure output
 lib/falsifi.ts               Canonical grouping and deterministic model engine
-lib/readiness.ts             Missing-requirement and next-action selection
+lib/readiness.ts             Optional research-status suggestions
 lib/market.ts                Market normalization and background metrics
 tests/                       Engine, grouping, locale, market, and worker tests
 ```
 
 ## Honest differentiation
 
-Thesis journals, invalidation conditions, AI bull/bear analysis, alerts,
-decision history, primary-source links, and scenario testing already exist.
-Falsifi does not claim to be the world’s first.
-
-The narrow gap found in the public product review is the combination of:
+Thesis journals, source links, AI research tools, and provenance systems
+already exist. Falsifi does not claim to be the first or only product in this
+area. Its current focus is simply:
 
 ```text
-same-source relationship grouping
-+ canonical-URL anti-splitting
+matching links stay together
++ user-confirmed same-source relationships
 + a primary “materials → source groups” output
-+ a deterministic next missing evidence action
 ```
 
-This is a bounded positioning claim, not proof that no private or undocumented
-tool offers the same workflow. See [docs/UNIQUENESS.md](./docs/UNIQUENESS.md).
+This describes the product, not a claim that no other public, private, or
+undocumented tool can do the same thing. See
+[docs/UNIQUENESS.md](./docs/UNIQUENESS.md).
 
 ## Privacy and disclaimer
 
