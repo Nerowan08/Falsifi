@@ -3,7 +3,9 @@
 The MIT license covers Falsifi code only. It does not sublicense market data,
 news, filings, estimates, or other third-party content.
 
-## Default deployed adapter: Yahoo Finance chart/search
+## Default deployed adapters
+
+### Yahoo Finance chart/search
 
 The current owner-only deployment uses Yahoo Finance’s undocumented chart and
 search endpoints to retrieve delayed daily market history for personal
@@ -35,8 +37,25 @@ whether to add it.
 
 This search is experimental, can return irrelevant or paywalled pages, and is
 not a complete filing or news archive. Coverage can be limited for mainland
-China and Hong Kong stocks. Falsifi never labels these candidates as official,
-reliable, independent, or verified.
+China and Hong Kong stocks. Falsifi never labels these candidates as reliable,
+independent, or verified.
+
+### CNINFO A-share announcements
+
+For an A-share ticker, the material finder also requests recent company
+announcements from CNINFO (巨潮资讯), the disclosure platform designated by the
+China Securities Regulatory Commission. The adapter resolves the exact
+six-digit security code, requests the latest two pages of announcements, and
+accepts a result only when its `secCode` exactly matches the selected stock.
+Only title, issuer, filing time, and the fixed
+`static.cninfo.com.cn/finalpage/...PDF` link are returned.
+
+CNINFO candidates are labeled as company filings, but still start unselected,
+unclassified, and unverified. “Official filing” describes the document type;
+it does not mean Falsifi has checked the document’s relevance or the truth of
+every statement. The ticker is sent to CNINFO. The saved claim is not sent.
+The public lookup can change or become unavailable, so Yahoo results and manual
+link entry remain fallbacks.
 
 The four directional trend and momentum observations generated from one
 returned price series are marked `provenance: system-market` and share one
