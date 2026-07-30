@@ -26,6 +26,18 @@ replace it with a licensed provider and document that provider’s delay,
 display, retention, and redistribution terms. Falsifi does not call this feed
 real-time data.
 
+The user-invoked material finder also uses the Yahoo Finance search endpoint.
+It stores no article body and returns only candidate title, publisher, link,
+and publication time. Results start unselected and unverified. The company
+name, ticker, and search terms shown in the dialog are sent to Yahoo Finance;
+the user's saved claim is not appended. The user must open a page and decide
+whether to add it.
+
+This search is experimental, can return irrelevant or paywalled pages, and is
+not a complete filing or news archive. Coverage can be limited for mainland
+China and Hong Kong stocks. Falsifi never labels these candidates as official,
+reliable, independent, or verified.
+
 The four directional trend and momentum observations generated from one
 returned price series are marked `provenance: system-market` and share one
 `originId`. They remain optional market context and never satisfy the
