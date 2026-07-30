@@ -49,7 +49,8 @@ Market data and optional review notes do not control the grouping result.
   follow-up dialog.
 - **User-controlled source search.** “Find public sources” searches for
   candidate pages only after the user asks. Results start unselected and
-  unverified; nothing enters the record until the user confirms it.
+  unverified; nothing enters the record until the user confirms it. For
+  A-shares, official CNINFO filings are shown before supplemental Yahoo news.
 - **A clear output without subjective scores.** The main view reports material
   count, source-group count, and grouped items. It does not need user-entered
   0–100 impact or confidence numbers.
@@ -108,12 +109,12 @@ Example:
 Review dates, invalidation conditions, and contrary material can be useful, but
 they are optional and do not block source grouping.
 
-Yahoo Finance supplies delayed market context and experimental public-page
-search results. The search sends the company name, ticker, and visible search
-terms, never the user's claim. The adapter is undocumented and suitable for
-personal or self-hosted evaluation, not a public commercial data service. It
-is not a complete filing or news archive, especially for mainland China and
-Hong Kong stocks. See [DATA_SOURCES.md](./DATA_SOURCES.md).
+For A-shares, CNINFO supplies exact-ticker company-filing candidates with links
+to the original PDFs. Yahoo Finance supplies delayed market context and
+supplemental public-page search results. The lookup sends only the company
+identity and visible search terms needed by those providers, never the user's
+claim. Neither source is a complete filing or news archive, and every candidate
+still requires review. See [DATA_SOURCES.md](./DATA_SOURCES.md).
 
 ## Run locally
 
