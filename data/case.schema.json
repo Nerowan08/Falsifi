@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:falsifi:schema:case:v1",
+  "title": "Falsifi case",
+  "description": "Runtime semantic checks also require IDs to be unique within their arrays, cautiousThreshold to be below constructiveThreshold, assumption value and baseline to fall within min/max, each assumption's total range divided by step to be at most 2,000, and evidence dependency IDs to reference another item in the same case.",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "company",
+    "ticker",
+    "isDemo",
+    "thesis",
+    "horizon",
+    "baseScore",
+    "constructiveThreshold",
+    "cautiousThreshold",
+    "lastUpdated",
+    "modelVersion",
+    "evidence",
+    "assumptions"
+  ],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "\\S"
+    },
+    "company": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300,
+      "pattern": "\\S"
+    },
+    "ticker": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 24,
+      "pattern": "\\S"
+    },
+    "isDemo": { "type": "boolean" },
+    "thesis": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 5000,
+      "pattern": "\\S"
+    },
+    "horizon": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "\\S"
+    },
+    "baseScore": { "type": "number", "minimum": 0, "maximum": 100 },
+    "constructiveThreshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "cautiousThreshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "lastUpdated": { "type": "string", "format": "date-time" },
+    "modelVersion": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "\\S"
+    },
+    "evidence": {
+      "type": "array",
+      "maxItems": 40,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "title",
+          "source",
+          "sourceUrl",
+          "asOf",
+          "group",
+          "direction",
+          "impact",
+          "reliability",
+          "note",
+          "enabled"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "\\S"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500,
+            "pattern": "\\S"
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "pattern": "\\S"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048,
+            "pattern": "^https?://"
+          },
+          "asOf": { "type": "string", "format": "date" },
+          "group": {
+            "enum": [
+              "Official filing",
+              "Management",
+              "Market data",
+              "External estimate"
+            ]
+          },
+          "direction": { "enum": ["supports", "contradicts"] },
+          "impact": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          },
+          "reliability": { "type": "number", "minimum": 0, "maximum": 1 },
+          "note": { "type": "string", "maxLength": 2000 },
+          "enabled": { "type": "boolean" },
+          "originId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "\\S"
+          },
+          "claimId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "\\S"
+          },
+          "dependsOnIds": {
+            "type": "array",
+            "maxItems": 40,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "\\S"
+            }
+          },
+          "relation": {
+            "enum": ["direct", "derived", "duplicate"]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 12,
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "value",
+          "baseline",
+          "min",
+          "max",
+          "step",
+          "unit",
+          "impactPerUnit",
+          "direction",
+          "typicalShock"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120,
+            "pattern": "\\S"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300,
+            "pattern": "\\S"
+          },
+          "value": { "type": "number" },
+          "baseline": { "type": "number" },
+          "min": { "type": "number" },
+          "max": { "type": "number" },
+          "step": { "type": "number", "exclusiveMinimum": 0 },
+          "unit": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 24,
+            "pattern": "\\S"
+          },
+          "impactPerUnit": { "type": "number" },
+          "direction": { "enum": [-1, 1] },
+          "typicalShock": { "type": "number", "exclusiveMinimum": 0 }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
