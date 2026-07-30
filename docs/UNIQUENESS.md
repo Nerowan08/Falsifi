@@ -1,221 +1,158 @@
-# Product position and public landscape review
+# Product focus and public landscape review
 
 **Review date:** July 30, 2026
-**Scope:** public product pages and open-source repositories related to stock
-research, thesis tracking, charting, scenario analysis, counter-evidence, and
-research provenance.
+**Scope:** public product pages for stock-thesis tracking, investment journals,
+AI research assistants, provenance systems, and evidence review tools.
 
-## Honest conclusion
+## Conclusion
 
-Falsifi v0.5 is not a stock predictor, buy/sell signal, or substitute for
-primary research. Its defensible value is narrower:
+Falsifi cannot honestly claim to be the first stock-thesis tracker, the first
+falsification tool, the first source-linked research product, or the first
+system to ask what would change an investor’s mind. Those categories already
+contain capable products.
 
-> Record why a stock is worth researching, prevent repeated versions of the
-> same source from looking like independent support, and identify the smallest
-> tested change that would require the user to review the case.
+The product has therefore been narrowed to one job:
 
-No individual feature is unique. Charts, alerts, screeners, thesis journals,
-scenario analysis, counterfactual explanations, evidence records, and
-content-addressed snapshots all have public prior art. What is comparatively
-uncommon in mainstream personal-investing tools is this combination:
+> Given one stock thesis and several pieces of material, show how many
+> source groups the current record identifies and identify the
+> next missing evidence action.
+
+The memorable problem is:
+
+> Eight articles can still trace to one source.
+
+## Why the previous product was not good enough
+
+The previous interface presented market charts, indicators, a rule score,
+model robustness, a readiness checklist, evidence pages, dependency pages,
+history, methodology, and scenario sliders at the same level. A new user could
+not tell whether Falsifi was:
+
+- a stock screener;
+- a technical-analysis dashboard;
+- an investment journal;
+- a scenario model; or
+- an evidence manager.
+
+The data model also asked ordinary users for arbitrary 0–100 impact and
+confidence numbers. Even deterministic mathematics can create false precision
+when its inputs are ungrounded subjective numbers.
+
+The v0.6 redesign therefore removes scores and model sensitivity from the
+primary path. The main output is weight-free and directly observable:
 
 ```text
-falsifiable claim + observable invalidation condition
-→ research-readiness gate
-→ related-evidence-group deduplication
-→ smallest tested assessment change
-→ change since saved baseline
-→ next research action
+user-added material count
+→ source groups identified in the current record
+→ material grouped with another item
+→ next missing evidence action
 ```
-
-That is a product-positioning statement, not a claim of being first, globally
-unique, or impossible to reproduce.
-
-## What the practical audit found
-
-The v0.4 workflow could produce a polished score and a high robustness reading
-from price-derived indicators alone. Because moving averages, momentum,
-volatility, drawdown, and RSI all came from the same market series, this
-presentation created false precision. Repeating same-source items could also
-increase the score even though no new source had been added.
-
-In that form, the product was easy to replace:
-
-- a charting platform could provide the same market indicators;
-- a spreadsheet or notebook could calculate thresholds;
-- a notes app could store an investment thesis; and
-- a general-purpose AI assistant could summarize the result.
-
-The audit therefore rejected “more analysis” as the product goal. v0.5 instead
-uses market-derived indicators only as context and requires the user to define
-and support a reviewable research case.
-
-### Real-market regression check
-
-On July 30, 2026, the same one-year Yahoo Finance adapter was run through the
-old and new product logic for four listed equities. These values test product
-behavior; they are not investment conclusions:
-
-| Ticker | v0.4 displayed output | v0.5 internal diagnostic | v0.5 default user status |
-|---|---|---|---|
-| AAPL | 72.6, favorable, robustness 100 | 54.5, neutral, robustness 33 | Market context only · 0/6 checks |
-| TSLA | 25.3, cautious, robustness 100 | 46.3, neutral, robustness 41 | Market context only · 0/6 checks |
-| 603901.SS | 24.0, cautious, robustness 100 | 45.8, neutral, robustness 38 | Market context only · 0/6 checks |
-| 0700.HK | 35.8, cautious, robustness 74 | 46.9, neutral, robustness 46 | Market context only · 0/6 checks |
-
-Every automatic case had four trend or momentum observations, but only one
-related evidence group and 100% contribution concentration because every
-observation came from the same market series. v0.5 therefore withholds the
-assessment, rule score, and robustness from the default summary until the
-research-readiness checks pass.
-
-A separate regression copied one AAPL source-and-claim argument eight times.
-The score stayed at `54.543`, the related-group count stayed at `1`, and
-robustness stayed at `33`. This is the expected anti-duplication behavior. The
-test is included in the automated engine suite.
-
-## The v0.5 decision workflow
-
-### 1. Research definition
-
-The user records:
-
-- the actual claim being evaluated;
-- the intended time horizon;
-- an observable condition that would invalidate the claim;
-- the purpose of the review; and
-- the next review date.
-
-This turns a vague opinion into a claim that can be checked later. It still
-does not make the claim correct.
-
-### 2. Research-readiness gate
-
-Automatically generated market indicators do not satisfy the evidence
-requirements. A reviewable case needs:
-
-- a confirmed, falsifiable research claim;
-- an explicit invalidation condition;
-- primary material such as a regulatory filing or company disclosure;
-- deliberately recorded counter-evidence;
-- at least three related evidence groups and at least two user-added evidence
-  items; and
-- a scheduled review date.
-
-The gate is a workflow check, not a quality score. A case can pass all checks
-and still be wrong, incomplete, or biased.
-
-### 3. Related evidence groups
-
-Items that share an original source, underlying claim, or declared dependency
-belong to one related evidence group. Enabled item contributions inside a group
-are averaged before the groups are added to the model score. Duplicating a
-declared source therefore cannot multiply that group’s contribution.
-
-This does not prove that separate groups are statistically independent, detect
-copied wording, or discover undeclared relationships. Users must still classify
-the evidence honestly.
-
-### 4. Smallest tested assessment change
-
-Falsifi removes whole related evidence groups and searches for the smallest
-tested group combination that crosses the user-defined assessment threshold.
-It also supports bounded one- and two-variable sensitivity checks.
-
-The result means “this tested change crossed the model threshold.” It does not
-mean the scenario is probable, economically realistic, or sufficient grounds
-for a trade.
-
-### 5. Baseline change and next action
-
-A saved local snapshot provides a baseline for the next review. The action
-summary shows what market context changed, which readiness requirement or
-tested condition is weakest, and the next concrete research task. This is the
-part intended to reduce repeated manual review rather than create another
-dashboard to monitor.
 
 ## Existing alternatives
 
-Publicly described products cover substantial parts of this workflow:
+Publicly described products already cover most broad positioning:
 
-| Category | Examples | What they can replace |
-|---|---|---|
-| Charting, alerts, and replay | [TradingView](https://www.tradingview.com/) | Price charts, indicators, alerts, and historical review |
-| Market and fundamental workspaces | [Koyfin](https://www.koyfin.com/), [TIKR](https://www.tikr.com/), [FinChat](https://finchat.io/) | Market data, screening, company fundamentals, estimates, and research summaries |
-| Narrative and thesis tracking | [Simply Wall St Narratives](https://support.simplywall.st/hc/en-us/articles/13416018054415-Getting-Started-with-Narratives), [Horyzon Thesis Tracker](https://horyzonapp.com/investment-thesis-tracker/), [ThesesWatch](https://theseswatch.com/), [subThesis](https://www.subthesis.app/) | Thesis notes, assumptions, monitoring, and review reminders |
-| AI research assistants | [Vexton](https://www.vexton.ai/), [Cleriq](https://www.cleriq.app/), [AlphaBrief](https://www.alphabrief.io/) | Research aggregation, summaries, and source discovery |
-| Local open-source research systems | [Mira](https://github.com/byteseek/Mira), [StockSense-AI](https://github.com/Spkap/StockSense-AI), [Thesis Investment OS](https://github.com/youngseongshin/thesis-investment-os), [MingCang](https://github.com/Zeeechenn/MingCang) | Evidence logs, counter-evidence, thesis history, and local workflows |
+| Product | Public positioning that overlaps |
+|---|---|
+| [Horyzon](https://horyzonapp.com/) | Thesis records, “what would change your mind,” timelines, and AI insights |
+| [Vexton](https://www.vexton.ai/) | Structured thesis generation, challenges, bias prompts, review cadence, and decision trail |
+| [Bonsai Compass](https://www.bonsai.finance/) | Bull/bear cases, hidden assumptions, thesis breakers, missing evidence, and thesis stress tests |
+| [ThesesWatch](https://theseswatch.com/) | Thesis metrics, thresholds, monitoring, and divergence alerts |
+| [subThesis](https://www.subthesis.app/) | Living theses, supporting evidence, decisions, outcomes, filings, branches, and version history |
+| [Fulcrius](https://fulcrius.com/) | Investment assumptions, dependencies, and assumption tracking |
+| [Burin](https://burin.app/) | Primary-source-linked models, contradiction detection, readiness gates, and thesis-change tracking |
+| [Vouch](https://vouchapi.com/) | Claim provenance, SEC/XBRL verification, and audit trails |
+| [InvestorOS](https://www.investoros.app/) / [InvestJournal](https://www.investjournal.co/) | Decision journals, review dates, and outcome reviews |
 
-The table is a bounded description of public positioning, not a certification
-that any product lacks an undocumented feature. Products change, private
-systems cannot be inspected, and a global completeness claim cannot be made.
+Accordingly, the following claims are not distinctive:
 
-## Where Falsifi is harder to replace
+- “track an investment thesis”;
+- “write what would change your mind”;
+- “challenge confirmation bias”;
+- “link research to primary sources”;
+- “monitor thesis invalidation”;
+- “keep an auditable decision history”; or
+- “stress-test a stock idea.”
 
-Falsifi is most useful when all of the following matter:
+## The narrower gap
 
-1. several notes may repeat one source or underlying claim;
-2. the user wants counter-evidence recorded before conviction is displayed;
-3. the user wants a reproducible related-group removal test rather than an AI
-   opinion;
-4. the user wants to compare the current case with a saved baseline; and
-5. the output must end with a research task or review trigger, not a trade
-   recommendation.
+In the public product pages reviewed, no product was found that makes the
+following combination its primary personal-investing task:
 
-If the user only needs a price chart, indicator summary, stock screener, target
-price, or generated buy/sell opinion, Falsifi is not the right tool and is easy
-to replace.
+1. canonical-URL identity that a user cannot split with labels;
+2. explicit grouping of shared underlying sources;
+3. a first-class “materials → identified source groups” result; and
+4. a deterministic next missing evidence action.
 
-## Methodological prior art
+This is a bounded review result. It is not proof that no private, internal, or
+undocumented product implements the same workflow.
 
-Falsifi did not invent counterfactual explanation or removal-based analysis:
+## Why this pain is real
 
-- [Microsoft’s counterfactual analysis overview](https://learn.microsoft.com/en-us/azure/machine-learning/concept-counterfactual-analysis)
-  describes finding small feature changes that produce a different decision.
-- Covert, Lundberg, and Lee’s
-  [Explaining by Removing](https://arxiv.org/abs/2011.14878) unifies explanation
-  methods that remove inputs and measure the effect.
+Repeated information can feel more credible even when repetition adds no new
+underlying evidence. Relevant prior research includes:
 
-Accordingly:
+- Hassan and Barber (2021), [The effects of repetition frequency on the
+  illusory truth effect](https://pubmed.ncbi.nlm.nih.gov/33983553/).
+- Navarrete et al. (2026), [Warnings and repetition-based credibility
+  gains](https://pubmed.ncbi.nlm.nih.gov/42001848/).
 
-- related-group removal is a removal-based explanation;
-- the smallest tested assessment change is a bounded counterfactual search;
-- one- and two-variable threshold checks are sensitivity analysis; and
-- a SHA-256 snapshot is content addressing, not a trusted timestamp.
+Falsifi does not diagnose psychology. It addresses one operational consequence:
+several documents should not automatically look like several different source
+groups.
 
-The product distinction is the integrated workflow and its explicit limits,
-not a new mathematical method.
-
-## Claims we can and cannot make
+## Exact product claims
 
 Reasonable:
 
-> Falsifi is an evidence-first stock-research review tool. It combines a
-> research-readiness gate, related-evidence-group deduplication, bounded
-> threshold-change tests, baseline comparison, and next-action guidance—a
-> combination that is uncommon in mainstream personal-investing tools.
+> Falsifi shows how material for one stock thesis groups by source. It groups
+> identical canonical URLs and explicit same-source relationships, then shows
+> the next missing evidence action.
+
+Also reasonable:
+
+> In our July 2026 review of public product pages, we did not find a
+> personal-investing product that made canonical source grouping plus a
+> “materials-to-source-groups” result its primary task.
 
 Not reasonable:
 
-- “the world’s first” or “globally unique”;
-- “no one has ever done this”;
-- “an AI stock-picking system”;
-- “a patented or new counterfactual algorithm”;
-- “proof that a thesis is correct”;
-- “an objective confidence or probability score”; or
-- “tamper-proof research history.”
+- “world first” or “globally unique”;
+- “automatically finds every copied article”;
+- “proves sources are independent”;
+- “proves a thesis correct”;
+- “objective confidence score”;
+- “AI stock picker”; or
+- “guaranteed protection from confirmation bias.”
+
+## Current defensibility and next moat
+
+The current deterministic grouping can still be reproduced in a spreadsheet or
+notes workflow. The most valuable future extension is not another chart. It is:
+
+```text
+paste URL or upload document
+→ extract factual claims
+→ detect cross-site repetitions
+→ trace a report back to a filing or transcript
+→ let the user confirm or reject each proposed relationship
+→ recommend one genuinely different counter-source to inspect
+```
+
+Until that extraction and provenance layer exists, the interface describes its
+current capability conservatively: exact URL identity plus explicit
+relationships, not universal automatic source tracing.
 
 ## 中文摘要
 
-Falsifi v0.5 不是股票预测器，也不提供买卖信号。它最实际的用途，是帮助用户
-记录“为什么值得研究这只股票”，防止把同一来源的重复信息当成多份支持，并
-找出在已测试范围内，什么最小变化会要求用户重新检查当前判断。
+Falsifi 不能再定位成泛化的“投资论点跟踪、压力测试、反方论证、证据溯源、
+提醒”大合集，因为这些能力都有公开竞品。
 
-行情自动指标只提供背景。要形成可以复核的研究案例，用户必须写明可证伪判断、
-可观察的失效条件、原始资料、反向证据、来源多样性和下次复核日期。同一关联
-证据组内的贡献先取平均，再与其他组相加，以避免同源重复计分。
+v0.6 只解决一个问题：用户已经有一项股票判断和若干材料，系统显示当前记录
+识别出多少个来源组，并指出下一项缺失证据。相同规范化网址无法通过
+修改标签被拆开；行情数据不参与人工证据来源数；主结果不依赖用户随意填写的
+0–100 分。
 
-图表、提醒、研究笔记、情景分析和 AI 摘要都有成熟替代方案。因此不能说
-Falsifi “世界首创”或“独一无二”。较准确的表述是：研究完整度检查、关联
-证据组去重、改变判断的最小已测试条件、基准变化和下一项研究行动，这一组合
-在主流个人投资工具中并不常见。
+本轮公开产品页审查中，没有发现把“规范化网址防拆分 + 同源关系归组 +
+材料数到来源组数的首要结果 + 下一项证据缺口”同时作为个人股票研究核心任务
+的产品。但这只能作为有边界的检索结论，不能宣传“全球首创”或“从未有人做过”。
