@@ -91,9 +91,9 @@ const COPY: Record<Locale, ResearchCopy> = {
       "market-context": (groups) =>
         `The automatic indicators come from ${groups} market-data group. They are context, not an investment case.`,
       incomplete: (groups, manual) =>
-        `${manual} manually reviewed evidence item(s) across ${groups} related group(s). Complete the missing checks before relying on the model.`,
+        `${manual} user-added material(s); ${groups} verified source group(s). Complete the missing checks before reviewing the record.`,
       reviewable: (groups, manual) =>
-        `${manual} manually reviewed evidence item(s) across ${groups} related group(s). The case is ready to be challenged and revisited.`,
+        `${manual} user-added material(s); ${groups} verified source group(s). The record is ready to challenge and revisit.`,
     },
     progress: (done, total) => `${done} of ${total} research checks complete`,
     checksTitle: "Research checks",
@@ -102,7 +102,7 @@ const COPY: Record<Locale, ResearchCopy> = {
       "invalidation-criteria": "A written condition that would weaken the claim",
       "primary-source": "At least one company or regulatory filing",
       "counter-evidence": "At least one independently reviewed challenge",
-      "source-diversity": "At least three genuinely different evidence groups",
+      "source-diversity": "At least two verified source groups",
       "review-date": "A scheduled review date",
     },
     nextTitle: "Next best research action",
@@ -135,11 +135,11 @@ const COPY: Record<Locale, ResearchCopy> = {
     advancedHelp:
       "Inspect rule sensitivity, related evidence groups, and scenario boundaries.",
     modal: {
-      eyebrow: "Case definition",
-      title: "Define what you are testing",
+      eyebrow: "Claim definition",
+      title: "Make one claim testable",
       subtitle:
-        "A useful stress test starts with a specific claim, a condition that could prove it wrong, and a date to review it.",
-      purpose: "Research task",
+        "Write what you expect, what observable fact would weaken it, and when you will check again.",
+      purpose: "Why are you checking it?",
       purposes: {
         "new-research": "New research",
         "holding-review": "Review an existing holding",
@@ -157,8 +157,8 @@ const COPY: Record<Locale, ResearchCopy> = {
       validation:
         "Complete the claim, time horizon, invalidation condition, and review date.",
       cancel: "Cancel",
-      save: "Save research case",
-      close: "Close case definition",
+      save: "Save and add evidence",
+      close: "Close claim definition",
     },
   },
   "zh-CN": {
@@ -172,9 +172,9 @@ const COPY: Record<Locale, ResearchCopy> = {
       "market-context": (groups) =>
         `自动指标只来自 ${groups} 个行情数据组，只能作为背景，不能构成完整投资论点。`,
       incomplete: (groups, manual) =>
-        `目前有 ${manual} 条人工核查证据，分属 ${groups} 个关联组。补齐缺口后再依赖模型结论。`,
+        `目前有 ${manual} 项人工录入材料、${groups} 个已核查来源组。请先补齐缺口。`,
       reviewable: (groups, manual) =>
-        `目前有 ${manual} 条人工核查证据，分属 ${groups} 个关联组，可以开始系统反证并定期复核。`,
+        `目前有 ${manual} 项人工录入材料、${groups} 个已核查来源组，可以开始反证并定期复核。`,
     },
     progress: (done, total) => `已完成 ${done}/${total} 项研究检查`,
     checksTitle: "研究检查",
@@ -183,7 +183,7 @@ const COPY: Record<Locale, ResearchCopy> = {
       "invalidation-criteria": "已写明什么情况会削弱该判断",
       "primary-source": "至少一份公司或监管机构原始披露",
       "counter-evidence": "至少一条经过核查的反向证据",
-      "source-diversity": "至少三个真正不同的证据组",
+      "source-diversity": "至少两个已核查来源组",
       "review-date": "已设置下一次复核日期",
     },
     nextTitle: "下一项最值得完成的研究",
@@ -215,11 +215,11 @@ const COPY: Record<Locale, ResearchCopy> = {
     advancedTitle: "高级模型压力测试",
     advancedHelp: "查看规则敏感性、关联证据组和情景边界。",
     modal: {
-      eyebrow: "案例定义",
-      title: "先定义你真正要检验的判断",
+      eyebrow: "判断定义",
+      title: "把一项判断写成可以检验的句子",
       subtitle:
-        "有效的压力测试需要一条具体判断、一个可能推翻它的条件，以及明确的复核日期。",
-      purpose: "研究任务",
+        "写清你预计会发生什么、哪项可观察事实会削弱它，以及何时重新检查。",
+      purpose: "为什么要检查它？",
       purposes: {
         "new-research": "研究一只新股票",
         "holding-review": "复核现有持仓",
@@ -236,8 +236,8 @@ const COPY: Record<Locale, ResearchCopy> = {
       reviewDate: "下次复核日期",
       validation: "请完整填写研究判断、期限、失效条件和复核日期。",
       cancel: "取消",
-      save: "保存研究案例",
-      close: "关闭案例定义",
+      save: "保存并添加证据",
+      close: "关闭判断定义",
     },
   },
   ja: {
@@ -251,9 +251,9 @@ const COPY: Record<Locale, ResearchCopy> = {
       "market-context": (groups) =>
         `自動指標は ${groups} つの市場データ群だけに基づきます。投資判断ではなく背景情報です。`,
       incomplete: (groups, manual) =>
-        `手動確認済みエビデンスは ${manual} 件、関連グループは ${groups} 件です。未完了項目を先に補ってください。`,
+        `ユーザー追加資料は ${manual} 件、確認済み出典群は ${groups} 件です。未完了項目を先に補ってください。`,
       reviewable: (groups, manual) =>
-        `手動確認済みエビデンスは ${manual} 件、関連グループは ${groups} 件です。反証と定期レビューを行える状態です。`,
+        `ユーザー追加資料は ${manual} 件、確認済み出典群は ${groups} 件です。反証と定期レビューを行える状態です。`,
     },
     progress: (done, total) => `調査チェック ${done}/${total} 完了`,
     checksTitle: "調査チェック",
@@ -262,7 +262,7 @@ const COPY: Record<Locale, ResearchCopy> = {
       "invalidation-criteria": "仮説を弱める条件を明記",
       "primary-source": "企業または規制当局の一次資料が1件以上",
       "counter-evidence": "確認済みの反証材料が1件以上",
-      "source-diversity": "実質的に異なるエビデンス群が3件以上",
+      "source-diversity": "確認済みの出典群が2件以上",
       "review-date": "次回レビュー日を設定",
     },
     nextTitle: "次に行うべき調査",
@@ -295,11 +295,11 @@ const COPY: Record<Locale, ResearchCopy> = {
     advancedHelp:
       "ルール感応度、関連エビデンス群、シナリオ境界を確認します。",
     modal: {
-      eyebrow: "ケース定義",
-      title: "検証する内容を定義",
+      eyebrow: "仮説の定義",
+      title: "一つの仮説を検証可能にする",
       subtitle:
-        "有用なストレステストには、具体的な仮説、反証条件、次回レビュー日が必要です。",
-      purpose: "調査目的",
+        "予想、弱める観察可能な事実、次回確認日を記録します。",
+      purpose: "確認する目的",
       purposes: {
         "new-research": "新規調査",
         "holding-review": "保有銘柄の見直し",
@@ -316,8 +316,8 @@ const COPY: Record<Locale, ResearchCopy> = {
       reviewDate: "次回レビュー日",
       validation: "仮説、期間、反証条件、レビュー日をすべて入力してください。",
       cancel: "キャンセル",
-      save: "調査ケースを保存",
-      close: "ケース定義を閉じる",
+      save: "保存して証拠を追加",
+      close: "仮説定義を閉じる",
     },
   },
   es: {
@@ -331,9 +331,9 @@ const COPY: Record<Locale, ResearchCopy> = {
       "market-context": (groups) =>
         `Los indicadores automáticos proceden de ${groups} grupo de datos de mercado. Son contexto, no una tesis de inversión.`,
       incomplete: (groups, manual) =>
-        `Hay ${manual} evidencia(s) revisada(s) manualmente en ${groups} grupo(s) relacionado(s). Completa las comprobaciones pendientes.`,
+        `Hay ${manual} material(es) añadido(s) y ${groups} grupo(s) de fuentes verificado(s). Completa las comprobaciones pendientes.`,
       reviewable: (groups, manual) =>
-        `Hay ${manual} evidencia(s) revisada(s) manualmente en ${groups} grupo(s) relacionado(s). El caso ya se puede cuestionar y revisar.`,
+        `Hay ${manual} material(es) añadido(s) y ${groups} grupo(s) de fuentes verificado(s). El registro ya se puede cuestionar y revisar.`,
     },
     progress: (done, total) =>
       `${done} de ${total} comprobaciones completadas`,
@@ -343,7 +343,7 @@ const COPY: Record<Locale, ResearchCopy> = {
       "invalidation-criteria": "Una condición escrita que debilitaría la tesis",
       "primary-source": "Al menos una fuente empresarial o regulatoria",
       "counter-evidence": "Al menos una evidencia contraria revisada",
-      "source-diversity": "Al menos tres grupos de evidencia realmente distintos",
+      "source-diversity": "Al menos dos grupos de fuentes verificados",
       "review-date": "Una fecha de revisión programada",
     },
     nextTitle: "Siguiente acción de investigación",
@@ -376,11 +376,11 @@ const COPY: Record<Locale, ResearchCopy> = {
     advancedHelp:
       "Examina la sensibilidad de reglas, los grupos relacionados y los límites del escenario.",
     modal: {
-      eyebrow: "Definición del caso",
-      title: "Define lo que quieres comprobar",
+      eyebrow: "Definición de la tesis",
+      title: "Convierte una tesis en algo comprobable",
       subtitle:
-        "Una prueba útil empieza con una tesis concreta, una condición que podría refutarla y una fecha de revisión.",
-      purpose: "Tarea de investigación",
+        "Escribe qué esperas, qué hecho observable la debilitaría y cuándo revisarás de nuevo.",
+      purpose: "Motivo de la comprobación",
       purposes: {
         "new-research": "Nueva investigación",
         "holding-review": "Revisar una posición existente",
@@ -398,7 +398,7 @@ const COPY: Record<Locale, ResearchCopy> = {
       validation:
         "Completa la tesis, el horizonte, la condición de invalidación y la fecha.",
       cancel: "Cancelar",
-      save: "Guardar el caso",
+      save: "Guardar y añadir evidencia",
       close: "Cerrar la definición",
     },
   },
