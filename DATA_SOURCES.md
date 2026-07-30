@@ -24,11 +24,18 @@ replace it with a licensed provider and document that provider’s delay,
 display, retention, and redistribution terms. Falsifi does not call this feed
 real-time data.
 
-All indicators generated from one returned price series share the same
-`originId`. The evidence dependency check therefore places that series in one
-related evidence group instead of presenting moving averages, RSI, returns,
-and drawdown as separate information sources. Grouping reports the
-relationship; it does not automatically change the items’ assigned weights.
+The four directional trend and momentum observations generated from one
+returned price series share the same `originId`. The evidence dependency check
+therefore places them in one related evidence group instead of presenting
+moving averages and returns as separate information sources. Volatility,
+drawdown, RSI, and volume remain descriptive market context or scenario inputs;
+Falsifi does not assign them a universal supporting or weakening direction. In
+v0.5, duplicate source-and-claim items are averaged first, then the remaining
+argument units inside one related evidence group are averaged before groups are
+added. Grouping therefore supports both dependency auditing and protection
+against same-source duplicate scoring. It does not prove that separate groups
+are statistically independent or detect a relationship the user failed to
+declare.
 
 ## SEC EDGAR (supported)
 

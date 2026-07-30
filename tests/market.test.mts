@@ -14,6 +14,7 @@ import {
   normalizeSymbolInput,
   parseYahooChart,
   parseYahooSearch,
+  refreshMarketCase,
   relocalizeMarketCase,
 } from "../lib/market.ts";
 import type { MarketPoint } from "../lib/falsifi.ts";
@@ -162,7 +163,7 @@ test("builds a valid non-demo case from market data", () => {
   assert.equal(isThesisCase(thesisCase), true);
   assert.equal(thesisCase.isDemo, false);
   assert.equal(thesisCase.marketSnapshot?.symbol, "TEST");
-  assert.equal(thesisCase.evidence.length, 8);
+  assert.equal(thesisCase.evidence.length, 4);
   assert.equal(thesisCase.assumptions.length, 4);
   const drawdown = thesisCase.assumptions.find(
     (item) => item.id === "market-drawdown",
@@ -171,6 +172,60 @@ test("builds a valid non-demo case from market data", () => {
   assert.ok(drawdown.value >= 0);
   assert.equal(drawdown.direction, -1);
   assert.equal(analysis.independenceAudit.independentRootCount, 1);
+});
+
+test("refreshes market-derived inputs while preserving the user's research case", () => {
+  const initialSnapshot = parseYahooChart(chartPayload);
+  const initial = buildMarketCase(initialSnapshot, "en");
+  initial.thesis = "Margins can recover while demand remains resilient.";
+  initial.horizon = "12 months";
+  initial.researchPlan = {
+    purpose: "holding-review",
+    thesisConfirmed: true,
+    invalidationCriteria:
+      "Two consecutive quarters of weaker demand and lower margins.",
+    nextReviewDate: "2026-09-30",
+  };
+  initial.evidence.push({
+    id: "manual-filing",
+    title: "Latest quarterly filing",
+    source: "Issuer filing",
+    sourceUrl: "https://example.com/filing",
+    asOf: "2026-07-30",
+    group: "Official filing",
+    direction: "supports",
+    impact: 3,
+    reliability: 0.9,
+    note: "Manually reviewed evidence remains attached after a refresh.",
+    enabled: true,
+    originId: "issuer-q2",
+    claimId: "margin-recovery",
+    relation: "direct",
+  });
+
+  const nextPayload = structuredClone(chartPayload);
+  nextPayload.chart.result[0].meta.regularMarketPrice =
+    (closes.at(-1) ?? 0) + 5;
+  nextPayload.chart.result[0].meta.regularMarketTime =
+    (timestamps.at(-1) ?? 0) + 86_400;
+  const refreshed = refreshMarketCase(
+    initial,
+    parseYahooChart(nextPayload),
+    "en",
+  );
+
+  assert.equal(refreshed.id, initial.id);
+  assert.equal(refreshed.thesis, initial.thesis);
+  assert.equal(refreshed.horizon, initial.horizon);
+  assert.deepEqual(refreshed.researchPlan, initial.researchPlan);
+  assert.equal(
+    refreshed.evidence.some((item) => item.id === "manual-filing"),
+    true,
+  );
+  assert.equal(
+    refreshed.evidence.filter((item) => item.relation === "derived").length,
+    4,
+  );
 });
 
 test("migrates legacy negative drawdown inputs without changing the score", () => {
@@ -202,15 +257,38 @@ test("migrates legacy negative drawdown inputs without changing the score", () =
   assert.equal(isThesisCase(migrated), true);
 });
 
-test("omits volume evidence when the provider has no volume series", () => {
+test("keeps volume as context rather than directional evidence", () => {
   const payload = structuredClone(chartPayload);
   payload.chart.result[0].indicators.quote[0].volume =
     Array.from({ length: closes.length }, () => null) as unknown as number[];
   const thesisCase = buildMarketCase(parseYahooChart(payload), "en");
 
-  assert.equal(thesisCase.evidence.length, 7);
+  assert.equal(thesisCase.evidence.length, 4);
+  assert.equal(thesisCase.marketSnapshot?.metrics.volumeRatio20, null);
   assert.equal(
     thesisCase.evidence.some((item) => item.id === "market-volume"),
+    false,
+  );
+});
+
+test("keeps directionally ambiguous risk metrics out of evidence scoring", () => {
+  const thesisCase = buildMarketCase(parseYahooChart(chartPayload), "en");
+  const ids = thesisCase.evidence.map((item) => item.id).sort();
+
+  assert.deepEqual(ids, [
+    "market-momentum-quarter",
+    "market-momentum-year",
+    "market-trend-200",
+    "market-trend-cross",
+  ]);
+  assert.equal(
+    ids.some(
+      (id) =>
+        id.includes("volatility") ||
+        id.includes("drawdown") ||
+        id.includes("rsi") ||
+        id.includes("volume"),
+    ),
     false,
   );
 });

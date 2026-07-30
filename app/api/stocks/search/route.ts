@@ -44,7 +44,7 @@ async function fetchYahooSearch(url: URL) {
     headers: {
       accept: "application/json",
       "accept-language": url.searchParams.get("lang") ?? "en-US",
-      "user-agent": "Falsifi/0.4 (+https://github.com/Nerowan08/Falsifi)",
+      "user-agent": "Falsifi/0.5 (+https://github.com/Nerowan08/Falsifi)",
     },
     signal: AbortSignal.timeout(7_000),
   });

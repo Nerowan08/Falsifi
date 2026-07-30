@@ -2,10 +2,10 @@
 
 > **Find what would flip your view.**
 
-Falsifi is an open-source, source-linked stress-testing workspace for stock
-research. It does not produce another buy/sell signal. It makes a research case
-explicit, tests which changes would alter the current assessment, and preserves
-the exact state for later review.
+Falsifi is an open-source, source-linked stock-research review workspace. It
+does not produce another buy/sell signal. It makes a research case explicit,
+tests which changes would alter the current assessment, and preserves the exact
+state for later review.
 
 [简体中文](./README.zh-CN.md) · [Methodology](./docs/METHODOLOGY.md) ·
 [Landscape review](./docs/UNIQUENESS.md) · [Data sources](./DATA_SOURCES.md)
@@ -19,28 +19,33 @@ Most AI stock tools ask, “What should I buy?”
 Falsifi asks a more disciplined question: “What is the smallest tested change
 that would alter my current assessment?”
 
-The result is a debugger for investor reasoning—not an oracle, probability
-model, or trading system.
+The result is a structured review and stress test for investor reasoning—not an
+oracle, probability model, or trading system.
 
-## What v0.4 includes
+## What v0.5 includes
 
 - **Real stock entry point** — search or enter U.S., mainland China, and Hong
   Kong symbols instead of landing in a fictional demo.
-- **Source-linked market snapshot** — loads one year of delayed daily prices,
+- **Market context, not an automatic thesis** — loads one year of delayed daily prices,
   shows market time, retrieval time, and source details, and calculates
   returns, annualized volatility, maximum drawdown, Wilder RSI, moving averages,
   and recent volume relative to its 20-session average. A complete adjusted-close
   series is used when available; otherwise the full ordinary-close series is
   used, and the interface labels the actual basis.
-  Analysis requires at least 200 valid daily observations.
-- **Inspectable case generation** — converts those market observations into a
-  non-demo technical starting case. Every generated item remains editable and
-  cites its upstream market series. The generated case is not a return
-  forecast.
+  Market indicators are only background for starting research; they do not
+  make a case complete and are not a return forecast. At least 200 valid daily
+  observations are required.
+- **Research-readiness gate** — a case is reviewable only after the user defines
+  a falsifiable research claim, an observable invalidation condition, primary
+  material, counter-evidence, sufficient source diversity, and a review date.
+  The interface identifies the missing requirement and proposes the next
+  research action.
 - **Evidence dependency check** — groups items that share an original source,
-  underlying claim, or declared dependency. Separate groups are not proof of
-  statistical independence, and grouping does not automatically change any
-  assigned weight.
+  underlying claim, or declared dependency. Enabled contributions inside each
+  related evidence group are averaged before groups are added, so duplicating
+  one declared source cannot increase its total score contribution. Separate
+  groups are not proof of statistical independence; relationships still depend
+  on accurate user declarations.
 - **Smallest tested assessment change** — removes whole related evidence groups
   and finds the smallest tested group set that crosses an assessment threshold.
 - **Two-variable threshold combinations** — searches pairs of scenario inputs
@@ -59,6 +64,9 @@ model, or trading system.
   observations without creating an account.
 - **Restorable SHA-256 snapshots** — freezes canonical case JSON for local
   version comparison. This is a content fingerprint, not a trusted timestamp.
+- **Baseline change and next action** — compares the latest market context with
+  the most recent saved snapshot, surfaces the weakest tested condition and
+  evidence gap, and turns the result into a concrete follow-up task.
 - **Four interface languages** — English, Simplified Chinese, Japanese, and
   Spanish. Generated case text follows the selected language; user-authored
   research is never silently translated.
@@ -91,21 +99,25 @@ Production Worker build:
 npm run build
 ```
 
-## Analyze a real stock
+## Use Falsifi on a real research decision
 
 1. Choose U.S., A-share, Hong Kong, or all markets.
 2. Search by company name or enter a ticker such as `AAPL`, `603901`,
    `002441`, or `0700.HK`.
-3. Select the company. Falsifi retrieves delayed daily history and builds the
-   initial case. Only listed equities with at least 200 valid daily
-   observations are accepted; ETFs, indexes, futures, FX, and crypto are
-   rejected.
-4. Add regulatory filings, management disclosures, or third-party research in
-   **Evidence**. Market-derived observations intentionally share one related
-   evidence group because they come from one market series. Review or adjust
-   their weights yourself; grouping reports the relationship but does not
-   reweight the score.
-5. Change scenario inputs, save a snapshot, or export the complete case JSON.
+3. Select the company. Falsifi retrieves delayed daily history as **market
+   context**. Only listed equities with at least 200 valid daily observations
+   are accepted; ETFs, indexes, futures, FX, and crypto are rejected.
+4. Write the actual claim you are evaluating, its time horizon, an observable
+   condition that would invalidate it, and the next review date.
+5. Add primary material such as a regulatory filing or company disclosure,
+   then deliberately add counter-evidence. Declare shared sources or claims so
+   repeated versions of the same information remain in one related evidence
+   group.
+6. Follow the readiness checklist until the case has source diversity and is
+   reviewable. The model diagnostics are decision aids, not permission to trade.
+7. Save a baseline. On the next review, refresh the market context, inspect
+   what changed, test the weakest condition, and complete the suggested research
+   action before updating the case.
 
 The built-in Yahoo Finance chart/search adapter is undocumented and intended
 for personal or self-hosted evaluation. It can be delayed, throttled, or
@@ -122,6 +134,8 @@ For the same valid case JSON and engine version, Falsifi returns the same
 result. The core engine is pure TypeScript with no network dependency.
 
 - related-group removal search is exact through four groups;
+- enabled items within one related evidence group are averaged, preventing
+  duplicate same-source items from multiplying that group’s contribution;
 - two-variable search is exhaustive until the 100,000-state limit, then
   switches to deterministic sampling and reports that fact;
 - an absent result means “not found inside the tested bounds,” not proof that a
@@ -158,6 +172,7 @@ components/             Real-stock picker and market snapshot UI
 lib/falsifi.ts          Deterministic stress-testing engine
 lib/i18n.ts             Four-language core UI
 lib/market.ts           Market normalization, metrics, and case generation
+lib/readiness.ts        Research-readiness checks and next-action selection
 lib/demo.ts             Synthetic engine test fixture (not the landing page)
 data/                   JSON schema
 examples/               Importable case template
@@ -168,19 +183,27 @@ docs/                   Method, architecture, and landscape audit
 
 ## Honest differentiation
 
-Individual ideas such as thesis tracking, scenario analysis, counterfactual
-explanations, evidence records, and SHA-256 evidence packs already exist.
-Falsifi’s distinction is their integration into an evidence-first workflow:
+Charts, alerts, screeners, thesis journals, scenario analysis,
+counterfactual explanations, evidence records, and SHA-256 content fingerprints
+all have established alternatives. Falsifi does not claim to have invented any
+of them. Its defensible distinction is an uncommon combination in mainstream
+personal-investing tools:
 
 ```text
-evidence relationship graph → related-group removal test
-                            → one- and two-variable sensitivity
-                            → restorable local versions
+falsifiable claim + invalidation condition
+→ research-readiness gate
+→ related-evidence-group deduplication
+→ smallest tested assessment change
+→ change since saved baseline
+→ next research action
 ```
 
-Our public landscape scan found no exact open-source equivalent, but this is
-not a “world first” claim. Private, unpublished, and unindexed systems cannot be
-verified. Read the evidence and comparison matrix in
+Most market summaries and automatically generated indicators are easy to
+replace with a charting site, spreadsheet, notebook, or general-purpose AI
+assistant. Falsifi earns its place only when the user needs to record why a
+view exists, avoid counting repeated evidence as independent support, and know
+what observation or follow-up should trigger reconsideration. Read the bounded
+comparison and prior-art review in
 [`docs/UNIQUENESS.md`](./docs/UNIQUENESS.md).
 
 ## What Falsifi does not do

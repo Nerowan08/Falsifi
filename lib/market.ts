@@ -677,13 +677,7 @@ export function buildMarketCase(
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")}-${asOf}`;
   const source = text.source;
-  const latestVolumeRatio = metrics.volumeRatio20;
   const trendCrossPositive = metrics.sma50 >= metrics.sma200;
-  const rsiPositive = metrics.rsi14 >= 45 && metrics.rsi14 <= 70;
-  const volumePositive =
-    latestVolumeRatio !== null &&
-    latestVolumeRatio >= 1 &&
-    metrics.dayReturn >= 0;
 
   const makeEvidence = (
     id: string,
@@ -724,7 +718,13 @@ export function buildMarketCase(
     constructiveThreshold: 58,
     cautiousThreshold: 42,
     lastUpdated: snapshot.fetchedAt,
-    modelVersion: "Falsifi 0.4.0",
+    modelVersion: "Falsifi 0.5.0",
+    researchPlan: {
+      purpose: "new-research",
+      thesisConfirmed: false,
+      invalidationCriteria: "",
+      nextReviewDate: "",
+    },
     marketSnapshot: snapshot,
     evidence: [
       makeEvidence(
@@ -763,46 +763,7 @@ export function buildMarketCase(
         text.notes.momentum1y(metrics.yearReturn, snapshot.priceBasis),
         "long-term-momentum",
       ),
-      makeEvidence(
-        "market-volatility",
-        text.labels.volatility,
-        metrics.annualizedVolatility <= 35 ? "supports" : "contradicts",
-        evidenceImpact(metrics.annualizedVolatility - 35, 0.08, 2.2, 5.5),
-        0.75,
-        text.notes.volatility(metrics.annualizedVolatility),
-        "realized-risk",
-      ),
-      makeEvidence(
-        "market-drawdown",
-        text.labels.drawdown,
-        metrics.maxDrawdown >= -25 ? "supports" : "contradicts",
-        evidenceImpact(metrics.maxDrawdown + 25, 0.1, 2.2, 5.5),
-        0.78,
-        text.notes.drawdown(metrics.maxDrawdown),
-        "drawdown-risk",
-      ),
-      makeEvidence(
-        "market-rsi",
-        text.labels.rsi,
-        rsiPositive ? "supports" : "contradicts",
-        2.8,
-        0.62,
-        text.notes.rsi(metrics.rsi14),
-        "short-term-momentum",
-      ),
-      makeEvidence(
-        "market-volume",
-        text.labels.volume,
-        volumePositive ? "supports" : "contradicts",
-        2.4,
-        0.68,
-        text.notes.volume(latestVolumeRatio ?? 0, metrics.dayReturn),
-        "volume-confirmation",
-      ),
-    ].filter(
-      (item) =>
-        item.id !== "market-volume" || metrics.volumeRatio20 !== null,
-    ),
+    ],
     assumptions: [
       {
         id: "market-quarter-momentum",
@@ -857,6 +818,58 @@ export function buildMarketCase(
         typicalShock: 12,
       },
     ],
+  };
+}
+
+/**
+ * Refreshes the market-derived portion of a case without overwriting the
+ * user's research question, plan, manually entered evidence, or any custom
+ * scenario inputs.
+ */
+export function refreshMarketCase(
+  thesisCase: ThesisCase,
+  snapshot: MarketSnapshot,
+  locale: Locale,
+): ThesisCase {
+  const fresh = buildMarketCase(snapshot, locale);
+  const priorMarketEvidence = new Map(
+    thesisCase.evidence
+      .filter(
+        (item) =>
+          item.relation === "derived" &&
+          item.originId?.startsWith("market-series-"),
+      )
+      .map((item) => [item.id, item]),
+  );
+  const manualEvidence = thesisCase.evidence.filter(
+    (item) => !priorMarketEvidence.has(item.id),
+  );
+  const marketAssumptionIds = new Set(
+    fresh.assumptions.map((item) => item.id),
+  );
+  const customAssumptions = thesisCase.assumptions.filter(
+    (item) => !marketAssumptionIds.has(item.id),
+  );
+  const keepUserDefinition =
+    thesisCase.researchPlan?.thesisConfirmed === true;
+
+  return {
+    ...fresh,
+    id: thesisCase.id,
+    thesis: keepUserDefinition ? thesisCase.thesis : fresh.thesis,
+    horizon: keepUserDefinition ? thesisCase.horizon : fresh.horizon,
+    baseScore: thesisCase.baseScore,
+    constructiveThreshold: thesisCase.constructiveThreshold,
+    cautiousThreshold: thesisCase.cautiousThreshold,
+    researchPlan: thesisCase.researchPlan ?? fresh.researchPlan,
+    evidence: [
+      ...fresh.evidence.map((item) => ({
+        ...item,
+        enabled: priorMarketEvidence.get(item.id)?.enabled ?? item.enabled,
+      })),
+      ...manualEvidence,
+    ],
+    assumptions: [...fresh.assumptions, ...customAssumptions],
   };
 }
 

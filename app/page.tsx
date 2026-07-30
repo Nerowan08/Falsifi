@@ -39,6 +39,11 @@ import {
   marketUi,
   StockPicker,
 } from "@/components/market-workspace";
+import {
+  ResearchActionSummary,
+  ResearchPlanModal,
+  researchUi,
+} from "@/components/research-action";
 import { UserGuide } from "@/components/user-guide";
 import {
   demoLocalizedCopy,
@@ -54,6 +59,7 @@ import {
   EvidenceItem,
   EvidenceStressMode,
   isHttpUrl,
+  isMarketSnapshot,
   isThesisCase,
   MarketSnapshot,
   Posture,
@@ -65,8 +71,14 @@ import {
 import {
   buildMarketCase,
   normalizeMarketCase,
+  refreshMarketCase,
   relocalizeMarketCase,
 } from "@/lib/market";
+import {
+  assessResearchReadiness,
+  type ReadinessAction,
+  type ResearchReadiness,
+} from "@/lib/readiness";
 
 type View =
   | "stress"
@@ -378,39 +390,55 @@ function CaseIntro({
 function MetricGrid({
   analysis,
   locale,
+  readiness,
 }: {
   analysis: StressResult;
   locale: Locale;
+  readiness: ResearchReadiness;
 }) {
+  const ready = readiness.status === "reviewable";
+  const copy = researchUi(locale);
+
   return (
     <section className="metric-grid" aria-label={t(locale, "common.score")}>
       <article>
         <span>{t(locale, "metrics.posture")}</span>
-        <strong className={`posture ${analysis.posture.toLowerCase()}`}>
-          {t(locale, postureKeys[analysis.posture])}
+        <strong
+          className={
+            ready ? `posture ${analysis.posture.toLowerCase()}` : "posture"
+          }
+        >
+          {ready
+            ? t(locale, postureKeys[analysis.posture])
+            : copy.statuses[readiness.status]}
         </strong>
         <small className="metric-help">
-          {t(locale, postureHelpKeys[analysis.posture])}
+          {ready
+            ? t(locale, postureHelpKeys[analysis.posture])
+            : copy.statusHelp[readiness.status](
+                readiness.relatedGroupCount,
+                readiness.manualEvidenceCount,
+              )}
         </small>
       </article>
       <article>
         <span>{t(locale, "metrics.score")}</span>
         <strong>
-          {analysis.score.toFixed(1)}
-          <small>/100</small>
+          {ready ? analysis.score.toFixed(1) : "—"}
+          {ready && <small>/100</small>}
         </strong>
         <small className="metric-help">
-          {t(locale, "metrics.scoreHelp")}
+          {ready ? t(locale, "metrics.scoreHelp") : copy.marketOnly}
         </small>
       </article>
       <article>
         <span>{t(locale, "metrics.stability")}</span>
         <strong>
-          {analysis.stabilityScore}
-          <small>/100</small>
+          {ready ? analysis.stabilityScore : "—"}
+          {ready && <small>/100</small>}
         </strong>
         <small className="metric-help">
-          {t(locale, "metrics.stabilityHelp")}
+          {ready ? t(locale, "metrics.stabilityHelp") : copy.marketOnly}
         </small>
       </article>
       <article>
@@ -657,12 +685,27 @@ function StressView({
   setThesisCase,
   analysis,
   locale,
+  readiness,
+  previousCase,
+  refreshing,
+  onRefresh,
+  onEditPlan,
+  onNextAction,
+  onSaveBaseline,
 }: {
   thesisCase: ThesisCase;
   setThesisCase: (value: ThesisCase) => void;
   analysis: StressResult;
   locale: Locale;
+  readiness: ResearchReadiness;
+  previousCase?: ThesisCase;
+  refreshing: boolean;
+  onRefresh: () => void;
+  onEditPlan: () => void;
+  onNextAction: (action: ReadinessAction) => void;
+  onSaveBaseline: () => void;
 }) {
+  const actionCopy = researchUi(locale);
   const updateAssumption = (id: string, value: number) => {
     setThesisCase({
       ...thesisCase,
@@ -698,241 +741,288 @@ function StressView({
           locale={locale}
         />
       )}
-      <MetricGrid analysis={analysis} locale={locale} />
+      <ResearchActionSummary
+        thesisCase={thesisCase}
+        previousCase={previousCase}
+        readiness={readiness}
+        locale={locale}
+        refreshing={refreshing}
+        onRefresh={onRefresh}
+        onEditPlan={onEditPlan}
+        onNextAction={onNextAction}
+        onSaveBaseline={onSaveBaseline}
+      />
 
-      <section className="primary-grid">
-        <FlipSummary
-          thesisCase={thesisCase}
-          analysis={analysis}
-          locale={locale}
-        />
-        <article className="card chart-card">
-          <div className="section-heading compact">
-            <div>
-              <span className="eyebrow">
-                {t(locale, "stress.cliff.title")}
-              </span>
-              <h2>{t(locale, "stress.cliff.description")}</h2>
-            </div>
-            <strong className="mini-score">{analysis.score.toFixed(1)}</strong>
-          </div>
-          <SensitivityChart
+      <details
+        className="advanced-analysis"
+        open={readiness.status === "reviewable"}
+      >
+        <summary>
+          <span>
+            <strong>{actionCopy.advancedTitle}</strong>
+            <small>{actionCopy.advancedHelp}</small>
+          </span>
+        </summary>
+        <div className="advanced-analysis-body">
+          <MetricGrid
             analysis={analysis}
-            thesisCase={thesisCase}
             locale={locale}
+            readiness={readiness}
           />
-        </article>
-      </section>
 
-      <section className="card assumption-card">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">
-              {t(locale, "stress.assumptions.title")}
-            </span>
-            <h2>{t(locale, "stress.assumptions.description")}</h2>
-          </div>
-          <button className="button ghost" onClick={resetAssumptions}>
-            <RefreshCcw size={14} />
-            {changedAssumptions
-              ? t(locale, "stress.assumptions.changedCount", {
-                  count: changedAssumptions,
-                })
-              : t(locale, "stress.assumptions.noChanges")}
-          </button>
-        </div>
-        <div className="assumption-grid">
-          {thesisCase.assumptions.map((assumption) => {
-            const label = localizedAssumption(
-              assumption.id,
-              assumption.label,
-              thesisCase,
-              locale,
-            );
-            const digits = assumption.step < 1 ? 1 : 0;
-            return (
-              <label className="assumption-control" key={assumption.id}>
-                <span className="assumption-topline">
-                  <strong>{label}</strong>
-                  <output>
-                    {formatValue(assumption.value, assumption.unit, digits)}
-                  </output>
-                </span>
-                <input
-                  type="range"
-                  min={assumption.min}
-                  max={assumption.max}
-                  step={assumption.step}
-                  value={assumption.value}
-                  onChange={(event) =>
-                    updateAssumption(
-                      assumption.id,
-                      Number(event.target.value),
-                    )
-                  }
-                  aria-label={t(locale, "aria.assumptionSlider", {
-                    name: label,
-                  })}
-                />
-                <span className="assumption-meta">
-                  <small>
-                    {t(locale, "stress.assumptions.baseline", {
-                      value: formatValue(
-                        assumption.baseline,
-                        assumption.unit,
-                        digits,
-                      ),
-                    })}
-                  </small>
-                  <button
-                    onClick={(event) => {
-                      event.preventDefault();
-                      updateAssumption(assumption.id, assumption.baseline);
-                    }}
-                    aria-label={t(locale, "aria.resetAssumption", {
-                      name: label,
-                    })}
-                  >
-                    <RefreshCcw size={12} />
-                  </button>
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      </section>
-
-      <section className="secondary-grid">
-        <article className="card frontier-card">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t(locale, "stress.frontier.title")}
-              </span>
-              <h2>{t(locale, "stress.frontier.description")}</h2>
-            </div>
-            <span className="proof-chip">
-              {t(
-                locale,
-                analysis.jointFlipFrontier.exact
-                  ? "stress.search.completeGrid"
-                  : "stress.search.sampled",
-              )}{" "}
-              ·{" "}
-              {t(locale, "stress.search.testedCombinations", {
-                count:
-                  analysis.jointFlipFrontier.evaluatedStates.toLocaleString(
-                    locale,
-                  ),
-              })}
-            </span>
-          </div>
-          <p className="search-scope-note">
-            {t(locale, "stress.frontier.scope")}{" "}
-            {t(locale, "stress.search.stateLimit", {
-              count:
-                analysis.jointFlipFrontier.maxStates.toLocaleString(locale),
-            })}
-          </p>
-          <div className="frontier-list">
-            {analysis.jointFlipFrontier.points.length ? (
-              analysis.jointFlipFrontier.points.slice(0, 4).map((point, i) => (
-                <div className="frontier-row" key={`${point.assumptionIds}-${i}`}>
-                  <span className="route-number">
-                    {String(i + 1).padStart(2, "0")}
+          <section className="primary-grid">
+            <FlipSummary
+              thesisCase={thesisCase}
+              analysis={analysis}
+              locale={locale}
+            />
+            <article className="card chart-card">
+              <div className="section-heading compact">
+                <div>
+                  <span className="eyebrow">
+                    {t(locale, "stress.cliff.title")}
                   </span>
-                  <div>
-                    <strong>
-                      {localizedAssumption(
-                        point.assumptionIds[0],
-                        point.labels[0],
-                        thesisCase,
-                        locale,
-                      )}
-                      <em>
-                        {signed(point.deltas[0])}
-                        {point.units[0]}
-                      </em>
-                    </strong>
-                    <strong>
-                      {localizedAssumption(
-                        point.assumptionIds[1],
-                        point.labels[1],
-                        thesisCase,
-                        locale,
-                      )}
-                      <em>
-                        {signed(point.deltas[1])}
-                        {point.units[1]}
-                      </em>
-                    </strong>
-                    <small className="combination-scope">
-                      {t(
-                        locale,
-                        point.requiresBoth
-                          ? "stress.frontier.requiresBoth"
-                          : "stress.frontier.oneSufficient",
-                      )}
-                    </small>
-                  </div>
-                  <span className={`posture-tag ${point.resultingPosture.toLowerCase()}`}>
-                    {t(locale, postureKeys[point.resultingPosture])} ·{" "}
-                    {point.resultingScore.toFixed(1)}
-                  </span>
+                  <h2>{t(locale, "stress.cliff.description")}</h2>
                 </div>
-              ))
-            ) : (
-              <div className="empty-state">
-                {t(locale, "stress.frontier.noFrontier")}
+                <strong className="mini-score">
+                  {readiness.status === "reviewable"
+                    ? analysis.score.toFixed(1)
+                    : "—"}
+                </strong>
               </div>
-            )}
-          </div>
-        </article>
+              <SensitivityChart
+                analysis={analysis}
+                thesisCase={thesisCase}
+                locale={locale}
+              />
+            </article>
+          </section>
 
-        <article className="card semantics-card">
-          <div className="section-heading">
-            <div>
-              <span className="eyebrow">
-                {t(locale, "stress.semantics.title")}
-              </span>
-              <h2>{t(locale, "stress.semantics.description")}</h2>
+          <section className="card assumption-card">
+            <div className="section-heading">
+              <div>
+                <span className="eyebrow">
+                  {t(locale, "stress.assumptions.title")}
+                </span>
+                <h2>{t(locale, "stress.assumptions.description")}</h2>
+              </div>
+              <button className="button ghost" onClick={resetAssumptions}>
+                <RefreshCcw size={14} />
+                {changedAssumptions
+                  ? t(locale, "stress.assumptions.changedCount", {
+                      count: changedAssumptions,
+                    })
+                  : t(locale, "stress.assumptions.noChanges")}
+              </button>
             </div>
-          </div>
-          <div
-            className="semantics-grid"
-            aria-label={t(locale, "aria.stressSemantics")}
-          >
-            {(["remove", "degrade", "contradict"] as EvidenceStressMode[]).map(
-              (mode) => {
-                const outcome = analysis.evidenceStress.outcomes[mode];
-                return (
-                  <div
-                    className={`semantic-option ${outcome.flipsPosture ? "flips" : ""}`}
-                    key={mode}
-                    title={t(locale, stressHelpKeys[mode])}
-                  >
-                    <span>{t(locale, stressModeKeys[mode])}</span>
-                    <strong>{outcome.score.toFixed(1)}</strong>
-                    <small>
-                      {signed(outcome.delta)} ·{" "}
-                      {t(locale, postureKeys[outcome.posture])}
-                    </small>
-                    <p className="semantic-help">
-                      {t(locale, stressHelpKeys[mode])}
-                    </p>
-                  </div>
+            <div className="assumption-grid">
+              {thesisCase.assumptions.map((assumption) => {
+                const label = localizedAssumption(
+                  assumption.id,
+                  assumption.label,
+                  thesisCase,
+                  locale,
                 );
-              },
-            )}
-          </div>
-          <p className="semantic-note">
-            <Info size={14} />
-            {t(locale, "stress.semantics.scope", {
-              count: analysis.evidenceStress.evidenceIds.length,
-            })}
-          </p>
-        </article>
-      </section>
+                const digits = assumption.step < 1 ? 1 : 0;
+                return (
+                  <label className="assumption-control" key={assumption.id}>
+                    <span className="assumption-topline">
+                      <strong>{label}</strong>
+                      <output>
+                        {formatValue(
+                          assumption.value,
+                          assumption.unit,
+                          digits,
+                        )}
+                      </output>
+                    </span>
+                    <input
+                      type="range"
+                      min={assumption.min}
+                      max={assumption.max}
+                      step={assumption.step}
+                      value={assumption.value}
+                      onChange={(event) =>
+                        updateAssumption(
+                          assumption.id,
+                          Number(event.target.value),
+                        )
+                      }
+                      aria-label={t(locale, "aria.assumptionSlider", {
+                        name: label,
+                      })}
+                    />
+                    <span className="assumption-meta">
+                      <small>
+                        {t(locale, "stress.assumptions.baseline", {
+                          value: formatValue(
+                            assumption.baseline,
+                            assumption.unit,
+                            digits,
+                          ),
+                        })}
+                      </small>
+                      <button
+                        onClick={(event) => {
+                          event.preventDefault();
+                          updateAssumption(
+                            assumption.id,
+                            assumption.baseline,
+                          );
+                        }}
+                        aria-label={t(locale, "aria.resetAssumption", {
+                          name: label,
+                        })}
+                      >
+                        <RefreshCcw size={12} />
+                      </button>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+
+          <section className="secondary-grid">
+            <article className="card frontier-card">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">
+                    {t(locale, "stress.frontier.title")}
+                  </span>
+                  <h2>{t(locale, "stress.frontier.description")}</h2>
+                </div>
+                <span className="proof-chip">
+                  {t(
+                    locale,
+                    analysis.jointFlipFrontier.exact
+                      ? "stress.search.completeGrid"
+                      : "stress.search.sampled",
+                  )}{" "}
+                  ·{" "}
+                  {t(locale, "stress.search.testedCombinations", {
+                    count:
+                      analysis.jointFlipFrontier.evaluatedStates.toLocaleString(
+                        locale,
+                      ),
+                  })}
+                </span>
+              </div>
+              <p className="search-scope-note">
+                {t(locale, "stress.frontier.scope")}{" "}
+                {t(locale, "stress.search.stateLimit", {
+                  count:
+                    analysis.jointFlipFrontier.maxStates.toLocaleString(locale),
+                })}
+              </p>
+              <div className="frontier-list">
+                {analysis.jointFlipFrontier.points.length ? (
+                  analysis.jointFlipFrontier.points
+                    .slice(0, 4)
+                    .map((point, i) => (
+                      <div
+                        className="frontier-row"
+                        key={`${point.assumptionIds}-${i}`}
+                      >
+                        <span className="route-number">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                        <div>
+                          <strong>
+                            {localizedAssumption(
+                              point.assumptionIds[0],
+                              point.labels[0],
+                              thesisCase,
+                              locale,
+                            )}
+                            <em>
+                              {signed(point.deltas[0])}
+                              {point.units[0]}
+                            </em>
+                          </strong>
+                          <strong>
+                            {localizedAssumption(
+                              point.assumptionIds[1],
+                              point.labels[1],
+                              thesisCase,
+                              locale,
+                            )}
+                            <em>
+                              {signed(point.deltas[1])}
+                              {point.units[1]}
+                            </em>
+                          </strong>
+                          <small className="combination-scope">
+                            {t(
+                              locale,
+                              point.requiresBoth
+                                ? "stress.frontier.requiresBoth"
+                                : "stress.frontier.oneSufficient",
+                            )}
+                          </small>
+                        </div>
+                        <span
+                          className={`posture-tag ${point.resultingPosture.toLowerCase()}`}
+                        >
+                          {t(locale, postureKeys[point.resultingPosture])} ·{" "}
+                          {point.resultingScore.toFixed(1)}
+                        </span>
+                      </div>
+                    ))
+                ) : (
+                  <div className="empty-state">
+                    {t(locale, "stress.frontier.noFrontier")}
+                  </div>
+                )}
+              </div>
+            </article>
+
+            <article className="card semantics-card">
+              <div className="section-heading">
+                <div>
+                  <span className="eyebrow">
+                    {t(locale, "stress.semantics.title")}
+                  </span>
+                  <h2>{t(locale, "stress.semantics.description")}</h2>
+                </div>
+              </div>
+              <div
+                className="semantics-grid"
+                aria-label={t(locale, "aria.stressSemantics")}
+              >
+                {(
+                  ["remove", "degrade", "contradict"] as EvidenceStressMode[]
+                ).map((mode) => {
+                  const outcome = analysis.evidenceStress.outcomes[mode];
+                  return (
+                    <div
+                      className={`semantic-option ${outcome.flipsPosture ? "flips" : ""}`}
+                      key={mode}
+                      title={t(locale, stressHelpKeys[mode])}
+                    >
+                      <span>{t(locale, stressModeKeys[mode])}</span>
+                      <strong>{outcome.score.toFixed(1)}</strong>
+                      <small>
+                        {signed(outcome.delta)} ·{" "}
+                        {t(locale, postureKeys[outcome.posture])}
+                      </small>
+                      <p className="semantic-help">
+                        {t(locale, stressHelpKeys[mode])}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="semantic-note">
+                <Info size={14} />
+                {t(locale, "stress.semantics.scope", {
+                  count: analysis.evidenceStress.evidenceIds.length,
+                })}
+              </p>
+            </article>
+          </section>
+        </div>
+      </details>
     </>
   );
 }
@@ -1540,19 +1630,32 @@ function MethodView({ locale }: { locale: Locale }) {
   );
 }
 
+type EvidenceDefaults = {
+  direction?: EvidenceDirection;
+  group?: EvidenceGroup;
+};
+
+const defaultOriginId = (sourceUrl: string) => {
+  const url = new URL(sourceUrl);
+  const path = url.pathname.replace(/\/+$/, "") || "/";
+  return `source:${url.hostname.toLowerCase()}${path}`.slice(0, 120);
+};
+
 function EvidenceModal({
   locale,
   initial,
+  defaults,
   onClose,
   onSave,
 }: {
   locale: Locale;
   initial: EvidenceItem | null;
+  defaults?: EvidenceDefaults;
   onClose: () => void;
   onSave: (item: EvidenceItem) => void;
 }) {
   const [direction, setDirection] = useState<EvidenceDirection>(
-    initial?.direction ?? "contradicts",
+    initial?.direction ?? defaults?.direction ?? "contradicts",
   );
   const [error, setError] = useState("");
   const firstFieldRef = useRef<HTMLInputElement>(null);
@@ -1640,7 +1743,7 @@ function EvidenceModal({
       reliability,
       note,
       enabled: initial?.enabled ?? true,
-      originId: originId || undefined,
+      originId: originId || defaultOriginId(sourceUrl),
       claimId: claimId || undefined,
       dependsOnIds: initial?.dependsOnIds,
       relation: initial?.relation ?? "direct",
@@ -1704,7 +1807,12 @@ function EvidenceModal({
             </label>
             <label className="field">
               <span>{t(locale, "evidence.form.sourceGroup")}</span>
-              <select name="group" defaultValue={initial?.group ?? "Official filing"}>
+              <select
+                name="group"
+                defaultValue={
+                  initial?.group ?? defaults?.group ?? "Official filing"
+                }
+              >
                 {(Object.keys(groupKeys) as EvidenceGroup[]).map((group) => (
                   <option key={group} value={group}>
                     {t(locale, groupKeys[group])}
@@ -1851,12 +1959,20 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingEvidence, setEditingEvidence] =
     useState<EvidenceItem | null>(null);
+  const [evidenceDefaults, setEvidenceDefaults] =
+    useState<EvidenceDefaults>();
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [showResearchPlanModal, setShowResearchPlanModal] = useState(false);
+  const [refreshingMarket, setRefreshingMarket] = useState(false);
   const [hydrated, setHydrated] = useState(false);
   const importRef = useRef<HTMLInputElement>(null);
   const guideButtonRef = useRef<HTMLButtonElement>(null);
   const analysis = useMemo(
     () => (thesisCase ? runStressTest(thesisCase) : null),
+    [thesisCase],
+  );
+  const readiness = useMemo(
+    () => (thesisCase ? assessResearchReadiness(thesisCase) : null),
     [thesisCase],
   );
   const caseSnapshots = useMemo(
@@ -1945,7 +2061,7 @@ export default function HomePage() {
     }
   }, [hydrated, snapshots, thesisCase]);
 
-  const createSnapshot = async () => {
+  const createSnapshot = async (stayOnCurrentView = false) => {
     if (!thesisCase || !analysis) return;
     const hash = await sha256(thesisCase);
     const now = new Date().toISOString();
@@ -1971,7 +2087,7 @@ export default function HomePage() {
         ...current,
       ].slice(0, 30),
     );
-    setActiveView("history");
+    if (!stayOnCurrentView) setActiveView("history");
   };
 
   const saveEvidence = (item: EvidenceItem) => {
@@ -1994,17 +2110,19 @@ export default function HomePage() {
     }
     setThesisCase(nextCase);
     setEditingEvidence(null);
+    setEvidenceDefaults(undefined);
     setShowEvidenceModal(false);
     setActiveView("evidence");
   };
 
-  const openAddEvidence = () => {
+  const openAddEvidence = (defaults?: EvidenceDefaults) => {
     if (!thesisCase) return;
     if (thesisCase.evidence.length >= 40) {
       window.alert(t(locale, "error.evidenceLimit"));
       return;
     }
     setEditingEvidence(null);
+    setEvidenceDefaults(defaults);
     setShowEvidenceModal(true);
   };
 
@@ -2091,11 +2209,94 @@ export default function HomePage() {
     }
   };
 
+  const saveResearchPlan = ({
+    thesis,
+    horizon,
+    researchPlan,
+  }: {
+    thesis: string;
+    horizon: string;
+    researchPlan: NonNullable<ThesisCase["researchPlan"]>;
+  }) => {
+    if (!thesisCase) return;
+    setThesisCase({
+      ...thesisCase,
+      thesis,
+      horizon,
+      researchPlan,
+      lastUpdated: new Date().toISOString(),
+    });
+    setShowResearchPlanModal(false);
+  };
+
+  const refreshCurrentMarket = async () => {
+    if (!thesisCase?.marketSnapshot || refreshingMarket) return;
+    const symbol = thesisCase.marketSnapshot.symbol;
+    setRefreshingMarket(true);
+    try {
+      const params = new URLSearchParams({
+        symbol,
+        name: thesisCase.company,
+      });
+      const response = await fetch(`/api/stocks/quote?${params}`);
+      if (!response.ok) throw new Error("Market refresh failed");
+      const body = (await response.json()) as { snapshot?: unknown };
+      if (!isMarketSnapshot(body.snapshot)) {
+        throw new Error("Invalid market snapshot");
+      }
+      const snapshot = body.snapshot;
+      setThesisCase((current) =>
+        current?.ticker === symbol
+          ? refreshMarketCase(current, snapshot, locale)
+          : current,
+      );
+    } catch {
+      window.alert(marketUi(locale).unavailable);
+    } finally {
+      setRefreshingMarket(false);
+    }
+  };
+
+  const handleReadinessAction = (action: ReadinessAction) => {
+    if (
+      action === "define-case" ||
+      action === "add-invalidation" ||
+      action === "set-review-date"
+    ) {
+      setShowResearchPlanModal(true);
+      return;
+    }
+    if (action === "save-baseline") {
+      void createSnapshot(true);
+      return;
+    }
+
+    setActiveView("evidence");
+    if (action === "add-primary-source") {
+      openAddEvidence({
+        group: "Official filing",
+        direction: "supports",
+      });
+    } else if (action === "add-counter-evidence") {
+      openAddEvidence({
+        group: "External estimate",
+        direction: "contradicts",
+      });
+    } else {
+      openAddEvidence({
+        group: "External estimate",
+        direction: "supports",
+      });
+    }
+  };
+
   const selectStock = (snapshot: MarketSnapshot) => {
     setThesisCase(buildMarketCase(snapshot, locale));
     setSearchQuery("");
     setEditingEvidence(null);
+    setEvidenceDefaults(undefined);
     setShowEvidenceModal(false);
+    setShowResearchPlanModal(false);
     setActiveView("stress");
   };
 
@@ -2118,7 +2319,9 @@ export default function HomePage() {
     setThesisCase(null);
     setSearchQuery("");
     setEditingEvidence(null);
+    setEvidenceDefaults(undefined);
     setShowEvidenceModal(false);
+    setShowResearchPlanModal(false);
     setActiveView("stress");
   };
 
@@ -2169,7 +2372,7 @@ export default function HomePage() {
         onChangeLocale={changeLocale}
         onChangeStock={changeStock}
         onOpenGuide={openGuide}
-        onSnapshot={createSnapshot}
+        onSnapshot={() => void createSnapshot()}
         guideButtonRef={guideButtonRef}
       />
 
@@ -2185,7 +2388,7 @@ export default function HomePage() {
             hasCase={Boolean(thesisCase)}
             onClose={closeGuide}
           />
-        ) : !thesisCase || !analysis ? (
+        ) : !thesisCase || !analysis || !readiness ? (
           <StockPicker
             locale={locale}
             onSelect={selectStock}
@@ -2200,6 +2403,13 @@ export default function HomePage() {
                 setThesisCase={(value) => setThesisCase(value)}
                 analysis={analysis}
                 locale={locale}
+                readiness={readiness}
+                previousCase={caseSnapshots[0]?.caseState}
+                refreshing={refreshingMarket}
+                onRefresh={() => void refreshCurrentMarket()}
+                onEditPlan={() => setShowResearchPlanModal(true)}
+                onNextAction={handleReadinessAction}
+                onSaveBaseline={() => void createSnapshot(true)}
               />
             )}
             {activeView === "evidence" && (
@@ -2209,9 +2419,10 @@ export default function HomePage() {
                 locale={locale}
                 searchQuery={searchQuery}
                 setSearchQuery={setSearchQuery}
-                onAdd={openAddEvidence}
+                onAdd={() => openAddEvidence()}
                 onEdit={(item) => {
                   setEditingEvidence(item);
+                  setEvidenceDefaults(undefined);
                   setShowEvidenceModal(true);
                 }}
                 onDelete={deleteEvidence}
@@ -2231,7 +2442,7 @@ export default function HomePage() {
                 analysis={analysis}
                 snapshots={caseSnapshots}
                 locale={locale}
-                onSnapshot={createSnapshot}
+                onSnapshot={() => void createSnapshot()}
                 onRestore={restoreSnapshot}
                 onExport={exportCase}
                 onImport={() => importRef.current?.click()}
@@ -2273,11 +2484,22 @@ export default function HomePage() {
         <EvidenceModal
           locale={locale}
           initial={editingEvidence}
+          defaults={evidenceDefaults}
           onClose={() => {
             setEditingEvidence(null);
+            setEvidenceDefaults(undefined);
             setShowEvidenceModal(false);
           }}
           onSave={saveEvidence}
+        />
+      )}
+
+      {showResearchPlanModal && thesisCase && (
+        <ResearchPlanModal
+          thesisCase={thesisCase}
+          locale={locale}
+          onClose={() => setShowResearchPlanModal(false)}
+          onSave={saveResearchPlan}
         />
       )}
     </div>

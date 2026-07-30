@@ -87,6 +87,18 @@ export type Assumption = {
   typicalShock: number;
 };
 
+export type ResearchPurpose =
+  | "new-research"
+  | "holding-review"
+  | "watchlist";
+
+export type ResearchPlan = {
+  purpose: ResearchPurpose;
+  thesisConfirmed: boolean;
+  invalidationCriteria: string;
+  nextReviewDate: string;
+};
+
 export type ThesisCase = {
   schemaVersion: 1;
   id: string;
@@ -100,6 +112,7 @@ export type ThesisCase = {
   cautiousThreshold: number;
   lastUpdated: string;
   modelVersion: string;
+  researchPlan?: ResearchPlan;
   marketSnapshot?: MarketSnapshot;
   evidence: EvidenceItem[];
   assumptions: Assumption[];
@@ -265,11 +278,20 @@ export function scoreCase(
   assumptionOverrides: Record<string, number> = {},
 ) {
   const disabled = new Set(disabledEvidenceIds);
-  const evidenceScore = thesisCase.evidence.reduce((total, item) => {
-    if (!item.enabled || disabled.has(item.id)) return total;
-    const sign = item.direction === "supports" ? 1 : -1;
-    return total + sign * item.impact * item.reliability;
-  }, 0);
+  const evidenceById = new Map(
+    thesisCase.evidence.map((item) => [item.id, item]),
+  );
+  const evidenceScore = buildEvidenceRoots(thesisCase).reduce(
+    (total, root) => {
+      const activeItems = root.evidenceIds
+        .filter((id) => !disabled.has(id))
+        .map((id) => evidenceById.get(id))
+        .filter((item): item is EvidenceItem => Boolean(item));
+      if (activeItems.length === 0) return total;
+      return total + calculateEvidenceGroupContribution(activeItems);
+    },
+    0,
+  );
 
   const assumptionScore = thesisCase.assumptions.reduce((total, assumption) => {
     const current =
@@ -319,6 +341,40 @@ const evidenceContribution = (item: EvidenceItem) =>
 
 const compareStrings = (left: string, right: string) =>
   left < right ? -1 : left > right ? 1 : 0;
+
+/**
+ * Treats repeated rows for the same declared source-and-claim pair as one
+ * argument unit. Each unit is averaged first, then distinct units receive
+ * equal weight inside their related evidence group.
+ */
+function calculateEvidenceGroupContribution(items: EvidenceItem[]) {
+  if (items.length === 0) return 0;
+  const argumentUnits = new Map<string, EvidenceItem[]>();
+
+  items.forEach((item) => {
+    const unitKey =
+      item.originId || item.claimId
+        ? JSON.stringify([item.originId ?? null, item.claimId ?? null])
+        : JSON.stringify(["item", item.id]);
+    const unitItems = argumentUnits.get(unitKey) ?? [];
+    unitItems.push(item);
+    argumentUnits.set(unitKey, unitItems);
+  });
+
+  const unitContributions = Array.from(argumentUnits.values()).map(
+    (unitItems) =>
+      unitItems.reduce(
+        (total, item) => total + evidenceContribution(item),
+        0,
+      ) / unitItems.length,
+  );
+  return (
+    unitContributions.reduce(
+      (total, contribution) => total + contribution,
+      0,
+    ) / unitContributions.length
+  );
+}
 
 /**
  * Groups enabled evidence by declared relationships. Shared origin IDs,
@@ -384,20 +440,14 @@ export function buildEvidenceRoots(thesisCase: ThesisCase): EvidenceRoot[] {
     components.set(root, items);
   });
 
-  const totalAbsoluteContribution = evidence.reduce(
-    (total, item) => total + Math.abs(evidenceContribution(item)),
-    0,
-  );
-
-  return Array.from(components.values())
+  const roots = Array.from(components.values())
     .map((items) => {
       const sortedItems = items
         .slice()
         .sort((a, b) => compareStrings(a.id, b.id));
-      const absoluteContribution = sortedItems.reduce(
-        (total, item) => total + Math.abs(evidenceContribution(item)),
-        0,
-      );
+      const netContribution =
+        calculateEvidenceGroupContribution(sortedItems);
+      const absoluteContribution = Math.abs(netContribution);
       const directions = (["supports", "contradicts"] as const).filter(
         (direction) =>
           sortedItems.some((item) => item.direction === direction),
@@ -421,18 +471,24 @@ export function buildEvidenceRoots(thesisCase: ThesisCase): EvidenceRoot[] {
           ),
         ).sort(compareStrings),
         directions,
-        netContribution: sortedItems.reduce(
-          (total, item) => total + evidenceContribution(item),
-          0,
-        ),
+        netContribution,
         absoluteContribution,
-        shareOfAbsoluteContribution:
-          totalAbsoluteContribution === 0
-            ? 0
-            : absoluteContribution / totalAbsoluteContribution,
+        shareOfAbsoluteContribution: 0,
       };
     })
     .sort((a, b) => compareStrings(a.id, b.id));
+
+  const totalAbsoluteContribution = roots.reduce(
+    (total, root) => total + root.absoluteContribution,
+    0,
+  );
+  return roots.map((root) => ({
+    ...root,
+    shareOfAbsoluteContribution:
+      totalAbsoluteContribution === 0
+        ? 0
+        : root.absoluteContribution / totalAbsoluteContribution,
+  }));
 }
 
 export function auditEvidenceIndependence(
@@ -1049,9 +1105,12 @@ export function buildSensitivity(
 function calculateStabilityScore(
   thesisCase: ThesisCase,
   score: number,
-  minimumFlipSet: EvidenceItem[],
   assumptionFlip: AssumptionFlip | null,
+  independenceAudit: EvidenceIndependenceAudit,
+  minimumIndependentFlip: MinimumIndependentFlipResult,
 ) {
+  if (independenceAudit.enabledEvidenceCount === 0) return 0;
+
   const nearestThreshold =
     getPosture(thesisCase, score) === "Constructive"
       ? thesisCase.constructiveThreshold
@@ -1068,17 +1127,22 @@ function calculateStabilityScore(
         ? nearestThreshold
         : Math.abs(score - nearestThreshold)
       : 0;
-  const enabledEvidenceCount = thesisCase.evidence.filter(
-    (item) => item.enabled,
-  ).length;
-  const testedEvidenceBuffer =
-    minimumFlipSet.length > 0
-      ? minimumFlipSet.length
-      : Math.min(enabledEvidenceCount, 4);
-  const evidenceResilience =
-    enabledEvidenceCount === 0
+  const testedGroupBuffer = minimumIndependentFlip.found
+    ? minimumIndependentFlip.rootIds.length
+    : minimumIndependentFlip.searchedThroughRootCount;
+  const groupBufferResilience = clamp(testedGroupBuffer / 3, 0, 1);
+  const rootCount = independenceAudit.independentRootCount;
+  const concentrationResilience =
+    rootCount <= 1
       ? 0
-      : clamp(testedEvidenceBuffer / 3, 0, 1);
+      : clamp(
+          (1 - independenceAudit.concentrationHhi) /
+            (1 - 1 / rootCount),
+          0,
+          1,
+        );
+  const evidenceResilience =
+    groupBufferResilience * concentrationResilience;
   const assumption = assumptionFlip
     ? thesisCase.assumptions.find(
         (item) => item.id === assumptionFlip.assumptionId,
@@ -1095,12 +1159,20 @@ function calculateStabilityScore(
       : 1;
   const marginResilience = clamp(margin / 9.5, 0, 1);
 
-  return Math.round(
+  const blendedScore = Math.round(
     100 *
       (0.35 * evidenceResilience +
         0.25 * assumptionResilience +
         0.4 * marginResilience),
   );
+  const groupFragilityCap = minimumIndependentFlip.found
+    ? Math.round(
+        100 *
+          clamp(minimumIndependentFlip.rootIds.length / 3, 0, 1),
+      )
+    : 100;
+
+  return Math.min(blendedScore, groupFragilityCap);
 }
 
 export function runStressTest(thesisCase: ThesisCase): StressResult {
@@ -1143,8 +1215,9 @@ export function runStressTest(thesisCase: ThesisCase): StressResult {
     stabilityScore: calculateStabilityScore(
       thesisCase,
       score,
-      minimumFlipSet,
       assumptionFlip,
+      independenceAudit,
+      minimumIndependentFlip,
     ),
     ablations,
     sensitivity: buildSensitivity(thesisCase, driver.id),
@@ -1214,6 +1287,12 @@ const evidenceRelations = new Set<EvidenceRelation>([
   "duplicate",
 ]);
 
+const researchPurposes = new Set<ResearchPurpose>([
+  "new-research",
+  "holding-review",
+  "watchlist",
+]);
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
@@ -1224,6 +1303,29 @@ const isNonEmptyString = (value: unknown, maxLength = 10_000) =>
   typeof value === "string" &&
   value.trim().length > 0 &&
   value.length <= maxLength;
+
+function isResearchPlan(value: unknown): value is ResearchPlan {
+  if (!isRecord(value)) return false;
+  const nextReviewDate = value.nextReviewDate;
+  const parsedReviewDate =
+    typeof nextReviewDate === "string" &&
+    /^\d{4}-\d{2}-\d{2}$/.test(nextReviewDate)
+      ? new Date(`${nextReviewDate}T00:00:00.000Z`)
+      : null;
+  const validReviewDate =
+    nextReviewDate === "" ||
+    (parsedReviewDate !== null &&
+      !Number.isNaN(parsedReviewDate.getTime()) &&
+      parsedReviewDate.toISOString().slice(0, 10) === nextReviewDate);
+
+  return (
+    researchPurposes.has(value.purpose as ResearchPurpose) &&
+    typeof value.thesisConfirmed === "boolean" &&
+    typeof value.invalidationCriteria === "string" &&
+    value.invalidationCriteria.length <= 2_000 &&
+    validReviewDate
+  );
+}
 
 export function isHttpUrl(value: unknown): value is string {
   if (typeof value !== "string" || value.length > 2_048) return false;
@@ -1415,6 +1517,8 @@ export function isThesisCase(value: unknown): value is ThesisCase {
     !isNonEmptyString(value.lastUpdated, 64) ||
     Number.isNaN(Date.parse(value.lastUpdated as string)) ||
     !isNonEmptyString(value.modelVersion, 120) ||
+    (value.researchPlan !== undefined &&
+      !isResearchPlan(value.researchPlan)) ||
     !Array.isArray(value.evidence) ||
     !Array.isArray(value.assumptions) ||
     value.evidence.length > 40 ||

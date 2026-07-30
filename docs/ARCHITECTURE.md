@@ -4,10 +4,12 @@
 
 ```text
 Multilingual browser UI
-  ├── real-stock search and source-linked market snapshot
-  ├── local case and evidence editor
-  ├── evidence dependency and source-type exclusion checks
-  ├── scenario controls and one- / two-variable sensitivity views
+  ├── real-stock search and clearly labeled market context
+  ├── research claim, invalidation condition, purpose, and review date
+  ├── readiness checks and next-research-action summary
+  ├── local evidence editor and related-evidence-group audit
+  ├── baseline comparison and refresh
+  ├── bounded group-removal and scenario sensitivity diagnostics
   ├── JSON import/export
   └── restorable SHA-256 snapshot history
         │
@@ -18,7 +20,7 @@ Same-origin market routes
   └── explicit cache, source, delay, and failure states
         │
 Deterministic TypeScript engine
-  ├── bounded scoring and item-removal recalculation
+  ├── group-aware scoring and item-removal recalculation
   ├── source / claim / dependency relationship grouping
   ├── smallest tested item and related-group changes
   ├── one- and two-variable counterfactual search
@@ -30,8 +32,26 @@ Additional adapters
 ```
 
 The deployed product does not require a database. Browser storage contains the
-device-local case, snapshot history, and interface locale. The pure engine has
-no network dependency, paid API, model call, or random state.
+device-local case, snapshot history, and interface locale. The pure engine and
+readiness checks have no network dependency, paid API, model call, or random
+state.
+
+## Decision boundary
+
+The market adapter answers “what has the price series done?” It does not answer
+“why should this stock be owned?” or “what will it return?” Automatically
+generated moving averages, momentum, volatility, drawdown, RSI, and volume
+observations are therefore labeled as market context.
+
+The research-readiness layer is a separate deterministic workflow gate. It
+requires a user-confirmed research claim, an observable invalidation condition,
+primary material, counter-evidence, source diversity, and a review date. Passing
+the gate means that the required fields exist; it does not validate the truth,
+quality, or completeness of the research.
+
+Advanced score and sensitivity outputs are model diagnostics. They are not
+buy/sell signals, forecasts, confidence probabilities, suitability assessments,
+or measures of investment safety.
 
 ## Data contracts
 
@@ -47,9 +67,40 @@ The runtime validator rejects self-references and dangling dependencies. Old v1
 case files without these fields continue to work, with each unlinked item
 treated as its own related group.
 
-v0.4 adds an optional `marketSnapshot` with instrument metadata, fetch and
+v0.4 added an optional `marketSnapshot` with instrument metadata, fetch and
 market timestamps, normalized daily observations, calculated metrics, and a
 source URL. Imported cases without a snapshot remain valid.
+
+v0.5 adds an optional `researchPlan`:
+
+- `purpose`: new research, holding review, or watchlist;
+- `thesisConfirmed`: whether the displayed claim is the user’s actual claim;
+- `invalidationCriteria`: an observable condition that would disconfirm the
+  claim; and
+- `nextReviewDate`: the planned review date.
+
+The optional object preserves backward compatibility. An older case without a
+research plan is valid but does not pass the readiness gate.
+
+## Group-aware evidence model
+
+`originId`, `claimId`, and `dependsOnIds` connect evidence that reuses an
+underlying source or claim. The engine builds connected related evidence groups.
+For enabled items, it:
+
+1. calculates each item’s signed weighted contribution;
+2. averages items with the same declared source-and-claim pair into one
+   argument unit;
+3. averages those argument units inside each related evidence group; and
+4. adds the resulting group contributions to the case score.
+
+This prevents duplicated items from one declared source from multiplying that
+source’s model contribution. It does not detect an undeclared relationship,
+prove statistical independence between groups, or establish causality.
+
+The readiness layer applies a separate source-diversity rule: at least three
+related evidence groups and at least two user-added evidence items. Market-
+derived items do not satisfy the primary-source or counter-evidence checks.
 
 ## Search boundaries
 
@@ -59,7 +110,20 @@ source URL. Imported cases without a snapshot remain valid.
 - Dense joint grids are sampled deterministically and marked non-exact.
 
 Search metadata is returned with every advanced result so the UI does not
-present a heuristic or bounded absence as mathematical proof.
+present a heuristic or bounded absence as mathematical proof. A “not found”
+result means only that no threshold change was found within the tested bounds.
+
+## Baseline and action summary
+
+Saving a snapshot stores the complete canonical case locally. On a later
+review, the current market snapshot can be compared with the latest saved case
+for the same instrument. The comparison is descriptive: it reports tracked
+market-context changes and does not infer a cause or expected return.
+
+The action selector chooses the first incomplete readiness requirement. When
+the case is reviewable but has no saved snapshot, it recommends saving a
+baseline. This ordering is explicit and deterministic; it is not generated by
+an AI model.
 
 ## Internationalization boundary
 

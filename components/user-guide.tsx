@@ -103,10 +103,10 @@ type GuideCopy = {
 
 export const GUIDE_COPY: Record<Locale, GuideCopy> = {
   en: {
-    title: "Falsifi user guide",
+    title: "Falsifi 0.5 user guide",
     subtitle:
-      "A practical walkthrough from choosing a stock to saving a reviewable research case.",
-    duration: "About 8–10 minutes",
+      "A practical workflow for turning a stock idea into a reviewable, falsifiable research case.",
+    duration: "About 10 minutes",
     backToAnalysis: "Back to analysis",
     backToPicker: "Back to stock search",
     toc: "On this page",
@@ -114,53 +114,58 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "What Falsifi does",
       title: "What Falsifi does—and does not do",
       body:
-        "Falsifi turns delayed price and volume data into an inspectable, rule-based starting case. It then tests how easily that assessment changes when evidence or scenario inputs change.",
+        "Falsifi helps you state a falsifiable research claim, record what would invalidate it, organize related evidence without double-counting one source, and test which evidence or scenario change would alter the current model assessment.",
       callout:
-        "It does not forecast returns, calculate a target price, recommend a trade, or connect to a brokerage. Its 0–100 score is an internal rule score, not a probability.",
+        "Automatic price and volume data is market context only. Falsifi does not forecast returns, calculate a target price, recommend a trade, or connect to a brokerage. Its 0–100 rule score is not a probability.",
     },
     quickStart: {
       nav: "Quick start",
-      title: "Five-minute workflow",
+      title: "Recommended research workflow",
       intro:
-        "Use this order the first time. It keeps the data check separate from your interpretation.",
+        "Use this order. The research-readiness check deliberately keeps an automatic market snapshot from looking like a completed analysis.",
       steps: [
         {
-          title: "1. Find the listed stock",
+          title: "1. Choose the stock and verify the quote",
           body:
-            "Choose a market, then search by company name or ticker. Confirm the company and exchange before opening it.",
+            "Choose a market, search by company name or ticker, and confirm the company, exchange, currency, market-data time, provider, and price basis. Quotes can be delayed or incomplete.",
         },
         {
-          title: "2. Check the market snapshot",
+          title: "2. Define the research case",
           body:
-            "Review the exchange, currency, market-data time, retrieval time, provider, and the price basis named above the chart. Quotes are delayed and may be incomplete.",
+            "Write a specific, falsifiable research claim, choose its time horizon and purpose, state an observable invalidation condition, and set a review date.",
         },
         {
-          title: "3. Read the starting assessment",
+          title: "3. Add primary-source evidence",
           body:
-            "Treat the assessment, rule score, and robustness score as model outputs—not as buy, sell, risk, or return signals.",
+            "Add and link the issuer’s original disclosure or a relevant exchange or regulatory filing. Record its date, direction, source group, claim group, reliability, and limitations.",
         },
         {
-          title: "4. Test the scenario inputs",
+          title: "4. Seek counter-evidence and different sources",
           body:
-            "Move one scenario input at a time. Note the nearest threshold and the combinations that change the current assessment.",
+            "Actively add evidence that could weaken the claim. Prefer sources that do not merely repeat the same document or underlying claim, and declare relationships when they do.",
         },
         {
-          title: "5. Inspect and add evidence",
+          title: "5. Complete the research-readiness check",
           body:
-            "Verify every source. Add filings, management disclosures, and third-party research instead of relying on price indicators alone.",
+            "Follow the displayed next research action until the case has a defined claim, invalidation condition, primary evidence, counter-evidence, source diversity, and a review date.",
         },
         {
-          title: "6. Save before changing stock",
+          title: "6. Then use the advanced stress tests",
           body:
-            "Save a browser snapshot or export the current case as JSON before replacing the active stock.",
+            "Only after the case is reviewable, inspect the rule score, group-level flip test, scenario sensitivity, contribution concentration, and model robustness. These remain model diagnostics, not investment signals.",
+        },
+        {
+          title: "7. Save a baseline, refresh, and compare",
+          body:
+            "Save the case as a baseline. At the review date, refresh market data and inspect what changed since that baseline before editing the claim or evidence. Export JSON for a portable backup.",
         },
       ],
     },
     results: {
       nav: "Read the results",
-      title: "How to read the market data and summary",
+      title: "How to read context, readiness, and results",
       intro:
-        "The automatic case uses roughly one year of daily prices and, when available, volume. It requires at least 200 valid daily observations.",
+        "The automatic case uses roughly one year of daily prices and, when available, volume. It requires at least 200 valid daily observations, but it is only background for starting research—not a completed stock analysis.",
       market: [
         {
           title: "Price basis",
@@ -190,24 +195,34 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Automatic evidence directions",
           body:
-            "The fixed heuristics count the following as supporting: price at or above SMA200; SMA50 at or above SMA200; nonnegative 3-month and available-year returns; annualized volatility of 35% or less; drawdown loss of 25% or less; RSI from 45 to 70; and, when volume exists, a volume ratio of at least 1 with a nonnegative daily return. Otherwise the item weakens the score. These are not validated trading rules.",
+            "The automatic case creates four directional observations: price versus SMA200, SMA50 versus SMA200, 3-month return, and the available return over roughly one year. Being at or above the stated comparator in the first two, and nonnegative momentum in the last two, supports the model score; the opposite results weaken it. Volatility, drawdown, RSI, and volume remain market metrics or scenario inputs without an assumed positive or negative direction. All are context, not validated trading rules, fundamental evidence, or a conclusion about the company.",
         },
       ],
       metrics: [
         {
+          title: "Research readiness",
+          body:
+            "The readiness check asks whether the case has a defined claim, an observable invalidation condition, primary-source evidence, manually added counter-evidence, enough source and claim diversity, and a review date. It checks process completeness, not investment quality.",
+        },
+        {
+          title: "Next research action",
+          body:
+            "The action panel points to the first missing requirement—for example defining the case, adding a filing, seeking counter-evidence, adding a different evidence group, or saving a baseline. Complete that task before adding more model complexity.",
+        },
+        {
           title: "Current assessment",
           body:
-            "With the default thresholds, favorable means 58 or higher, neutral means 42 or higher but below 58, and cautious means below 42.",
+            "Advanced diagnostics are meaningful only after the readiness check. With the default thresholds, favorable means 58 or higher, neutral means 42 or higher but below 58, and cautious means below 42. These labels describe the configured rule model only.",
         },
         {
           title: "Rule score",
           body:
-            "The automatic case starts at 50, then combines enabled evidence, confidence weights, assigned impact, and scenario-input changes. An imported case can define another base score. It is not a probability.",
+            "Each enabled item contributes its signed assigned impact multiplied by its reliability. Related items are averaged within their related evidence group; the group contributions are then added to the base score together with configured scenario changes. Repeating the same source or claim therefore does not multiply its weight. The score is not a probability.",
         },
         {
           title: "Model robustness",
           body:
-            "An internal diagnostic: 35% item-level evidence buffer, 25% nearest one-variable buffer, and 40% distance from the current score to an assessment threshold. It is not stock-price stability or investment safety.",
+            "This internal diagnostic combines the group-level flip buffer, concentration of contribution across groups, the nearest scenario-input buffer, and distance to an assessment threshold. No enabled evidence produces 0 robustness; if one related evidence group alone determines the assessment, robustness is capped at 33. It is not price stability or investment safety.",
         },
         {
           title: "Related evidence groups",
@@ -216,13 +231,13 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         },
       ],
       example:
-        "An automatic case normally shows 7–8 evidence items in 1 related group. Every item comes from the same price-and-volume dataset, and the volume item is omitted when volume is unavailable; these are not separate original sources.",
+        "An automatic case shows 4 trend and momentum observations in 1 related evidence group because all four come from the same price history. It remains marked as market context until you define the case and add verifiable, diverse research evidence.",
     },
     stress: {
       nav: "Run stress tests",
       title: "Use the stress-test workspace",
       intro:
-        "Stress tests answer counterfactual questions inside the current rule model. They do not estimate what will happen in the market.",
+        "Use these advanced diagnostics after the case passes the research-readiness check. They answer counterfactual questions inside the configured rule model; they do not estimate what will happen in the market.",
       items: [
         {
           title: "Smallest tested assessment change",
@@ -269,7 +284,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "Manage evidence",
       title: "Check, edit, and add evidence",
       intro:
-        "The automatic case is a technical-market starting point. A serious research case should add primary company disclosures, relevant management statements, and genuinely independent third-party evidence.",
+        "The automatic case is market context only. Build the research case with original company or regulatory material, explicit counter-evidence, and sources that do not simply repeat one document or claim.",
       fields: [
         {
           title: "Confidence weight",
@@ -309,7 +324,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "An imported case can also declare item-to-item dependencies with dependsOnIds. This advanced field is available in JSON, not in the current evidence form.",
       ],
       warning:
-        "The dependency check identifies and reports relationships; it does not automatically reduce assigned impact inside a group. Review, disable, or edit weights when several indicators repeat the same underlying information.",
+        "Scoring averages the signed contributions of enabled items within each related evidence group, then adds the group contributions. Grouping therefore prevents repeated material from multiplying its weight, but you must still verify whether group IDs and declared dependencies are accurate.",
     },
     audit: {
       nav: "Check relationships",
@@ -325,7 +340,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Impact concentration (0–100)",
           body:
-            "An internal index based on squared shares of each group’s absolute rule-score influence. A higher value means fewer groups account for more of the model impact.",
+            "An internal index based on squared shares of each related evidence group’s absolute contribution after within-group averaging. A higher value means fewer groups account for more of the model impact.",
         },
         {
           title: "Older evidence",
@@ -348,12 +363,12 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Score calculation",
           body:
-            "The score equals the base score plus each enabled item’s signed assigned impact multiplied by its confidence weight, plus each scenario input’s change from baseline multiplied by its configured per-unit effect and direction. The result is limited to 0–100.",
+            "For each enabled item, calculate direction × assigned impact × reliability. Average those contributions inside each related evidence group, add the resulting group contributions, then add configured scenario-input changes to the base score. The result is limited to 0–100.",
         },
         {
           title: "Relationship grouping",
           body:
-            "Shared source-group IDs, claim-group IDs, and imported dependency links form connected groups. Grouping exposes reused information but does not automatically change weights or prove independence.",
+            "Shared source-group IDs, claim-group IDs, and imported dependency links form connected related evidence groups. Items inside a group are averaged for scoring; grouping reduces repeated-source weight but does not prove that different groups are independent.",
         },
         {
           title: "Discrete searches",
@@ -363,7 +378,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Model-robustness score",
           body:
-            "The 35/25/40 diagnostic combines the tested evidence buffer, nearest one-variable buffer, and score margin. No enabled evidence contributes zero to the evidence component; a missing threshold inside the tested range is not proof of safety.",
+            "The diagnostic considers how many whole related evidence groups must change the assessment, how concentrated group contributions are, the nearest tested scenario-input threshold, and the current score’s threshold distance. With no enabled evidence it is 0; when one group alone determines the assessment it cannot exceed 33. A threshold not found within the tested range is not proof of safety.",
         },
       ],
     },
@@ -371,8 +386,10 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "Save and restore",
       title: "Snapshots, import, and export",
       intro:
-        "Save a version before changing an important scenario input, removing evidence, restoring an older case, or switching stocks.",
+        "Save a baseline once the research case is reviewable, and save again before changing an important input, removing evidence, restoring an older case, or switching stocks.",
       items: [
+        "“Refresh market data” updates the current quote-derived context while preserving the confirmed research claim, horizon, invalidation condition, review date, manual evidence, and custom scenario inputs.",
+        "The action panel compares refreshed price, 3-month momentum, volatility, and drawdown with the latest saved baseline. Treat the comparison as a review prompt, not an automatic thesis update.",
         "Snapshots are stored only in this browser. The site keeps up to 30 snapshots in total across stocks.",
         "Clearing site data, changing browser, or changing device does not carry snapshots with you.",
         "Restoring a snapshot replaces unsaved changes in the active case.",
@@ -388,7 +405,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "Use Falsifi as a structured checklist and sensitivity tool, not as a complete stock-analysis service.",
       items: [
         "The Yahoo Finance integration is experimental. Data can be delayed, incomplete, throttled, or changed by the provider.",
-        "The default case uses price and volume indicators only. It does not automatically analyze financial statements, valuation, news, industry structure, or management quality.",
+        "The default case uses price and volume indicators only as market context. It does not automatically analyze financial statements, valuation, news, industry structure, or management quality.",
         "The rule weights, confidence values, thresholds, and test ranges are heuristic settings and may contain subjective judgment.",
         "One-variable analysis holds other inputs fixed. Two-variable analysis does not model three-way interactions or infer real-world correlation.",
         "During a trading session, the latest daily bar and volume can be provisional until the market closes.",
@@ -401,14 +418,19 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       title: "Common questions",
       items: [
         {
-          title: "Why do 7–8 indicators form one related group?",
+          title: "Why do the 4 automatic observations form one related group?",
           body:
-            "They all came from the same price-and-volume series; the volume item is omitted when volume is unavailable. Multiple calculations from one dataset do not create multiple original sources.",
+            "They all come from the same price history. Several calculations from one dataset do not create separate original sources.",
         },
         {
           title: "Does a high score mean I should buy?",
           body:
-            "No. It only reflects the current rule inputs and thresholds. It is not expected return, win probability, suitability, or a recommendation.",
+            "No. A score is hidden or secondary until the research case is ready, and even then it only reflects the configured groups, inputs, and thresholds. It is not expected return, win probability, suitability, or a recommendation.",
+        },
+        {
+          title: "Why does the automatic case say “market context”?",
+          body:
+            "Price and volume can show what the stock has done, but not why the business is attractive or what would invalidate that view. Define a falsifiable claim and add primary, counter, and genuinely different evidence before using advanced diagnostics.",
         },
         {
           title: "Does “not found” mean the case is safe?",
@@ -431,9 +453,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       "Good use of Falsifi starts with a falsifiable question, verifiable sources, and an explicit record of what would change your mind.",
   },
   "zh-CN": {
-    title: "Falsifi 使用指南",
-    subtitle: "从选择股票到保存研究版本，一步步完成可核查的股票分析。",
-    duration: "约 8–10 分钟",
+    title: "Falsifi 0.5 使用指南",
+    subtitle: "从选择股票到定期复核，一步步建立可核查、可证伪的研究案例。",
+    duration: "约 10 分钟",
     backToAnalysis: "返回分析",
     backToPicker: "返回选股",
     toc: "本页目录",
@@ -441,52 +463,58 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "工具用途",
       title: "Falsifi 能做什么，不能做什么",
       body:
-        "Falsifi 会把延迟的价格和成交量数据整理成一个可检查的规则模型初始案例，再测试当证据或情景参数变化时，当前判断有多容易改变。",
+        "Falsifi 用来明确一项可证伪的研究判断，记录判断失效条件，避免把同源信息重复计分，并测试哪些证据或情景变化足以改变当前的模型判断。",
       callout:
-        "它不预测收益，不计算目标价，不推荐买卖，也不连接券商。0–100 分是内部规则评分，不是概率。",
+        "自动获取的价格和成交量只能作为行情背景。Falsifi 不预测收益，不计算目标价，不推荐买卖，也不连接券商。0–100 分是内部规则评分，不是概率。",
     },
     quickStart: {
       nav: "快速开始",
-      title: "五分钟上手流程",
-      intro: "第一次使用时建议按这个顺序操作，先核对数据，再做判断。",
+      title: "建议的研究流程",
+      intro:
+        "建议始终按这个顺序操作。研究就绪检查会把自动行情与完整研究明确分开。",
       steps: [
         {
-          title: "1. 找到正确的上市股票",
+          title: "1. 选择股票并核查行情",
           body:
-            "先选择市场，再输入公司名称或股票代码。进入前核对公司名称和交易所。",
+            "选择市场，按公司名称或股票代码搜索；核对公司、交易所、币种、行情时间、数据提供方和价格口径。行情可能延迟或不完整。",
         },
         {
-          title: "2. 核对行情概览",
+          title: "2. 定义可证伪的研究判断",
           body:
-            "查看交易所、币种、行情时间、获取时间、数据提供方，以及图表上标明的价格口径。行情可能延迟或不完整。",
+            "写下具体的研究判断，选择研究用途和期限，说明一个可以观察、能够使判断失效的条件，并设置复核日期。",
         },
         {
-          title: "3. 阅读初始判断",
+          title: "3. 添加公司或监管原始资料",
           body:
-            "把当前判断、规则评分和模型内稳健度当作规则模型输出，不要当成买卖、风险或收益信号。",
+            "添加并链接公司原始披露、交易所公告或监管文件；记录资料日期、证据方向、来源组、论点组、可靠性和使用限制。",
         },
         {
-          title: "4. 调整情景参数",
+          title: "4. 主动寻找反向证据和不同来源",
           body:
-            "一次调整一个参数，观察最近临界值，以及哪些参数组合会改变当前判断。",
+            "主动加入可能削弱研究判断的证据。优先寻找没有重复同一份材料或同一个底层主张的来源；存在关联时应如实归组。",
         },
         {
-          title: "5. 核查并补充证据",
+          title: "5. 完成研究就绪检查",
           body:
-            "逐条打开来源核验。不要只依赖价格指标，应补充公司公告、监管文件、管理层披露和独立第三方资料。",
+            "按照页面给出的“下一步研究行动”，补齐研究判断、失效条件、原始资料、反向证据、来源多样性和复核日期。",
         },
         {
-          title: "6. 更换股票前先保存",
+          title: "6. 通过检查后再看高级压力测试",
           body:
-            "更换当前股票前，先保存浏览器快照，或把当前案例导出为 JSON。",
+            "案例达到研究就绪状态后，再查看规则评分、关联证据组翻转测试、情景敏感性、贡献集中度和模型内稳健度。它们仍是模型诊断，不是投资信号。",
+        },
+        {
+          title: "7. 保存基准，刷新后比较变化",
+          body:
+            "保存当前案例作为比较基准。到复核日期后刷新行情，先看相对基准发生了什么变化，再修改研究判断或证据；需要跨设备备份时导出 JSON。",
         },
       ],
     },
     results: {
       nav: "理解结果",
-      title: "如何阅读行情指标与摘要",
+      title: "如何阅读行情背景、研究就绪状态与结果",
       intro:
-        "自动案例使用约一年的日线价格，以及可用时的成交量。至少需要 200 个有效日度数据点。",
+        "自动案例使用约一年的日线价格，以及可用时的成交量，至少需要 200 个有效日度数据点。它只是开始研究时的行情背景，不是完整的股票分析。",
       market: [
         {
           title: "价格口径",
@@ -516,24 +544,34 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "自动证据的方向规则",
           body:
-            "以下固定规则会记为“支持”：价格不低于 200 日均线；50 日均线不低于 200 日均线；3 个月及当前可用近一年涨跌幅不为负；年化波动率不高于 35%；最大回撤损失不高于 25%；RSI 在 45–70；有成交量时，量比不低于 1 且当日涨跌幅不为负。其他情况记为“削弱”。这些是启发式规则，不是经过验证的交易标准。",
+            "自动案例只生成 4 条带方向的观察：价格相对 200 日均线、50 日均线相对 200 日均线、3 个月涨跌幅，以及当前可用的约一年涨跌幅。前两项不低于对应比较基准、后两项动量不为负时支持模型评分，反之削弱。波动率、最大回撤、RSI 和成交量仍会作为行情指标或情景参数显示，但系统不会预设它们是利好还是利空。所有这些都只是行情背景，不是经过验证的交易规则、基本面证据或公司分析结论。",
         },
       ],
       metrics: [
         {
+          title: "研究就绪检查",
+          body:
+            "检查案例是否具备明确判断、可观察的失效条件、公司或监管原始资料、手动添加的反向证据、足够的来源与论点多样性，以及复核日期。它检查研究流程是否完整，不评价投资是否优质。",
+        },
+        {
+          title: "下一步研究行动",
+          body:
+            "行动面板会指出当前最先要补的事项，例如定义研究案例、添加监管文件、寻找反向证据、补充不同的关联证据组或保存基准。应先完成该任务，再增加模型复杂度。",
+        },
+        {
           title: "当前判断",
           body:
-            "按默认阈值，58 分及以上为偏积极，42 分及以上但低于 58 分为中性，低于 42 分为偏谨慎。",
+            "高级诊断只有在通过研究就绪检查后才具有可解释性。按默认阈值，58 分及以上为偏积极，42 分及以上但低于 58 分为中性，低于 42 分为偏谨慎。这些标签只描述当前配置的规则模型。",
         },
         {
           title: "规则评分",
           body:
-            "自动案例从 50 分开始，结合已启用证据、可信度权重、设定影响分和情景参数变化计算；导入案例可以设置其他基础分。它不是概率。",
+            "每条已启用证据先按“方向×设定影响分×可靠性”计算贡献；同一关联证据组内取平均，再把各组贡献与设定的情景参数变化加到基础分上。同源或同一论点的重复材料因此不会成倍增加权重。它不是概率。",
         },
         {
           title: "模型内稳健度",
           body:
-            "内部诊断由三部分组成：35% 为逐条证据缓冲，25% 为最近单因素临界距离，40% 为当前分数到判断阈值的距离。它不代表股价稳定、投资安全或未来风险。",
+            "这项内部诊断综合关联证据组级翻转缓冲、各组贡献集中度、最近情景参数临界缓冲，以及当前评分到判断阈值的距离。没有已启用证据时为 0；如果一个关联证据组就能决定判断，最高为 33。它不代表股价稳定或投资安全。",
         },
         {
           title: "关联证据组",
@@ -542,13 +580,13 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         },
       ],
       example:
-        "自动案例通常显示“7–8 条证据 · 1 个关联组”。这些指标都来自同一份价格与成交量数据；没有成交量时会省略成交量项，因此不能把它们当作多个原始信息来源。",
+        "自动案例显示“4 条趋势与动量观察 · 1 个关联证据组”。4 条观察都来自同一份价格历史；在定义研究案例并补充可核验且来源不同的研究证据前，页面会一直把它标为“行情背景”。",
     },
     stress: {
       nav: "压力测试",
       title: "如何使用压力测试工作台",
       intro:
-        "压力测试回答的是当前规则模型里的反事实问题，并不估计市场接下来会发生什么。",
+        "案例通过研究就绪检查后，再使用这些高级诊断。压力测试回答的是当前规则模型里的反事实问题，并不估计市场接下来会发生什么。",
       items: [
         {
           title: "改变判断的最小已测试条件",
@@ -593,7 +631,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "管理证据",
       title: "核查、编辑和补充证据",
       intro:
-        "自动案例只是技术面起点。严肃的股票研究还应加入公司原始披露、相关管理层说明，以及真正独立的第三方资料。",
+        "自动案例只是行情背景。研究案例应加入公司或监管原始资料、明确的反向证据，以及没有简单重复同一份材料或同一论点的其他来源。",
       fields: [
         {
           title: "可信度权重",
@@ -633,7 +671,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "导入的案例还可以通过 dependsOnIds 声明逐条证据之间的依赖关系；这是 JSON 高级字段，当前证据表单不能直接编辑。",
       ],
       warning:
-        "证据依赖检查只识别并提示关联关系，不会自动调低组内的设定影响分。多项指标重复使用同一底层信息时，请自行停用或调整权重。",
+        "评分会先对每个关联证据组内已启用证据的有方向贡献取平均，再把各组贡献相加。归组可以防止重复材料成倍增加权重，但仍需核对来源组、论点组和依赖关系是否填写准确。",
     },
     audit: {
       nav: "检查证据关系",
@@ -644,12 +682,12 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "关联证据组与已归并项",
           body:
-            "共享来源、共享研究主张或导入依赖关系的证据会归入同一关联组。“已归并项”=已启用证据数−关联证据组数，不是内容重复检测结果。",
+            "共享来源、共享研究主张或导入依赖关系的证据会归入同一关联证据组。“已归并项”=已启用证据数−关联证据组数，不是内容重复检测结果。",
         },
         {
           title: "影响集中度（0–100）",
           body:
-            "这是内部指数，按各关联组对规则评分绝对影响占比的平方和计算。数值越高，说明模型影响越集中在少数关联组。",
+            "这是内部指数，按组内平均后各关联证据组的绝对贡献占比平方和计算。数值越高，说明模型影响越集中在少数关联证据组。",
         },
         {
           title: "较旧证据",
@@ -672,22 +710,22 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "评分计算",
           body:
-            "规则评分=基础分+各条已启用证据的方向×设定影响分×可信度权重+各情景参数相对基准值的变化×单位影响×方向，最终限制在 0–100。自动案例基础分为 50。",
+            "先计算每条已启用证据的“方向×设定影响分×可靠性”，在每个关联证据组内取平均，再把各组贡献和设定的情景参数变化加到基础分上，最后限制在 0–100。自动案例基础分为 50。",
         },
         {
           title: "证据关系归组",
           body:
-            "相同来源组 ID、相同论点组 ID 或导入的依赖链接会形成关联证据组。归组只让重复使用的信息可见，不会自动改权重，也不能证明组间独立。",
+            "相同来源组 ID、相同论点组 ID 或导入的依赖链接会形成关联证据组。组内证据会在评分时取平均，以减少重复来源的权重；但这不能证明不同关联证据组彼此独立。",
         },
         {
           title: "离散搜索",
           body:
-            "逐条证据和关联组最多测试四项组合；单因素和双因素搜索按每个参数声明的步长与边界进行。双因素完整步长网格最多计算 100,000 个状态，超过后会明确标为抽样搜索。",
+            "逐条证据和关联证据组最多测试四项组合；单因素和双因素搜索按每个参数声明的步长与边界进行。双因素完整步长网格最多计算 100,000 个状态，超过后会明确标为抽样搜索。",
         },
         {
           title: "模型内稳健度",
           body:
-            "35/25/40 指标结合已测试证据缓冲、最近单因素临界距离和当前评分到阈值的距离。没有已启用证据时，证据部分计 0；测试范围内未找到临界值，也不等于安全。",
+            "这项诊断考虑：改变判断至少需要影响多少个完整关联证据组、各组贡献是否过度集中、最近的情景参数临界值，以及当前评分到判断阈值的距离。没有已启用证据时为 0；一个关联证据组就能决定判断时最高为 33。测试范围内未找到临界值，也不等于安全。",
         },
       ],
     },
@@ -695,8 +733,10 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "保存与恢复",
       title: "快照、导入与导出",
       intro:
-        "修改重要情景参数、删除证据、恢复旧版本或更换股票之前，建议先保存一个快照。",
+        "案例达到研究就绪状态后，先保存一个比较基准；修改重要情景参数、删除证据、恢复旧版本或更换股票前也应保存。",
       items: [
+        "“刷新行情”会更新由价格和成交量生成的行情背景，同时保留已确认的研究判断、期限、失效条件、复核日期、手动证据和自定义情景参数。",
+        "行动面板会比较刷新后与最近保存基准之间的价格、3 个月动量、波动率和最大回撤变化。它用于提示复核，不会自动修改研究判断。",
         "快照只保存在当前浏览器中；所有股票合计最多保留 30 条。",
         "清除网站数据、更换浏览器或更换设备，快照不会自动跟随。",
         "恢复快照会替换当前尚未保存的修改。",
@@ -712,7 +752,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "请把 Falsifi 当作结构化检查清单和敏感性分析工具，不要把它当成完整的股票分析服务。",
       items: [
         "Yahoo Finance 行情接入为实验性接口，可能出现延迟、缺失、限流或接口变更。",
-        "默认案例只使用价格和成交量指标，不会自动分析财务报表、估值、新闻、行业结构或管理层质量。",
+        "默认案例只把价格和成交量指标作为行情背景，不会自动分析财务报表、估值、新闻、行业结构或管理层质量。",
         "规则权重、可信度、判断阈值和测试范围都是启发式设定，可能包含主观判断。",
         "单因素分析默认其他参数不变；双因素分析不处理三个以上参数联动，也不会推断现实中的相关性。",
         "交易时段内，最新一根日线和成交量在收盘前可能仍是暂定值。",
@@ -725,14 +765,19 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       title: "常见问题",
       items: [
         {
-          title: "为什么 7–8 个指标只有 1 个关联证据组？",
+          title: "为什么 4 条自动观察只有 1 个关联证据组？",
           body:
-            "因为它们都由同一份价格和成交量序列计算而来；没有成交量时会少一项。同一数据集的多种计算方式，不会变成多个原始信息来源。",
+            "因为它们都由同一份价格历史计算而来。同一数据集的多种计算方式，不会变成多个原始信息来源。",
         },
         {
           title: "分数高是不是就应该买入？",
           body:
-            "不是。它只反映当前规则输入和阈值，不是预期收益、上涨概率、适当性判断或投资建议。",
+            "不是。研究案例未就绪时，评分只应处于次要位置；即使案例已就绪，评分也只反映当前配置的关联证据组、参数和阈值，不是预期收益、上涨概率、适当性判断或投资建议。",
+        },
+        {
+          title: "为什么自动案例显示“行情背景”？",
+          body:
+            "价格和成交量只能说明股票过去如何变化，不能说明企业为什么值得研究，也不能替你定义什么事实会推翻判断。先写出可证伪判断，再补充原始资料、反向证据和真正不同的来源。",
         },
         {
           title: "“未找到”是不是表示很安全？",
@@ -755,10 +800,10 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       "Falsifi 最有价值的用法，是提出一个可以被推翻的问题、核验原始来源，并明确记录什么变化会让你改变判断。",
   },
   ja: {
-    title: "Falsifi 利用ガイド",
+    title: "Falsifi 0.5 利用ガイド",
     subtitle:
-      "銘柄の選択から、検証可能な分析ケースの保存までを順に説明します。",
-    duration: "約8～10分",
+      "銘柄の選択から定期レビューまで、検証可能で反証可能なリサーチケースの作り方を説明します。",
+    duration: "約10分",
     backToAnalysis: "分析に戻る",
     backToPicker: "銘柄検索に戻る",
     toc: "目次",
@@ -766,53 +811,58 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "できること",
       title: "Falsifi ができること・できないこと",
       body:
-        "Falsifi は遅延した価格・出来高データから確認可能なルールベースの初期ケースを作り、エビデンスやシナリオ入力が変わったときに現在の評価がどれほど変わりやすいかを検証します。",
+        "Falsifi は、反証可能なリサーチ仮説とその無効化条件を記録し、同じ情報源の二重計上を抑え、どのエビデンスやシナリオ変化で現在のモデル評価が変わるかを検証するためのツールです。",
       callout:
-        "将来リターンや目標株価を予測せず、売買を推奨せず、証券会社にも接続しません。0～100の値はルールに基づく内部スコアで、確率ではありません。",
+        "自動取得した価格・出来高は市場コンテキストにすぎません。将来リターンや目標株価を予測せず、売買を推奨せず、証券会社にも接続しません。0～100のルールスコアは確率ではありません。",
     },
     quickStart: {
       nav: "クイックスタート",
-      title: "5分で始める手順",
+      title: "推奨リサーチ手順",
       intro:
-        "初回はこの順序で、データの確認と解釈を分けて進めてください。",
+        "この順序で進めてください。リサーチ準備チェックにより、自動の市場スナップショットと完成した分析を明確に区別します。",
       steps: [
         {
-          title: "1. 上場銘柄を探す",
+          title: "1. 銘柄を選び、市場データを確認する",
           body:
-            "市場を選び、企業名またはティッカーで検索します。企業名と取引所を確認してから開きます。",
+            "市場を選び、企業名またはティッカーで検索します。企業、取引所、通貨、市場データ時刻、提供元、価格基準を確認してください。データは遅延・欠損する場合があります。",
         },
         {
-          title: "2. 市場データを確認する",
+          title: "2. 反証可能なリサーチ仮説を定義する",
           body:
-            "取引所、通貨、市場データ時刻、取得時刻、提供元、チャート上部に表示された価格基準を確認します。データは遅延・欠損する場合があります。",
+            "具体的な仮説、目的、対象期間を記入し、観測可能な無効化条件と次の見直し日を設定します。",
         },
         {
-          title: "3. 初期評価を読む",
+          title: "3. 企業・規制当局の一次資料を追加する",
           body:
-            "現在の評価、ルールスコア、モデル内の頑健性を、売買・リスク・リターンのシグナルと解釈しないでください。",
+            "企業の原資料、取引所開示、規制当局への提出書類を追加してリンクします。日付、方向、情報源グループ、主張グループ、信頼性、制約を記録します。",
         },
         {
-          title: "4. シナリオ入力を動かす",
+          title: "4. 反対材料と異なる情報源を探す",
           body:
-            "一度に1項目を変更し、最も近いしきい値と評価が変わる組み合わせを確認します。",
+            "仮説を弱め得るエビデンスを意識的に追加します。同じ文書や主張の繰り返しではない情報源を優先し、関係がある場合は正しくグループ化します。",
         },
         {
-          title: "5. エビデンスを確認・追加する",
+          title: "5. リサーチ準備チェックを完了する",
           body:
-            "すべての出典を確認し、価格指標だけでなく法定開示、経営陣の説明、独立した第三者資料を追加します。",
+            "画面に表示される「次のリサーチ作業」に従い、仮説、無効化条件、一次資料、反対材料、情報源の多様性、見直し日をそろえます。",
         },
         {
-          title: "6. 銘柄変更前に保存する",
+          title: "6. 準備完了後に高度なストレステストを使う",
           body:
-            "現在の銘柄を置き換える前に、ブラウザー内にスナップショットを保存するか、JSONをエクスポートします。",
+            "レビュー可能になってから、ルールスコア、関連エビデンス群の反転テスト、シナリオ感応度、寄与の集中度、モデル内の頑健性を確認します。いずれも投資シグナルではありません。",
+        },
+        {
+          title: "7. 基準を保存し、更新後の変化を確認する",
+          body:
+            "現在のケースを比較基準として保存します。見直し日に市場データを更新し、仮説やエビデンスを編集する前に基準からの変化を確認します。持ち運べるバックアップにはJSONを使います。",
         },
       ],
     },
     results: {
       nav: "結果の読み方",
-      title: "市場指標と要約の読み方",
+      title: "市場コンテキスト、準備状況、結果の読み方",
       intro:
-        "自動ケースは約1年分の日次価格と、利用可能な場合は出来高を使います。200件以上の有効な日次データが必要です。",
+        "自動ケースは約1年分の日次価格と、利用可能な場合は出来高を使い、200件以上の有効な日次データを必要とします。ただし、これはリサーチ開始時の市場コンテキストであり、完成した銘柄分析ではありません。",
       market: [
         {
           title: "価格基準",
@@ -842,24 +892,34 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "自動エビデンスの方向ルール",
           body:
-            "次の固定ルールを支持方向とします。価格がSMA200以上、SMA50がSMA200以上、3か月および利用可能期間の約1年リターンが0以上、年率換算ボラティリティが35%以下、ドローダウン損失が25%以下、RSIが45～70、出来高がある場合は出来高比率が1以上かつ日次リターンが0以上です。それ以外は反対方向です。検証済みの売買ルールではありません。",
+            "自動ケースが方向を付けるのは4項目です。価格とSMA200の関係、SMA50とSMA200の関係、3か月リターン、利用可能な約1年リターンです。前の2項目が比較対象以上、後の2項目が0以上ならモデルスコアを支持し、逆なら弱めます。ボラティリティ、最大ドローダウン、RSI、出来高は市場指標またはシナリオ入力として残りますが、正負の方向は仮定しません。すべて市場コンテキストであり、検証済みの売買ルール、ファンダメンタルズのエビデンス、企業に対する分析結論ではありません。",
         },
       ],
       metrics: [
         {
+          title: "リサーチ準備チェック",
+          body:
+            "仮説、観測可能な無効化条件、企業または規制当局の一次資料、手動で追加した反対材料、十分な情報源・主張の多様性、見直し日があるかを確認します。手順の充足度を確認するもので、投資対象の質を評価するものではありません。",
+        },
+        {
+          title: "次のリサーチ作業",
+          body:
+            "アクション欄は、ケースの定義、提出書類の追加、反対材料の探索、別の関連エビデンス群の追加、基準の保存など、最初に不足している作業を示します。モデルを複雑にする前に、その作業を終えてください。",
+        },
+        {
           title: "現在の評価",
           body:
-            "既定値では、58以上が前向き、42以上58未満が中立、42未満が慎重です。",
+            "高度な診断は、リサーチ準備チェックを通過してから解釈してください。既定値では58以上が前向き、42以上58未満が中立、42未満が慎重です。ラベルは設定されたルールモデルだけを表します。",
         },
         {
           title: "ルールスコア",
           body:
-            "自動ケースは50を基準に、有効なエビデンス、信頼度ウェイト、設定した影響度、シナリオ入力の変化を合成します。インポートしたケースは別の基準スコアを設定できます。確率ではありません。",
+            "各有効項目は、方向×設定した影響度×信頼性で寄与を計算します。関連エビデンス群の中で平均し、その群ごとの寄与と設定済みのシナリオ変化を基準スコアに加えます。同じ情報源や主張を繰り返してもウェイトは倍増しません。確率ではありません。",
         },
         {
           title: "モデル内の頑健性",
           body:
-            "内部指標は、項目単位のエビデンス余力35%、最も近い1変数しきい値までの余力25%、現在スコアから評価しきい値までの距離40%で構成されます。株価の安定性や投資の安全性ではありません。",
+            "関連エビデンス群単位の反転余力、群ごとの寄与集中度、最も近いシナリオ入力の余力、評価しきい値までの距離を組み合わせた内部診断です。有効なエビデンスがなければ0、1つの関連エビデンス群だけで評価が決まる場合は最大33です。株価の安定性や投資の安全性ではありません。",
         },
         {
           title: "関連エビデンス群",
@@ -868,13 +928,13 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         },
       ],
       example:
-        "自動ケースは通常「エビデンス7～8件・関連グループ1件」です。すべて同じ価格・出来高データから計算され、出来高がない場合は出来高項目を省きます。別々の原情報源ではありません。",
+        "自動ケースは「トレンド・モメンタム観測4件・関連エビデンス群1件」です。4件とも同じ価格履歴から計算されます。ケースを定義し、検証可能で異なる情報源のリサーチエビデンスを追加するまで、「市場コンテキスト」として表示されます。",
     },
     stress: {
       nav: "ストレステスト",
       title: "ストレステスト画面の使い方",
       intro:
-        "ストレステストは現在のルールモデル内の反実仮想を調べるもので、市場の将来を推定するものではありません。",
+        "リサーチ準備チェックを通過してから使う高度な診断です。現在のルールモデル内の反実仮想を調べるもので、市場の将来を推定するものではありません。",
       items: [
         {
           title: "評価が変わる最小のテスト済み条件",
@@ -919,7 +979,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "エビデンス管理",
       title: "エビデンスの確認・編集・追加",
       intro:
-        "自動ケースはテクニカル面の出発点です。本格的な分析では企業が公表した一次資料（法定開示など）、経営陣による説明、独立した第三者資料を追加してください。",
+        "自動ケースは市場コンテキストにすぎません。企業または規制当局の一次資料、明確な反対材料、同じ文書や主張を単に繰り返さない別の情報源でリサーチケースを作ります。",
       fields: [
         {
           title: "信頼度ウェイト",
@@ -959,7 +1019,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "インポートするケースでは dependsOnIds で項目間の依存関係も指定できます。これはJSONの上級項目で、現在の入力画面では編集できません。",
       ],
       warning:
-        "依存関係チェックは関係を可視化するだけで、群内の設定した影響度を自動調整しません。同じ情報を繰り返す指標は無効化またはウェイト調整してください。",
+        "スコアは、各関連エビデンス群内の有効項目について方向付き寄与を平均し、その後に群ごとの寄与を加算します。これにより同じ材料の繰り返しによるウェイト増加を抑えますが、情報源グループ、主張グループ、依存関係が正しいかは確認が必要です。",
     },
     audit: {
       nav: "関係を確認",
@@ -975,7 +1035,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "影響の集中度（0～100）",
           body:
-            "各グループがルールスコアに与える絶対影響の比率を二乗して計算する内部指数です。高いほど、少数のグループに影響が集中しています。",
+            "群内平均後の各関連エビデンス群の絶対寄与の比率を二乗して計算する内部指数です。高いほど、少数の群に影響が集中しています。",
         },
         {
           title: "古いエビデンス",
@@ -998,12 +1058,12 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "スコア計算",
           body:
-            "ルールスコアは、基準スコアに各有効項目の方向×設定した影響度×信頼度を加え、さらに各シナリオ入力の基準値からの変化×単位当たり影響×方向を加えて、0～100に収めた値です。自動ケースの基準は50です。",
+            "各有効項目について方向×設定した影響度×信頼性を計算し、関連エビデンス群の中で平均します。その群ごとの寄与と設定済みのシナリオ入力変化を基準スコアに加え、0～100に収めます。自動ケースの基準は50です。",
         },
         {
           title: "関係によるグループ化",
           body:
-            "同じ情報源グループID、主張グループID、またはインポートした依存リンクで接続された項目をまとめます。再利用された情報を見える化しますが、ウェイトを自動変更せず、独立性も証明しません。",
+            "同じ情報源グループID、主張グループID、またはインポートした依存リンクで接続された項目が関連エビデンス群になります。群内平均により同じ情報源の反復ウェイトを抑えますが、異なる群の独立性を証明するものではありません。",
         },
         {
           title: "離散的な検索",
@@ -1013,7 +1073,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "モデル内の頑健性",
           body:
-            "35/25/40の内部指標は、テスト済みエビデンス余力、最も近い1変数しきい値までの余力、スコアから評価しきい値までの距離を組み合わせます。有効なエビデンスが0件ならエビデンス部分も0です。範囲内でしきい値が見つからなくても安全を意味しません。",
+            "評価を変えるために必要な関連エビデンス群の数、群ごとの寄与集中度、最も近いシナリオ入力しきい値、現在スコアから評価しきい値までの距離を考慮します。有効なエビデンスがなければ0、1群だけで評価が決まる場合は最大33です。範囲内でしきい値が見つからなくても安全を意味しません。",
         },
       ],
     },
@@ -1021,8 +1081,10 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "保存と復元",
       title: "スナップショット・インポート・エクスポート",
       intro:
-        "重要なシナリオ入力の変更、エビデンス削除、スナップショットの復元、銘柄変更の前にスナップショットを保存してください。",
+        "リサーチケースがレビュー可能になったら比較基準を保存します。重要な入力変更、エビデンス削除、復元、銘柄変更の前にも保存してください。",
       items: [
+        "「市場データを更新」は、確認済みの仮説、対象期間、無効化条件、見直し日、手動エビデンス、独自のシナリオ入力を維持したまま、価格・出来高由来の市場コンテキストを更新します。",
+        "アクション欄は、更新後の価格、3か月モメンタム、ボラティリティ、最大ドローダウンを直近の保存基準と比較します。これは見直しのきっかけであり、仮説を自動変更するものではありません。",
         "スナップショットはこのブラウザーだけに保存され、全銘柄合計で最大30件です。",
         "サイトデータの削除、ブラウザーや端末の変更では自動移行されません。",
         "スナップショットの復元は、現在の未保存変更を置き換えます。",
@@ -1038,7 +1100,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "Falsifiは構造化チェックリストと感応度分析として使い、完全な銘柄分析サービスとは考えないでください。",
       items: [
         "Yahoo Finance連携は実験的で、遅延、欠損、制限、仕様変更が起こり得ます。",
-        "既定ケースは価格と出来高だけを使い、財務諸表、バリュエーション、ニュース、業界構造、経営品質を自動分析しません。",
+        "既定ケースは価格と出来高を市場コンテキストとして使うだけで、財務諸表、バリュエーション、ニュース、業界構造、経営品質を自動分析しません。",
         "ルールウェイト、信頼度、しきい値、テスト範囲はヒューリスティックな設定で、主観を含みます。",
         "1変数分析は他を固定します。2変数分析は3変数以上の相互作用や現実の相関を推定しません。",
         "取引時間中の最新日足・出来高は、引けまで暫定値の場合があります。",
@@ -1051,14 +1113,19 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       title: "よくある質問",
       items: [
         {
-          title: "7～8指標なのに関連グループが1つなのはなぜですか？",
+          title: "4つの自動観測が1つの関連エビデンス群になるのはなぜですか？",
           body:
-            "同じ価格・出来高系列から計算され、出来高がない場合は1項目省かれるためです。1つのデータセットから複数の計算をしても、原情報源は増えません。",
+            "すべて同じ価格履歴から計算されるためです。1つのデータセットから複数の計算をしても、原情報源は増えません。",
         },
         {
           title: "高スコアなら買うべきですか？",
           body:
-            "いいえ。現在のルール入力としきい値を示すだけで、期待収益、上昇確率、適合性、推奨ではありません。",
+            "いいえ。リサーチ準備前はスコアを補助的にしか扱えず、準備完了後も設定された関連エビデンス群、入力、しきい値を反映するだけです。期待収益、上昇確率、適合性、推奨ではありません。",
+        },
+        {
+          title: "自動ケースが「市場コンテキスト」と表示されるのはなぜですか？",
+          body:
+            "価格と出来高は過去の動きを示しますが、企業を調べる理由や、どの事実で仮説が無効になるかは示しません。反証可能な仮説を定義し、一次資料、反対材料、実質的に異なる情報源を追加してから高度な診断を使ってください。",
         },
         {
           title: "「見つからない」は安全という意味ですか？",
@@ -1081,10 +1148,10 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       "Falsifiは、反証可能な問い、確認できる一次資料、そして判断を変える条件の明示があって初めて有効に使えます。",
   },
   es: {
-    title: "Guía de uso de Falsifi",
+    title: "Guía de uso de Falsifi 0.5",
     subtitle:
-      "Un recorrido práctico desde la selección de una acción hasta el guardado de un caso de análisis verificable.",
-    duration: "Unos 8–10 minutos",
+      "Un flujo práctico para convertir una idea sobre una acción en un caso de investigación verificable y refutable.",
+    duration: "Unos 10 minutos",
     backToAnalysis: "Volver al análisis",
     backToPicker: "Volver a buscar acciones",
     toc: "En esta página",
@@ -1092,53 +1159,58 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "Qué hace",
       title: "Qué hace Falsifi y qué no hace",
       body:
-        "Falsifi transforma datos retrasados de precio y volumen en un caso inicial verificable basado en reglas. Después comprueba cuánto cambia la evaluación cuando varían las evidencias o las variables del escenario.",
+        "Falsifi ayuda a formular una tesis de investigación refutable, registrar qué la invalidaría, organizar evidencias relacionadas sin contar dos veces una misma fuente y comprobar qué cambio de evidencia o escenario modificaría la evaluación del modelo.",
       callout:
-        "No pronostica rentabilidades, no calcula precios objetivo, no recomienda operaciones y no se conecta a un bróker. La puntuación de 0 a 100 está basada en reglas internas; no es una probabilidad.",
+        "Los datos automáticos de precio y volumen son solo contexto de mercado. Falsifi no pronostica rentabilidades, no calcula precios objetivo, no recomienda operaciones y no se conecta a un bróker. La puntuación de 0 a 100 no es una probabilidad.",
     },
     quickStart: {
       nav: "Inicio rápido",
-      title: "Flujo de cinco minutos",
+      title: "Flujo de investigación recomendado",
       intro:
-        "La primera vez, sigue este orden para separar la comprobación de datos de su interpretación.",
+        "Sigue este orden. La comprobación de preparación evita que una instantánea automática de mercado parezca un análisis terminado.",
       steps: [
         {
-          title: "1. Busca la acción cotizada",
+          title: "1. Elige la acción y verifica la cotización",
           body:
-            "Elige un mercado y busca por empresa o ticker. Confirma la empresa y la bolsa antes de abrirla.",
+            "Elige un mercado, busca por empresa o ticker y confirma empresa, bolsa, moneda, hora del dato, proveedor y base de precios. Los datos pueden estar retrasados o incompletos.",
         },
         {
-          title: "2. Comprueba los datos de mercado",
+          title: "2. Define una tesis de investigación refutable",
           body:
-            "Revisa bolsa, moneda, hora del dato, hora de consulta, proveedor y la base de precios indicada sobre el gráfico. Los datos pueden estar retrasados o incompletos.",
+            "Escribe una tesis concreta, elige su finalidad y horizonte temporal, define un criterio observable que la invalidaría y fija una fecha de revisión.",
         },
         {
-          title: "3. Lee la evaluación inicial",
+          title: "3. Añade fuentes primarias de la empresa o del regulador",
           body:
-            "Interpreta la evaluación, la puntuación basada en reglas y la robustez como salidas del modelo, no como señales de compra, venta, riesgo o rentabilidad.",
+            "Añade y enlaza la publicación original del emisor o un documento relevante de la bolsa o del regulador. Registra fecha, dirección, grupo de fuente, grupo de afirmación, fiabilidad y limitaciones.",
         },
         {
-          title: "4. Cambia las variables del escenario",
+          title: "4. Busca activamente contraevidencia y fuentes distintas",
           body:
-            "Mueve una variable cada vez y observa el umbral más cercano y las combinaciones que cambian la evaluación.",
+            "Añade evidencias que puedan debilitar la tesis. Da prioridad a fuentes que no repitan el mismo documento o la misma afirmación subyacente, y declara las relaciones cuando existan.",
         },
         {
-          title: "5. Comprueba y añade evidencias",
+          title: "5. Completa la comprobación de preparación",
           body:
-            "Verifica cada fuente y añade documentos regulatorios, declaraciones de la dirección y fuentes externas independientes.",
+            "Sigue la «próxima tarea de investigación» hasta tener una tesis definida, criterio de invalidación, fuente primaria, contraevidencia, diversidad de fuentes y fecha de revisión.",
         },
         {
-          title: "6. Guarda antes de cambiar de acción",
+          title: "6. Usa después las pruebas de estrés avanzadas",
           body:
-            "Guarda una instantánea en el navegador o exporta el caso actual como JSON antes de sustituir la acción activa.",
+            "Solo cuando el caso sea revisable, examina la puntuación, el cambio por grupos, la sensibilidad del escenario, la concentración de contribuciones y la robustez del modelo. Siguen siendo diagnósticos, no señales de inversión.",
+        },
+        {
+          title: "7. Guarda una referencia, actualiza y compara",
+          body:
+            "Guarda el caso como referencia. En la fecha de revisión, actualiza los datos de mercado y comprueba qué cambió respecto a esa referencia antes de editar la tesis o sus evidencias. Exporta JSON para una copia portátil.",
         },
       ],
     },
     results: {
       nav: "Leer resultados",
-      title: "Cómo leer los datos y el resumen",
+      title: "Cómo leer el contexto, la preparación y los resultados",
       intro:
-        "El caso automático usa aproximadamente un año de precios diarios y, si existe, volumen. Se requieren al menos 200 observaciones diarias válidas.",
+        "El caso automático usa aproximadamente un año de precios diarios y, si existe, volumen. Requiere al menos 200 observaciones válidas, pero solo aporta contexto para iniciar la investigación; no es un análisis bursátil completo.",
       market: [
         {
           title: "Base de precios",
@@ -1168,24 +1240,34 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Reglas de dirección de la evidencia automática",
           body:
-            "Las reglas fijas consideran favorables: precio igual o superior a la SMA200; SMA50 igual o superior a la SMA200; rentabilidades no negativas a 3 meses y en el período anual disponible; volatilidad anualizada de hasta 35%; pérdida por drawdown de hasta 25%; RSI entre 45 y 70; y, si hay volumen, una razón de volumen de al menos 1 junto con rentabilidad diaria no negativa. En los demás casos, la evidencia es desfavorable. Son reglas heurísticas, no criterios de negociación validados.",
+            "El caso automático solo asigna dirección a cuatro observaciones: precio frente a SMA200, SMA50 frente a SMA200, rentabilidad a 3 meses y rentabilidad disponible de aproximadamente un año. Estar en o por encima del comparador en las dos primeras y tener impulso no negativo en las dos últimas apoya la puntuación; lo contrario la debilita. Volatilidad, drawdown máximo, RSI y volumen siguen como métricas de mercado o variables de escenario, sin presuponer que sean favorables o desfavorables. Todo ello es contexto, no reglas de negociación validadas, evidencias fundamentales ni una conclusión sobre la empresa.",
         },
       ],
       metrics: [
         {
+          title: "Preparación de la investigación",
+          body:
+            "La comprobación verifica que haya una tesis definida, un criterio de invalidación observable, una fuente primaria, contraevidencia añadida manualmente, suficiente diversidad de fuentes y afirmaciones, y una fecha de revisión. Mide si el proceso está completo, no la calidad de la inversión.",
+        },
+        {
+          title: "Próxima tarea de investigación",
+          body:
+            "El panel de acciones señala el primer requisito que falta: por ejemplo, definir el caso, añadir una presentación regulatoria, buscar contraevidencia, incorporar otro grupo de evidencias relacionadas o guardar una referencia. Haz esa tarea antes de complicar el modelo.",
+        },
+        {
           title: "Evaluación actual",
           body:
-            "Con los umbrales predeterminados, favorable es 58 o más; neutral, desde 42 hasta menos de 58; y prudente, menos de 42.",
+            "Los diagnósticos avanzados solo son interpretables tras completar la comprobación de preparación. Con los umbrales predeterminados, favorable es 58 o más; neutral, desde 42 hasta menos de 58; y prudente, menos de 42. Son etiquetas del modelo configurado.",
         },
         {
           title: "Puntuación basada en reglas",
           body:
-            "El caso automático parte de 50 y combina evidencias activas, pesos de confianza, impacto asignado y cambios del escenario. Un caso importado puede definir otra puntuación base. No es una probabilidad.",
+            "Cada evidencia activa aporta dirección × impacto asignado × fiabilidad. Las aportaciones se promedian dentro de cada grupo de evidencias relacionadas y después se suman los grupos y los cambios de escenario configurados a la puntuación base. Repetir una misma fuente o afirmación no multiplica su peso. No es una probabilidad.",
         },
         {
           title: "Robustez dentro del modelo",
           body:
-            "Diagnóstico interno compuesto por un 35% de margen ante evidencias por elemento, un 25% de margen hasta el umbral univariable más cercano y un 40% de distancia de la puntuación a un umbral. No mide estabilidad del precio ni seguridad de la inversión.",
+            "Diagnóstico interno que combina el margen de cambio por grupos, la concentración de aportaciones entre grupos, el margen hasta la variable de escenario más cercana y la distancia hasta un umbral de evaluación. Sin evidencias activas vale 0; si un solo grupo determina la evaluación, no puede superar 33. No mide estabilidad del precio ni seguridad de la inversión.",
         },
         {
           title: "Grupos de evidencias relacionadas",
@@ -1194,13 +1276,13 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         },
       ],
       example:
-        "El caso automático suele mostrar «7–8 evidencias · 1 grupo relacionado». Todas proceden del mismo conjunto de precio y volumen; la evidencia de volumen se omite si ese dato no está disponible. No son fuentes originales separadas.",
+        "El caso automático muestra «4 observaciones de tendencia e impulso · 1 grupo de evidencias relacionadas», porque las cuatro proceden del mismo historial de precios. Sigue marcado como contexto de mercado hasta que definas el caso y añadas evidencias verificables y diversas.",
     },
     stress: {
       nav: "Pruebas de estrés",
       title: "Cómo usar las pruebas de estrés",
       intro:
-        "Las pruebas responden preguntas contrafactuales dentro del modelo actual; no estiman lo que ocurrirá en el mercado.",
+        "Usa estos diagnósticos avanzados después de completar la comprobación de preparación. Responden preguntas contrafactuales dentro del modelo actual; no estiman lo que ocurrirá en el mercado.",
       items: [
         {
           title: "Condición mínima probada que cambia la evaluación",
@@ -1246,7 +1328,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "Gestionar evidencias",
       title: "Comprobar, editar y añadir evidencias",
       intro:
-        "El caso automático es solo un punto de partida técnico. Un análisis serio debe añadir documentos originales publicados por la empresa, explicaciones de la dirección y fuentes externas realmente independientes.",
+        "El caso automático solo aporta contexto de mercado. Construye el caso con material original de la empresa o del regulador, contraevidencia explícita y fuentes que no repitan simplemente el mismo documento o argumento.",
       fields: [
         {
           title: "Peso de confianza",
@@ -1286,7 +1368,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "Un caso importado también puede declarar dependencias entre elementos con dependsOnIds. Es un campo avanzado de JSON que el formulario actual no permite editar.",
       ],
       warning:
-        "La comprobación muestra relaciones, pero no reduce automáticamente el impacto dentro del grupo. Desactiva o ajusta pesos cuando varios indicadores repitan la misma información.",
+        "La puntuación promedia la aportación con signo de las evidencias activas dentro de cada grupo de evidencias relacionadas y después suma los grupos. Así se evita que el material repetido multiplique su peso, pero todavía debes comprobar que los grupos de fuente y afirmación y las dependencias sean correctos.",
     },
     audit: {
       nav: "Revisar relaciones",
@@ -1302,7 +1384,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Concentración del impacto (0–100)",
           body:
-            "Índice interno basado en la suma de los cuadrados de la cuota de impacto absoluto de cada grupo en la puntuación. Un valor alto indica que pocos grupos concentran más impacto.",
+            "Índice interno basado en la suma de los cuadrados de la cuota de aportación absoluta de cada grupo después del promedio interno. Un valor alto indica que pocos grupos concentran más impacto.",
         },
         {
           title: "Evidencia antigua",
@@ -1325,12 +1407,12 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Cálculo de la puntuación",
           body:
-            "La puntuación suma a la base el signo de cada evidencia activa por su impacto asignado y su peso de confianza, más el cambio de cada variable respecto a su base por el efecto unitario y la dirección configurados. El resultado se limita a 0–100; el caso automático parte de 50.",
+            "Calcula dirección × impacto asignado × fiabilidad para cada evidencia activa, promedia esas aportaciones dentro de cada grupo de evidencias relacionadas y suma las aportaciones de los grupos y los cambios de escenario configurados a la base. El resultado se limita a 0–100; el caso automático parte de 50.",
         },
         {
           title: "Agrupación por relaciones",
           body:
-            "Los mismos ID de grupo de fuente o afirmación y los enlaces de dependencia importados forman grupos conectados. La agrupación muestra información reutilizada, pero no cambia pesos automáticamente ni demuestra independencia.",
+            "Los mismos ID de grupo de fuente o afirmación y los enlaces de dependencia importados forman grupos conectados. Los elementos se promedian dentro del grupo para reducir el peso de fuentes repetidas, pero los grupos distintos no quedan demostrados como independientes.",
         },
         {
           title: "Búsquedas discretas",
@@ -1340,7 +1422,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Robustez dentro del modelo",
           body:
-            "El diagnóstico 35/25/40 combina el margen de evidencia probado, el margen hasta el umbral univariable más cercano y la distancia de la puntuación al umbral. Sin evidencias activas, el componente de evidencia vale cero; no hallar un umbral en el rango probado no significa seguridad.",
+            "El diagnóstico considera cuántos grupos completos deben cambiar para modificar la evaluación, la concentración de sus aportaciones, el umbral de escenario probado más cercano y la distancia de la puntuación al umbral de evaluación. Sin evidencias activas vale 0; si un grupo basta para decidir la evaluación, el máximo es 33. No hallar un umbral en el rango probado no significa seguridad.",
         },
       ],
     },
@@ -1348,8 +1430,10 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "Guardar y restaurar",
       title: "Instantáneas, importación y exportación",
       intro:
-        "Guarda una instantánea antes de cambiar una variable importante del escenario, eliminar evidencias, restaurar un caso o cambiar de acción.",
+        "Guarda una referencia cuando el caso sea revisable y vuelve a guardar antes de cambiar una variable importante, eliminar evidencias, restaurar un caso o cambiar de acción.",
       items: [
+        "«Actualizar datos de mercado» renueva el contexto derivado de precio y volumen, pero conserva la tesis confirmada, horizonte, criterio de invalidación, fecha de revisión, evidencias manuales y variables de escenario personalizadas.",
+        "El panel compara precio, impulso a 3 meses, volatilidad y drawdown tras la actualización con la última referencia guardada. La comparación invita a revisar; no modifica automáticamente la tesis.",
         "Las instantáneas se guardan solo en este navegador, con un máximo total de 30 entre todas las acciones.",
         "Borrar datos del sitio o cambiar de navegador o dispositivo no las traslada.",
         "Restaurar una instantánea sustituye los cambios no guardados del caso activo.",
@@ -1365,7 +1449,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "Usa Falsifi como lista de comprobación y herramienta de sensibilidad, no como servicio completo de análisis bursátil.",
       items: [
         "La integración con Yahoo Finance es experimental y puede sufrir retrasos, datos incompletos, límites o cambios.",
-        "El caso predeterminado solo usa precio y volumen; no analiza automáticamente estados financieros, valoración, noticias, sector ni calidad directiva.",
+        "El caso predeterminado solo usa precio y volumen como contexto de mercado; no analiza automáticamente estados financieros, valoración, noticias, sector ni calidad directiva.",
         "Pesos, confianza, umbrales y rangos son ajustes heurísticos y pueden incorporar juicio subjetivo.",
         "El análisis univariable mantiene lo demás fijo. El bivariable no modela interacciones de tres variables ni infiere correlaciones reales.",
         "Durante la sesión, la última barra diaria y su volumen pueden ser provisionales hasta el cierre.",
@@ -1378,14 +1462,19 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       title: "Preguntas frecuentes",
       items: [
         {
-          title: "¿Por qué 7–8 indicadores forman un solo grupo?",
+          title: "¿Por qué las 4 observaciones automáticas forman un solo grupo?",
           body:
-            "Todos proceden de la misma serie de precio y volumen; si falta volumen, se omite un indicador. Varios cálculos sobre un conjunto no crean nuevas fuentes originales.",
+            "Las cuatro proceden del mismo historial de precios. Varios cálculos sobre un conjunto de datos no crean nuevas fuentes originales.",
         },
         {
           title: "¿Una puntuación alta significa comprar?",
           body:
-            "No. Solo refleja reglas y umbrales actuales; no es rentabilidad esperada, probabilidad, idoneidad ni recomendación.",
+            "No. Antes de que el caso esté preparado, la puntuación solo es secundaria; incluso después refleja únicamente los grupos, variables y umbrales configurados. No es rentabilidad esperada, probabilidad, idoneidad ni recomendación.",
+        },
+        {
+          title: "¿Por qué el caso automático dice «contexto de mercado»?",
+          body:
+            "El precio y el volumen muestran lo ocurrido, pero no explican por qué merece investigar la empresa ni qué hecho invalidaría la tesis. Define una tesis refutable y añade fuentes primarias, contraevidencia y fuentes realmente distintas antes de usar diagnósticos avanzados.",
         },
         {
           title: "¿«No encontrado» significa que el caso es seguro?",

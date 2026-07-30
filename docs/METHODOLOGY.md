@@ -6,19 +6,33 @@ case JSON and engine version.
 
 ## 1. Case score
 
-For base score `b`, evidence items `i`, and scenario inputs `j`:
+For base score `b`, related evidence groups `g`, argument units `u`, repeated
+evidence items `i` for an argument, and scenario inputs `j`:
 
 ```text
+argument_contribution_u =
+  Σ (evidence_sign_i × impact_i × reliability_i) / duplicate_item_count_u
+
+group_contribution_g =
+  Σ argument_contribution_u / enabled_argument_count_g
+
 score =
   b
-  + Σ evidence_sign_i × impact_i × reliability_i
+  + Σ group_contribution_g
   + Σ (value_j − baseline_j) × impact_per_unit_j × input_direction_j
 ```
 
-The first summation adds each enabled evidence item. `evidence_sign` is `+1`
-for supporting evidence and `−1` for weakening evidence. The second adds each
-scenario input’s change from its baseline; `input_direction` is the configured
-slope sign (`+1` or `−1`) for that input.
+Items with the same declared `originId` and `claimId` are first averaged into
+one argument unit. Distinct argument units are then averaged within their
+related evidence group before the group is added to the score. Duplicating one
+declared source-and-claim pair therefore cannot change its relative weight.
+Independently declared groups still add separately. Evidence-exclusion
+counterfactuals keep the case's original group topology and recompute the
+two-level average from the items and argument units that remain enabled.
+`evidence_sign` is `+1` for supporting evidence and `−1` for weakening
+evidence. The scenario-input summation adds each input’s change from its
+baseline; `input_direction` is the configured slope sign (`+1` or `−1`) for
+that input.
 
 The score is clamped to `[0, 100]`. User-defined thresholds divide it into
 favorable, neutral, and cautious assessments. With the current defaults, the
@@ -56,10 +70,9 @@ include:
 - evidence older than the configured freshness window; and
 - score effects from excluding each source category.
 
-This process does not prove statistical independence, detect copied text, or
-automatically change the base score. Users remain responsible for declaring
-relationships and reviewing, disabling, or editing weights when several items
-reuse the same information.
+This process does not prove statistical independence or detect copied text.
+Users remain responsible for declaring relationships and reviewing, disabling,
+or editing weights when several items reuse the same information.
 
 ## 4. Smallest tested item and related-group changes
 
@@ -135,22 +148,34 @@ not be interpreted as interchangeable.
 
 ## 8. Model robustness score
 
-The visible model-robustness diagnostic is:
+The preliminary model-robustness diagnostic is:
 
 ```text
-35% × evidence buffer
+35% × related-group buffer × concentration resilience
 + 25% × nearest scenario-input buffer
 + 40% × score margin to the assessment threshold
 ```
 
-- Evidence buffer: when a change is found, its smallest item count divided by
-  three and capped at one. If no change is found, the number of enabled items
-  actually tested (up to four) is divided by three and capped at one. A case
-  with no enabled evidence receives zero for this component.
+- Related-group buffer: when a change is found, its smallest related-group
+  count divided by three and capped at one. If no change is found, the number
+  of related groups actually tested (up to four) is divided by three and
+  capped at one.
+- Concentration resilience: normalized from group-contribution HHI so equally
+  weighted groups score one and a single group scores zero:
+
+  ```text
+  (1 − HHI) / (1 − 1 / related_group_count)
+  ```
+
 - Scenario-input buffer: nearest one-variable threshold distance divided by
   typical change and capped at one.
 - Score margin: distance to the relevant assessment threshold divided by 9.5 points,
   capped at one.
+
+When removing `k` related groups changes the assessment, the final robustness
+score is capped at `100 × min(k / 3, 1)`. Thus a model whose assessment depends
+on one related group cannot score above 33. A case with no enabled evidence has
+robustness zero.
 
 This is an internal comparative diagnostic, not stock-price stability,
 investment safety, or a financial-risk estimate.
@@ -169,7 +194,8 @@ tamper-proof registry.
 
 - User-defined weights and thresholds can encode bias.
 - Dependencies are declared, not automatically verified from URLs or text.
-- Related-group reporting does not reweight evidence and is not a causal graph.
+- Related-group scoring depends on user-declared relationships and is not a
+  causal graph.
 - The pairwise search can miss interactions involving three or more
   scenario inputs.
 - Tested parameter combinations can be unrealistic.

@@ -71,6 +71,31 @@
       "maxLength": 120,
       "pattern": "\\S"
     },
+    "researchPlan": {
+      "type": "object",
+      "required": [
+        "purpose",
+        "thesisConfirmed",
+        "invalidationCriteria",
+        "nextReviewDate"
+      ],
+      "properties": {
+        "purpose": {
+          "enum": ["new-research", "holding-review", "watchlist"]
+        },
+        "thesisConfirmed": { "type": "boolean" },
+        "invalidationCriteria": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "nextReviewDate": {
+          "type": "string",
+          "maxLength": 10,
+          "pattern": "^$|^\\d{4}-\\d{2}-\\d{2}$"
+        }
+      },
+      "additionalProperties": false
+    },
     "marketSnapshot": {
       "type": "object",
       "required": [

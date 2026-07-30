@@ -28,7 +28,7 @@ async function fetchYahooChart(host: string, symbol: string) {
     headers: {
       accept: "application/json",
       "accept-language": "en-US,en;q=0.8",
-      "user-agent": "Falsifi/0.4 (+https://github.com/Nerowan08/Falsifi)",
+      "user-agent": "Falsifi/0.5 (+https://github.com/Nerowan08/Falsifi)",
     },
     signal: AbortSignal.timeout(9_000),
   });

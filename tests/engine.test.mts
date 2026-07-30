@@ -7,6 +7,7 @@ import { DEMO_CASE } from "../lib/demo.ts";
 import {
   MAX_JOINT_FLIP_STATES,
   auditEvidenceIndependence,
+  buildEvidenceRoots,
   canonicalStringify,
   compareEvidenceStressSemantics,
   findAssumptionFlip,
@@ -20,35 +21,38 @@ import {
   sha256,
 } from "../lib/falsifi.ts";
 
-test("the synthetic case reproduces its documented baseline", () => {
+test("the synthetic case reproduces its group-aware baseline", () => {
   const score = scoreCase(DEMO_CASE);
-  assert.ok(Math.abs(score - 67.642) < 0.001);
-  assert.equal(getPosture(DEMO_CASE, score), "Constructive");
+  assert.ok(Math.abs(score - 59.432) < 0.001);
+  assert.equal(getPosture(DEMO_CASE, score), "Balanced");
 });
 
-test("the smallest evidence flip requires two items", () => {
+test("the smallest item-level evidence flip is deterministic", () => {
   const flipSet = findMinimumFlipSet(DEMO_CASE);
-  assert.equal(flipSet.length, 2);
+  assert.deepEqual(
+    flipSet.map((item) => item.id),
+    ["ev-discounting"],
+  );
 
   const scoreAfterRemoval = scoreCase(
     DEMO_CASE,
     flipSet.map((item) => item.id),
   );
-  assert.equal(getPosture(DEMO_CASE, scoreAfterRemoval), "Balanced");
+  assert.equal(getPosture(DEMO_CASE, scoreAfterRemoval), "Constructive");
 });
 
-test("the nearest assumption cliff is a 2.6pp growth reduction", () => {
+test("the nearest scenario-input cliff is deterministic", () => {
   const flip = findAssumptionFlip(DEMO_CASE);
   assert.ok(flip);
   assert.equal(flip.assumptionId, "growth");
-  assert.ok(Math.abs(flip.delta - -2.6) < 0.001);
-  assert.equal(flip.resultingPosture, "Balanced");
+  assert.ok(Math.abs(flip.delta - 0.4) < 0.001);
+  assert.equal(flip.resultingPosture, "Constructive");
 });
 
 test("the published stability metric is deterministic", () => {
   const result = runStressTest(DEMO_CASE);
-  assert.equal(result.stabilityScore, 68);
-  assert.equal(result.minimumFlipSet.length, 2);
+  assert.equal(result.stabilityScore, 16);
+  assert.equal(result.minimumFlipSet.length, 1);
   assert.ok(result.ablations[0].delta !== 0);
   assert.equal(result.independenceAudit.independentRootCount, 3);
   assert.equal(result.minimumIndependentFlip.found, true);
@@ -71,7 +75,149 @@ test("a case with no enabled evidence gets no evidence-buffer credit", () => {
 
   assert.equal(result.minimumFlipSet.length, 0);
   assert.equal(result.assumptionFlip, null);
-  assert.equal(result.stabilityScore, 59);
+  assert.equal(result.stabilityScore, 0);
+});
+
+test("duplicating evidence in the same declared origin does not inflate score", () => {
+  const singleItemCase = structuredClone(DEMO_CASE);
+  singleItemCase.baseScore = 50;
+  singleItemCase.evidence = [structuredClone(DEMO_CASE.evidence[0])];
+  singleItemCase.assumptions.forEach((item) => {
+    item.value = item.baseline;
+  });
+  const singleScore = scoreCase(singleItemCase);
+
+  const duplicate = {
+    ...structuredClone(singleItemCase.evidence[0]),
+    id: "duplicate-same-origin",
+    relation: "duplicate" as const,
+  };
+  const duplicatedCase = {
+    ...singleItemCase,
+    evidence: [...singleItemCase.evidence, duplicate],
+  };
+
+  assert.equal(scoreCase(duplicatedCase), singleScore);
+  assert.equal(scoreCase(duplicatedCase, [duplicate.id]), singleScore);
+});
+
+test("duplicating one argument inside a multi-argument group changes nothing", () => {
+  const multiArgumentCase = structuredClone(DEMO_CASE);
+  multiArgumentCase.baseScore = 50;
+  multiArgumentCase.constructiveThreshold = 58;
+  multiArgumentCase.cautiousThreshold = 42;
+  multiArgumentCase.assumptions.forEach((item) => {
+    item.value = item.baseline;
+    item.impactPerUnit = 0;
+  });
+  const template = structuredClone(DEMO_CASE.evidence[0]);
+  multiArgumentCase.evidence = [
+    {
+      ...template,
+      id: "argument-trend",
+      originId: "same-market-series",
+      claimId: "trend",
+      impact: 4,
+      reliability: 1,
+    },
+    {
+      ...template,
+      id: "argument-momentum",
+      originId: "same-market-series",
+      claimId: "momentum",
+      impact: 8,
+      reliability: 1,
+    },
+  ];
+
+  const duplicatedCase = structuredClone(multiArgumentCase);
+  const duplicatedArgument = duplicatedCase.evidence[0];
+  duplicatedCase.evidence.push(
+    ...Array.from({ length: 8 }, (_, index) => ({
+      ...structuredClone(duplicatedArgument),
+      id: `argument-trend-copy-${index + 1}`,
+      relation: "duplicate" as const,
+    })),
+  );
+
+  const originalRoot = buildEvidenceRoots(multiArgumentCase)[0];
+  const duplicatedRoot = buildEvidenceRoots(duplicatedCase)[0];
+  const originalResult = runStressTest(multiArgumentCase);
+  const duplicatedResult = runStressTest(duplicatedCase);
+
+  assert.equal(originalRoot.netContribution, 6);
+  assert.equal(duplicatedRoot.netContribution, 6);
+  assert.equal(scoreCase(duplicatedCase), scoreCase(multiArgumentCase));
+  assert.equal(
+    duplicatedResult.stabilityScore,
+    originalResult.stabilityScore,
+  );
+});
+
+test("evidence exclusions preserve the case's declared group topology", () => {
+  const groupedCase = structuredClone(DEMO_CASE);
+  groupedCase.baseScore = 50;
+  groupedCase.assumptions.forEach((item) => {
+    item.value = item.baseline;
+  });
+  const template = structuredClone(DEMO_CASE.evidence[0]);
+  groupedCase.evidence = [
+    {
+      ...template,
+      id: "bridge-a",
+      originId: "origin-a",
+      claimId: "claim-a",
+      impact: 4,
+      reliability: 1,
+    },
+    {
+      ...template,
+      id: "bridge-b",
+      originId: "origin-a",
+      claimId: "claim-b",
+      impact: 4,
+      reliability: 1,
+    },
+    {
+      ...template,
+      id: "bridge-c",
+      originId: "origin-c",
+      claimId: "claim-b",
+      impact: 4,
+      reliability: 1,
+    },
+  ];
+
+  assert.equal(scoreCase(groupedCase), 54);
+  assert.equal(scoreCase(groupedCase, ["bridge-b"]), 54);
+});
+
+test("a one-group assessment flip is reported as clearly fragile", () => {
+  const fragileCase = structuredClone(DEMO_CASE);
+  fragileCase.baseScore = 50;
+  fragileCase.constructiveThreshold = 58;
+  fragileCase.cautiousThreshold = 42;
+  fragileCase.evidence = [
+    {
+      ...structuredClone(DEMO_CASE.evidence[0]),
+      impact: 9,
+      reliability: 1,
+      direction: "supports",
+    },
+  ];
+  fragileCase.assumptions.forEach((item) => {
+    item.value = item.baseline;
+    item.impactPerUnit = 0;
+  });
+
+  const result = runStressTest(fragileCase);
+
+  assert.equal(result.posture, "Constructive");
+  assert.equal(result.independenceAudit.independentRootCount, 1);
+  assert.equal(result.independenceAudit.maximumRootShare, 1);
+  assert.equal(result.minimumIndependentFlip.found, true);
+  assert.equal(result.minimumIndependentFlip.rootIds.length, 1);
+  assert.ok(result.stabilityScore <= 33);
 });
 
 test("the independence audit clusters shared provenance deterministically", () => {
@@ -83,8 +229,8 @@ test("the independence audit clusters shared provenance deterministically", () =
   assert.equal(audit.independentRootCount, 3);
   assert.equal(audit.duplicateCount, 5);
   assert.equal(audit.declaredDuplicateCount, 0);
-  assert.ok(Math.abs(audit.maximumRootShare - 0.9256783327) < 1e-9);
-  assert.ok(Math.abs(audit.concentrationHhi - 0.8596763277) < 1e-9);
+  assert.ok(Math.abs(audit.maximumRootShare - 0.4648924122) < 1e-9);
+  assert.ok(Math.abs(audit.concentrationHhi - 0.3610625519) < 1e-9);
   assert.equal(audit.directionConflicts.length, 1);
   assert.deepEqual(audit.directionConflicts[0].directions, [
     "supports",
@@ -115,7 +261,7 @@ test("staleness is measured against the case timestamp, not the wall clock", () 
   assert.deepEqual(audit.staleEvidenceIds, ["ev-sec-revenue"]);
 });
 
-test("the independent flip removes a whole provenance root", () => {
+test("the related-group flip removes a whole group", () => {
   const result = findMinimumIndependentFlip(DEMO_CASE);
 
   assert.equal(result.found, true);
@@ -123,11 +269,11 @@ test("the independent flip removes a whole provenance root", () => {
   assert.equal(result.exhaustive, true);
   assert.equal(result.totalRoots, 3);
   assert.equal(result.searchedThroughRootCount, 1);
-  assert.deepEqual(result.rootIds, ["ev-capex"]);
-  assert.equal(result.evidence.length, 6);
-  assert.equal(result.resultingPosture, "Balanced");
+  assert.deepEqual(result.rootIds, ["ev-latency"]);
+  assert.equal(result.evidence.length, 1);
+  assert.equal(result.resultingPosture, "Constructive");
   assert.ok(
-    Math.abs((result.resultingScore ?? Number.NaN) - 57.79) < 0.001,
+    Math.abs((result.resultingScore ?? Number.NaN) - 60.482) < 0.001,
   );
 });
 
@@ -166,9 +312,9 @@ test("the joint flip frontier finds reproducible two-variable paths", () => {
     "growth",
     "operating-leverage",
   ]);
-  assert.deepEqual(result.points[0].deltas, [-2.4, -1]);
+  assert.deepEqual(result.points[0].deltas, [0.2, 1]);
   assert.equal(result.points[0].requiresBoth, true);
-  assert.equal(result.points[0].resultingPosture, "Balanced");
+  assert.equal(result.points[0].resultingPosture, "Constructive");
 });
 
 test("dense joint grids respect the 100k hard state budget", () => {
@@ -215,18 +361,13 @@ test("remove, degrade, and contradict have distinct stress semantics", () => {
   const comparison = compareEvidenceStressSemantics(DEMO_CASE);
   const { remove, degrade, contradict } = comparison.outcomes;
 
-  assert.deepEqual(comparison.evidenceIds, [
-    "ev-retention",
-    "ev-rpo",
-  ]);
+  assert.deepEqual(comparison.evidenceIds, ["ev-discounting"]);
   assert.equal(remove.flipsPosture, true);
   assert.equal(degrade.flipsPosture, false);
   assert.equal(contradict.flipsPosture, true);
-  assert.ok(contradict.score < remove.score);
-  assert.ok(remove.score < degrade.score);
-  assert.ok(degrade.score < scoreCase(DEMO_CASE));
-  assert.ok(Math.abs(remove.delta - 2 * degrade.delta) < 1e-9);
-  assert.ok(Math.abs(contradict.delta - 2 * remove.delta) < 1e-9);
+  assert.ok(contradict.score > remove.score);
+  assert.ok(remove.score > degrade.score);
+  assert.ok(degrade.score > scoreCase(DEMO_CASE));
 });
 
 test("canonical JSON does not depend on object key order", () => {
@@ -300,6 +441,23 @@ test("schema version 1 cases without provenance metadata remain valid", () => {
   const audit = auditEvidenceIndependence(legacyCase);
   assert.equal(audit.independentRootCount, legacyCase.evidence.length);
   assert.equal(audit.duplicateCount, 0);
+});
+
+test("the optional research plan is validated without breaking legacy cases", () => {
+  const plannedCase = structuredClone(DEMO_CASE);
+  plannedCase.researchPlan = {
+    purpose: "holding-review",
+    thesisConfirmed: false,
+    invalidationCriteria: "",
+    nextReviewDate: "",
+  };
+  assert.equal(isThesisCase(plannedCase), true);
+
+  plannedCase.researchPlan.nextReviewDate = "not-a-date";
+  assert.equal(isThesisCase(plannedCase), false);
+
+  delete plannedCase.researchPlan;
+  assert.equal(isThesisCase(plannedCase), true);
 });
 
 test("the starter case exposes an assumption-only flip", () => {
