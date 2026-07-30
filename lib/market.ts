@@ -5,6 +5,7 @@ import type {
   MarketSnapshot,
   ThesisCase,
 } from "./falsifi";
+import { canonicalEvidenceSource } from "./falsifi.ts";
 import type { Locale } from "./i18n";
 
 export type MarketRegion = "all" | "us" | "cn" | "hk";
@@ -702,6 +703,8 @@ export function buildMarketCase(
     originId,
     claimId,
     relation: "derived" as const,
+    verification: "reviewed" as const,
+    provenance: "system-market" as const,
   });
 
   return {
@@ -718,7 +721,7 @@ export function buildMarketCase(
     constructiveThreshold: 58,
     cautiousThreshold: 42,
     lastUpdated: snapshot.fetchedAt,
-    modelVersion: "Falsifi 0.5.0",
+    modelVersion: "Falsifi 0.6.0",
     researchPlan: {
       purpose: "new-research",
       thesisConfirmed: false,
@@ -822,6 +825,61 @@ export function buildMarketCase(
 }
 
 /**
+ * Starts the evidence workflow even when optional market context is
+ * unavailable or too short for the market adapter.
+ */
+export function buildResearchCase(
+  stock: StockSearchResult,
+  locale: Locale,
+  snapshot?: MarketSnapshot,
+): ThesisCase {
+  if (snapshot) return buildMarketCase(snapshot, locale);
+  const now = new Date().toISOString();
+  const text = copy[locale];
+  return {
+    schemaVersion: 1,
+    id: `research-${stock.symbol
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")}-${Date.now()}`,
+    company: stock.name || stock.symbol,
+    ticker: stock.symbol,
+    isDemo: false,
+    thesis: text.thesis(stock.name || stock.symbol),
+    horizon: text.horizon,
+    baseScore: 50,
+    constructiveThreshold: 58,
+    cautiousThreshold: 42,
+    lastUpdated: now,
+    modelVersion: "Falsifi 0.6.0",
+    researchPlan: {
+      purpose: "new-research",
+      thesisConfirmed: false,
+      invalidationCriteria: "",
+      nextReviewDate: "",
+    },
+    evidence: [],
+    // The legacy rule engine requires one bounded input when a snapshot is
+    // saved. This neutral compatibility input has zero influence and is never
+    // shown in the evidence workflow.
+    assumptions: [
+      {
+        id: "evidence-only-baseline",
+        label: "Evidence-only compatibility baseline",
+        value: 0,
+        baseline: 0,
+        min: 0,
+        max: 1,
+        step: 1,
+        unit: "n/a",
+        impactPerUnit: 0,
+        direction: 1,
+        typicalShock: 1,
+      },
+    ],
+  };
+}
+
+/**
  * Refreshes the market-derived portion of a case without overwriting the
  * user's research question, plan, manually entered evidence, or any custom
  * scenario inputs.
@@ -836,8 +894,10 @@ export function refreshMarketCase(
     thesisCase.evidence
       .filter(
         (item) =>
-          item.relation === "derived" &&
-          item.originId?.startsWith("market-series-"),
+          item.provenance === "system-market" ||
+          (item.group === "Market data" &&
+            (item.id.startsWith("market-") ||
+              item.originId?.startsWith("market-series-"))),
       )
       .map((item) => [item.id, item]),
   );
@@ -875,6 +935,21 @@ export function refreshMarketCase(
 
 export function normalizeMarketCase(thesisCase: ThesisCase): ThesisCase {
   if (!thesisCase.marketSnapshot) return thesisCase;
+  const evidence = thesisCase.evidence.map((item) =>
+    item.group === "Market data" &&
+    (item.id.startsWith("market-") ||
+      item.originId?.startsWith("market-series-") ||
+      (item.relation === "derived" &&
+        canonicalEvidenceSource(item.sourceUrl) ===
+          canonicalEvidenceSource(thesisCase.marketSnapshot!.sourceUrl)))
+      ? {
+          ...item,
+          relation: "derived" as const,
+          verification: "reviewed" as const,
+          provenance: "system-market" as const,
+        }
+      : item,
+  );
   const drawdown = thesisCase.assumptions.find(
     (item) => item.id === "market-drawdown",
   );
@@ -884,11 +959,16 @@ export function normalizeMarketCase(thesisCase: ThesisCase): ThesisCase {
       drawdown.max > 0 &&
       drawdown.direction === -1)
   ) {
-    return thesisCase;
+    return evidence.every(
+      (item, index) => item === thesisCase.evidence[index],
+    )
+      ? thesisCase
+      : { ...thesisCase, evidence };
   }
 
   return {
     ...thesisCase,
+    evidence,
     assumptions: thesisCase.assumptions.map((item) =>
       item.id === "market-drawdown"
         ? {
