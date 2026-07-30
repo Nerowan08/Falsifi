@@ -283,8 +283,25 @@
               "pattern": "\\S"
             }
           },
+          "sameSourceAsIds": {
+            "type": "array",
+            "maxItems": 40,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 120,
+              "pattern": "\\S"
+            }
+          },
           "relation": {
             "enum": ["direct", "derived", "duplicate"]
+          },
+          "verification": {
+            "enum": ["original", "reviewed", "unverified"]
+          },
+          "provenance": {
+            "enum": ["user", "system-market"]
           }
         },
         "additionalProperties": false
