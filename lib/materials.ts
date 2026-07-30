@@ -10,8 +10,8 @@ export type MaterialCandidate = {
   publisher: string;
   sourceUrl: string;
   publishedAt: string;
-  provider: "Yahoo Finance";
-  kind: "news";
+  provider: "CNINFO" | "Yahoo Finance";
+  kind: "filing" | "news";
 };
 
 type YahooNewsItem = {
@@ -22,6 +22,15 @@ type YahooNewsItem = {
   providerPublishTime?: unknown;
   relatedTickers?: unknown;
   type?: unknown;
+};
+
+type CninfoAnnouncement = {
+  announcementId?: unknown;
+  announcementTitle?: unknown;
+  announcementTime?: unknown;
+  adjunctUrl?: unknown;
+  secCode?: unknown;
+  secName?: unknown;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -125,6 +134,144 @@ function publishedDate(value: unknown) {
   return date.toISOString();
 }
 
+const cleanCninfoTitle = (value: string) =>
+  value
+    .replace(/<[^>]*>/gu, "")
+    .replace(/&nbsp;/giu, " ")
+    .replace(/&amp;/giu, "&")
+    .replace(/&lt;/giu, "<")
+    .replace(/&gt;/giu, ">")
+    .replace(/\s+/gu, " ")
+    .trim();
+
+const filingPriority = (title: string) => {
+  if (/说明会/u.test(title)) return 1;
+  if (
+    /(?:年度报告|半年度报告|季度报告)$/u.test(title)
+  ) {
+    return 6;
+  }
+  if (
+    /报告摘要$|业绩预告|业绩快报|业绩预增|业绩预减|审计报告|利润分配|减值损失|风险提示|异常波动|立案|处罚|问询|增持|减持|发行|可转债/u.test(
+      title,
+    )
+  ) {
+    return 5;
+  }
+  if (
+    /重大|收购|出售|投资|合同|诉讼|仲裁|担保|关联交易|权益变动|回购|分红|权益分派/u.test(
+      title,
+    )
+  ) {
+    return 4;
+  }
+  if (/股东大会|董事会|监事会/u.test(title)) return 2;
+  return 1;
+};
+
+export function parseCninfoMaterialCandidates(
+  payload: unknown,
+  {
+    symbol,
+    companyName,
+    limit = 12,
+  }: {
+    symbol: string;
+    companyName?: string;
+    limit?: number;
+  },
+): MaterialCandidate[] {
+  if (!isRecord(payload) || !Array.isArray(payload.announcements)) {
+    return [];
+  }
+
+  const expectedCode = symbol.toUpperCase().split(".")[0];
+  if (!/^\d{6}$/.test(expectedCode)) return [];
+
+  const candidates: Array<{
+    candidate: MaterialCandidate;
+    priority: number;
+  }> = [];
+  const sources = new Set<string>();
+
+  for (const rawItem of payload.announcements) {
+    if (!isRecord(rawItem)) continue;
+    const item = rawItem as CninfoAnnouncement;
+    const secCode =
+      typeof item.secCode === "string" ? item.secCode.trim() : "";
+    if (secCode !== expectedCode) continue;
+
+    const rawTitle =
+      typeof item.announcementTitle === "string"
+        ? item.announcementTitle
+        : "";
+    const secName =
+      typeof item.secName === "string" ? item.secName.trim() : "";
+    const cleanedTitle = cleanCninfoTitle(rawTitle).slice(0, 460);
+    const title =
+      secName &&
+      !cleanedTitle.includes(secName) &&
+      !(companyName && cleanedTitle.includes(companyName))
+        ? `${secName}：${cleanedTitle}`.slice(0, 500)
+        : cleanedTitle;
+    const path =
+      typeof item.adjunctUrl === "string" ? item.adjunctUrl.trim() : "";
+    const pathMatch = path.match(
+      /^finalpage\/(\d{4}-\d{2}-\d{2})\/[a-zA-Z0-9._-]+\.PDF$/i,
+    );
+    const publishedAt = pathMatch?.[1] ?? null;
+    const publishedDate = publishedAt
+      ? new Date(`${publishedAt}T12:00:00.000Z`)
+      : null;
+    if (
+      !title ||
+      !publishedAt ||
+      !publishedDate ||
+      Number.isNaN(publishedDate.getTime()) ||
+      publishedDate.getTime() < Date.UTC(1990, 0, 1) ||
+      publishedDate.getTime() > Date.now() + 48 * 60 * 60 * 1_000
+    ) {
+      continue;
+    }
+
+    const sourceUrl = `https://static.cninfo.com.cn/${path}`;
+    if (!isHttpUrl(sourceUrl)) continue;
+    const sourceKey = canonicalEvidenceSource(sourceUrl);
+    if (sources.has(sourceKey)) continue;
+    sources.add(sourceKey);
+
+    const announcementId =
+      typeof item.announcementId === "string" &&
+      /^[a-zA-Z0-9_-]{1,100}$/.test(item.announcementId)
+        ? item.announcementId
+        : sourceKey;
+    candidates.push({
+      priority: filingPriority(title),
+      candidate: {
+        id: `cninfo:${announcementId}`,
+        title,
+        publisher: "巨潮资讯",
+        sourceUrl,
+        publishedAt,
+        provider: "CNINFO",
+        kind: "filing",
+      },
+    });
+  }
+
+  return candidates
+    .sort((left, right) => {
+      const priorityOrder = right.priority - left.priority;
+      if (priorityOrder) return priorityOrder;
+      const dateOrder = right.candidate.publishedAt.localeCompare(
+        left.candidate.publishedAt,
+      );
+      return dateOrder || left.candidate.id.localeCompare(right.candidate.id);
+    })
+    .slice(0, Math.max(0, Math.min(limit, 20)))
+    .map(({ candidate }) => candidate);
+}
+
 function candidateId(item: YahooNewsItem, sourceUrl: string) {
   if (
     typeof item.uuid === "string" &&
@@ -221,6 +368,21 @@ export function mergeMaterialCandidates(
     .slice(0, Math.max(0, Math.min(limit, 20)));
 }
 
+export function mergeMaterialCandidatesInOrder(
+  groups: MaterialCandidate[][],
+  limit = 12,
+) {
+  const bySource = new Map<string, MaterialCandidate>();
+  for (const candidate of groups.flat()) {
+    const key = canonicalEvidenceSource(candidate.sourceUrl);
+    if (!bySource.has(key)) bySource.set(key, candidate);
+  }
+  return Array.from(bySource.values()).slice(
+    0,
+    Math.max(0, Math.min(limit, 20)),
+  );
+}
+
 export function isMaterialCandidate(
   value: unknown,
 ): value is MaterialCandidate {
@@ -238,8 +400,8 @@ export function isMaterialCandidate(
     isHttpUrl(value.sourceUrl) &&
     typeof value.publishedAt === "string" &&
     !Number.isNaN(Date.parse(value.publishedAt)) &&
-    value.provider === "Yahoo Finance" &&
-    value.kind === "news"
+    ((value.provider === "CNINFO" && value.kind === "filing") ||
+      (value.provider === "Yahoo Finance" && value.kind === "news"))
   );
 }
 
@@ -253,7 +415,10 @@ export function materialCandidateToEvidence(
     source: candidate.publisher,
     sourceUrl: candidate.sourceUrl,
     asOf: candidate.publishedAt.slice(0, 10),
-    group: "External estimate",
+    group:
+      candidate.kind === "filing"
+        ? "Official filing"
+        : "External estimate",
     direction: "unclassified",
     impact: 3,
     reliability: 0.4,
