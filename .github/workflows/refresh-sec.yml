@@ -1,0 +1,55 @@
+name: Refresh SEC evidence
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Weekdays, deliberately off the top of the hour.
+    - cron: "17 13 * * 1-5"
+
+permissions:
+  contents: read
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check refresh configuration
+        id: config
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: |
+          if [ -z "$SEC_USER_AGENT" ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Scheduled refresh skipped. Add the SEC_USER_AGENT repository secret to enable it."
+          else
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Read watchlist
+        if: steps.config.outputs.enabled == 'true'
+        id: watchlist
+        run: |
+          tickers=$(node -e "const x=require('./config/watchlist.json'); process.stdout.write(x.tickers.join(','))")
+          echo "tickers=$tickers" >> "$GITHUB_OUTPUT"
+      - name: Fetch official SEC observations
+        if: steps.config.outputs.enabled == 'true'
+        env:
+          SEC_USER_AGENT: ${{ secrets.SEC_USER_AGENT }}
+        run: |
+          node scripts/fetch-sec.mjs \
+            --tickers "${{ steps.watchlist.outputs.tickers }}" \
+            --output outputs/sec
+      - name: Upload observations
+        if: steps.config.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: sec-observations
+          path: outputs/sec
+          if-no-files-found: error
+          retention-days: 7
