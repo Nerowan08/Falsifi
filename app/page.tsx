@@ -13,6 +13,7 @@ import {
   Import,
   Info,
   Link2,
+  Minus,
   Plus,
   RefreshCcw,
   Search,
@@ -35,6 +36,7 @@ import {
   StockPicker,
 } from "@/components/market-workspace";
 import { FalsifyWorkspace } from "@/components/falsify-workspace";
+import { MaterialFinderModal } from "@/components/material-finder";
 import {
   ResearchActionSummary,
   ResearchPlanModal,
@@ -73,6 +75,11 @@ import {
   relocalizeMarketCase,
   type StockSearchResult,
 } from "@/lib/market";
+import {
+  isCandidateAlreadyAdded,
+  materialCandidateToEvidence,
+  type MaterialCandidate,
+} from "@/lib/materials";
 import {
   assessResearchReadiness,
   type ReadinessAction,
@@ -1108,14 +1115,18 @@ function EvidenceView({
                   <span className={`direction ${item.direction}`}>
                     {item.direction === "supports" ? (
                       <ArrowUpRight size={12} />
-                    ) : (
+                    ) : item.direction === "contradicts" ? (
                       <ArrowDownRight size={12} />
+                    ) : (
+                      <Minus size={12} />
                     )}
                     {t(
                       locale,
                       item.direction === "supports"
                         ? "common.supports"
-                        : "common.contradicts",
+                        : item.direction === "contradicts"
+                          ? "common.contradicts"
+                          : "common.unclassified",
                     )}
                   </span>
                 </div>
@@ -1688,7 +1699,7 @@ function EvidenceModal({
   const simpleCopy = SIMPLE_EVIDENCE_COPY[locale];
   const initialVerification = initial?.verification ?? "unverified";
   const direction =
-    initial?.direction ?? defaults?.direction ?? "supports";
+    initial?.direction ?? defaults?.direction ?? "unclassified";
   const [error, setError] = useState("");
   const firstFieldRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -1993,6 +2004,7 @@ export default function HomePage() {
   const [evidenceDefaults, setEvidenceDefaults] =
     useState<EvidenceDefaults>();
   const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [showMaterialFinder, setShowMaterialFinder] = useState(false);
   const [researchPlanEditor, setResearchPlanEditor] =
     useState<ResearchPlanEditorMode | null>(null);
   const [refreshingMarket, setRefreshingMarket] = useState(false);
@@ -2144,6 +2156,43 @@ export default function HomePage() {
     setEditingEvidence(null);
     setEvidenceDefaults(undefined);
     setShowEvidenceModal(false);
+    setActiveView("stress");
+  };
+
+  const addFoundMaterials = (candidates: MaterialCandidate[]) => {
+    setThesisCase((current) => {
+      if (!current) return current;
+      const accepted: EvidenceItem[] = [];
+      const remaining = Math.max(0, 40 - current.evidence.length);
+      const idBase = Date.now().toString(36);
+
+      for (const candidate of candidates) {
+        if (
+          accepted.length >= remaining ||
+          isCandidateAlreadyAdded(candidate, [
+            ...current.evidence,
+            ...accepted,
+          ])
+        ) {
+          continue;
+        }
+        accepted.push(
+          materialCandidateToEvidence(
+            candidate,
+            `found-${idBase}-${accepted.length}`,
+          ),
+        );
+      }
+
+      if (!accepted.length) return current;
+      const nextCase: ThesisCase = {
+        ...current,
+        evidence: [...current.evidence, ...accepted],
+        lastUpdated: new Date().toISOString(),
+      };
+      return isThesisCase(nextCase) ? nextCase : current;
+    });
+    setShowMaterialFinder(false);
     setActiveView("stress");
   };
 
@@ -2322,6 +2371,7 @@ export default function HomePage() {
     setEditingEvidence(null);
     setEvidenceDefaults(undefined);
     setShowEvidenceModal(false);
+    setShowMaterialFinder(false);
     setResearchPlanEditor(null);
     setActiveView("stress");
   };
@@ -2428,6 +2478,7 @@ export default function HomePage() {
                 refreshing={refreshingMarket}
                 onEditClaim={() => setResearchPlanEditor("claim")}
                 onEditReview={() => setResearchPlanEditor("review")}
+                onFindEvidence={() => setShowMaterialFinder(true)}
                 onAddEvidence={() => openAddEvidence()}
                 onEditEvidence={(item) => {
                   setEditingEvidence(item);
@@ -2505,6 +2556,20 @@ export default function HomePage() {
         hidden
         onChange={(event) => importCase(event.target.files?.[0])}
       />
+
+      {showMaterialFinder && thesisCase && (
+        <MaterialFinderModal
+          thesisCase={thesisCase}
+          locale={locale}
+          existingEvidence={thesisCase.evidence}
+          remainingSlots={Math.max(
+            0,
+            40 - thesisCase.evidence.length,
+          )}
+          onClose={() => setShowMaterialFinder(false)}
+          onAdd={addFoundMaterials}
+        />
+      )}
 
       {showEvidenceModal && thesisCase && (
         <EvidenceModal
