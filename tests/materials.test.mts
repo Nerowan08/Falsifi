@@ -8,8 +8,11 @@ import {
 } from "../lib/falsifi.ts";
 import {
   isCandidateAlreadyAdded,
+  isMaterialCandidate,
   materialCandidateToEvidence,
   mergeMaterialCandidates,
+  mergeMaterialCandidatesInOrder,
+  parseCninfoMaterialCandidates,
   parseYahooMaterialCandidates,
 } from "../lib/materials.ts";
 import { buildResearchCase } from "../lib/market.ts";
@@ -176,4 +179,202 @@ test("detects a candidate whose canonical URL is already recorded", () => {
   item.sourceUrl = "https://example.com/apple-results?utm_medium=email";
 
   assert.equal(isCandidateAlreadyAdded(candidate, [item]), true);
+});
+
+test("parses exact-ticker CNINFO filings and rejects other companies", () => {
+  const candidates = parseCninfoMaterialCandidates(
+    {
+      announcements: [
+        {
+          announcementId: "1225374133",
+          announcementTitle: "2025年度权益分派实施公告",
+          announcementTime: Date.UTC(2026, 5, 17),
+          adjunctUrl: "finalpage/2026-06-17/1225374133.PDF",
+          secCode: "002441",
+          secName: "众业达",
+        },
+        {
+          announcementId: "wrong-company",
+          announcementTitle: "年度报告",
+          announcementTime: Date.UTC(2026, 4, 1),
+          adjunctUrl: "finalpage/2026-05-01/9999999999.PDF",
+          secCode: "000001",
+          secName: "平安银行",
+        },
+        {
+          announcementId: "unsafe-link",
+          announcementTitle: "2025年年度报告",
+          announcementTime: Date.UTC(2026, 3, 18),
+          adjunctUrl: "https://evil.example/redirect.PDF",
+          secCode: "002441",
+          secName: "众业达",
+        },
+      ],
+    },
+    {
+      symbol: "002441.SZ",
+      companyName: "众业达",
+    },
+  );
+
+  assert.equal(candidates.length, 1);
+  assert.equal(candidates[0].provider, "CNINFO");
+  assert.equal(candidates[0].kind, "filing");
+  assert.equal(candidates[0].publisher, "巨潮资讯");
+  assert.equal(candidates[0].publishedAt, "2026-06-17");
+  assert.equal(
+    candidates[0].sourceUrl,
+    "https://static.cninfo.com.cn/finalpage/2026-06-17/1225374133.PDF",
+  );
+  assert.match(candidates[0].title, /众业达/);
+  assert.equal(isMaterialCandidate(candidates[0]), true);
+});
+
+test("prioritizes financial reports in CNINFO results", () => {
+  const candidates = parseCninfoMaterialCandidates(
+    {
+      announcements: [
+        {
+          announcementId: "new-rules",
+          announcementTitle: "董事会秘书工作细则",
+          announcementTime: Date.UTC(2026, 6, 1),
+          adjunctUrl: "finalpage/2026-07-01/1000000001.PDF",
+          secCode: "002441",
+          secName: "众业达",
+        },
+        {
+          announcementId: "earnings-increase",
+          announcementTitle: "2026年半年度业绩预增公告",
+          announcementTime: Date.UTC(2026, 5, 30),
+          adjunctUrl: "finalpage/2026-07-01/1000000003.PDF",
+          secCode: "002441",
+          secName: "众业达",
+        },
+        {
+          announcementId: "annual-report",
+          announcementTitle: "2025年年度报告",
+          announcementTime: Date.UTC(2026, 3, 18),
+          adjunctUrl: "finalpage/2026-04-18/1000000002.PDF",
+          secCode: "002441",
+          secName: "众业达",
+        },
+      ],
+    },
+    {
+      symbol: "002441.SZ",
+      companyName: "众业达",
+    },
+  );
+
+  assert.equal(candidates[0].id, "cninfo:annual-report");
+  assert.equal(candidates[1].id, "cninfo:earnings-increase");
+});
+
+test("keeps official filings ahead of supplemental news", () => {
+  const filing = parseCninfoMaterialCandidates(
+    {
+      announcements: [
+        {
+          announcementId: "filing",
+          announcementTitle: "2025年年度报告",
+          announcementTime: Date.UTC(2026, 3, 18),
+          adjunctUrl: "finalpage/2026-04-18/1000000002.PDF",
+          secCode: "002441",
+          secName: "众业达",
+        },
+      ],
+    },
+    {
+      symbol: "002441.SZ",
+      companyName: "众业达",
+    },
+  );
+  const news = parseYahooMaterialCandidates(payload, {
+    symbol: "AAPL",
+    companyName: "Apple Inc.",
+  });
+  const merged = mergeMaterialCandidatesInOrder([filing, news], 3);
+
+  assert.equal(merged[0].provider, "CNINFO");
+  assert.equal(merged.length, 3);
+});
+
+test("official filings remain unverified, unclassified, and score-neutral", () => {
+  const candidate = parseCninfoMaterialCandidates(
+    {
+      announcements: [
+        {
+          announcementId: "annual-report",
+          announcementTitle: "2025年年度报告",
+          announcementTime: Date.UTC(2026, 3, 18),
+          adjunctUrl: "finalpage/2026-04-18/1000000002.PDF",
+          secCode: "002441",
+          secName: "众业达",
+        },
+      ],
+    },
+    {
+      symbol: "002441.SZ",
+      companyName: "众业达",
+    },
+  )[0];
+  assert.ok(candidate);
+
+  const item = materialCandidateToEvidence(candidate, "cninfo-filing");
+  const thesisCase = buildResearchCase(
+    {
+      symbol: "002441.SZ",
+      name: "众业达",
+      exchange: "SHZ",
+      exchangeName: "Shenzhen",
+      type: "EQUITY",
+      region: "cn",
+    },
+    "zh-CN",
+  );
+  const baselineScore = runStressTest(thesisCase).score;
+  thesisCase.evidence.push(item);
+
+  assert.equal(item.group, "Official filing");
+  assert.equal(item.verification, "unverified");
+  assert.equal(item.direction, "unclassified");
+  assert.equal(runStressTest(thesisCase).score, baselineScore);
+});
+
+test("rejects unknown material providers and kinds", () => {
+  const base = {
+    id: "candidate",
+    title: "Example",
+    publisher: "Example",
+    sourceUrl: "https://example.com/source",
+    publishedAt: new Date().toISOString(),
+    provider: "Unknown",
+    kind: "news",
+  };
+
+  assert.equal(isMaterialCandidate(base), false);
+  assert.equal(
+    isMaterialCandidate({
+      ...base,
+      provider: "CNINFO",
+      kind: "opinion",
+    }),
+    false,
+  );
+  assert.equal(
+    isMaterialCandidate({
+      ...base,
+      provider: "CNINFO",
+      kind: "news",
+    }),
+    false,
+  );
+  assert.equal(
+    isMaterialCandidate({
+      ...base,
+      provider: "Yahoo Finance",
+      kind: "filing",
+    }),
+    false,
+  );
 });
