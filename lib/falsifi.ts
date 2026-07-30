@@ -7,6 +7,13 @@ export type EvidenceDirection = "supports" | "contradicts";
 
 export type EvidenceRelation = "direct" | "derived" | "duplicate";
 
+export type EvidenceVerification =
+  | "original"
+  | "reviewed"
+  | "unverified";
+
+export type EvidenceProvenance = "user" | "system-market";
+
 export type EvidenceGroup =
   | "Official filing"
   | "Management"
@@ -70,7 +77,10 @@ export type EvidenceItem = {
   originId?: string;
   claimId?: string;
   dependsOnIds?: string[];
+  sameSourceAsIds?: string[];
   relation?: EvidenceRelation;
+  verification?: EvidenceVerification;
+  provenance?: EvidenceProvenance;
 };
 
 export type Assumption = {
@@ -343,49 +353,138 @@ const compareStrings = (left: string, right: string) =>
   left < right ? -1 : left > right ? 1 : 0;
 
 /**
- * Treats repeated rows for the same declared source-and-claim pair as one
- * argument unit. Each unit is averaged first, then distinct units receive
- * equal weight inside their related evidence group.
+ * Returns a conservative identity for a source URL.
+ *
+ * Tracking parameters, fragments, casing differences in the host, and a
+ * trailing slash must not let the same document masquerade as a new source.
+ * Meaningful query parameters are retained because some filing systems use
+ * them to identify different documents.
+ */
+export function canonicalEvidenceSource(value: string) {
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    url.hostname = url.hostname.toLowerCase().replace(/^www\./, "");
+    url.pathname =
+      url.pathname.replace(/\/{2,}/g, "/").replace(/\/$/, "") || "/";
+
+    const ignoredParameters = new Set([
+      "fbclid",
+      "gclid",
+      "mc_cid",
+      "mc_eid",
+      "ref",
+      "referrer",
+    ]);
+    Array.from(url.searchParams.keys()).forEach((key) => {
+      if (
+        ignoredParameters.has(key.toLowerCase()) ||
+        key.toLowerCase().startsWith("utm_")
+      ) {
+        url.searchParams.delete(key);
+      }
+    });
+    url.searchParams.sort();
+    return url.toString();
+  } catch {
+    return value.trim();
+  }
+}
+
+/**
+ * Gives one source group at most one supporting and one challenging signal.
+ *
+ * Repeating a row, changing its user label, or adding more pages already
+ * declared to share the same source cannot increase that group's influence.
+ * This serves the legacy rule engine; the primary product output is the
+ * descriptive source-group audit rather than this weighted score.
  */
 function calculateEvidenceGroupContribution(items: EvidenceItem[]) {
   if (items.length === 0) return 0;
-  const argumentUnits = new Map<string, EvidenceItem[]>();
+  const contributions = items.map(evidenceContribution);
+  const strongestSupport = contributions
+    .filter((value) => value > 0)
+    .reduce<number | null>(
+      (current, value) =>
+        current === null ? value : Math.max(current, value),
+      null,
+    );
+  const strongestChallenge = contributions
+    .filter((value) => value < 0)
+    .reduce<number | null>(
+      (current, value) =>
+        current === null ? value : Math.min(current, value),
+      null,
+    );
 
-  items.forEach((item) => {
-    const unitKey =
-      item.originId || item.claimId
-        ? JSON.stringify([item.originId ?? null, item.claimId ?? null])
-        : JSON.stringify(["item", item.id]);
-    const unitItems = argumentUnits.get(unitKey) ?? [];
-    unitItems.push(item);
-    argumentUnits.set(unitKey, unitItems);
-  });
+  if (strongestSupport !== null && strongestChallenge !== null) {
+    return (strongestSupport + strongestChallenge) / 2;
+  }
+  return strongestSupport ?? strongestChallenge ?? 0;
+}
 
-  const unitContributions = Array.from(argumentUnits.values()).map(
-    (unitItems) =>
-      unitItems.reduce(
-        (total, item) => total + evidenceContribution(item),
-        0,
-      ) / unitItems.length,
+/**
+ * A system market observation is context, not user-provided evidence.
+ *
+ * The ID/origin fallbacks migrate schema-v1 cases created before the explicit
+ * provenance field existed.
+ */
+export function isSystemMarketEvidence(
+  thesisCase: ThesisCase,
+  item: EvidenceItem,
+) {
+  if (item.provenance === "system-market") return true;
+  if (
+    item.group === "Market data" &&
+    (item.id.startsWith("market-") ||
+      item.originId?.startsWith("market-series-"))
+  ) {
+    return true;
+  }
+  return Boolean(
+    thesisCase.marketSnapshot &&
+      item.group === "Market data" &&
+      item.relation === "derived" &&
+      canonicalEvidenceSource(item.sourceUrl) ===
+        canonicalEvidenceSource(thesisCase.marketSnapshot.sourceUrl),
   );
+}
+
+export function isUserAddedEvidence(
+  thesisCase: ThesisCase,
+  item: EvidenceItem,
+) {
   return (
-    unitContributions.reduce(
-      (total, contribution) => total + contribution,
-      0,
-    ) / unitContributions.length
+    item.enabled &&
+    item.relation !== "derived" &&
+    !isSystemMarketEvidence(thesisCase, item)
+  );
+}
+
+export function isVerifiedEvidence(item: EvidenceItem) {
+  return (
+    item.verification === "original" ||
+    item.verification === "reviewed"
   );
 }
 
 /**
- * Groups enabled evidence by declared relationships. Shared origin IDs,
- * shared claim IDs, and explicit dependency edges place items in the same
- * connected group. The graph is intentionally undirected for clustering:
- * dependency direction is source metadata, not additional score weight.
+ * Groups enabled evidence by source identity and explicit same-source
+ * relationships. Matching canonical URLs are always joined. Shared origin
+ * IDs and explicit same-source edges can join additional material.
  *
- * The public API retains the historical EvidenceRoot name for schema and
- * import compatibility; the UI calls these "related evidence groups."
+ * A shared factual claim or a logical dependency is deliberately not enough:
+ * independent sources may report the same fact and must remain separate.
+ * User metadata may join material, but it cannot split one canonical URL into
+ * multiple apparently different sources.
+ *
+ * The returned structure retains the historical EvidenceRoot shape for
+ * schema compatibility.
  */
-export function buildEvidenceRoots(thesisCase: ThesisCase): EvidenceRoot[] {
+function buildEvidenceGroups(
+  thesisCase: ThesisCase,
+  sourceOnly: boolean,
+): EvidenceRoot[] {
   const evidence = thesisCase.evidence
     .filter((item) => item.enabled)
     .slice()
@@ -415,21 +514,32 @@ export function buildEvidenceRoots(thesisCase: ThesisCase): EvidenceRoot[] {
 
   const firstByOrigin = new Map<string, string>();
   const firstByClaim = new Map<string, string>();
+  const firstByCanonicalSource = new Map<string, string>();
 
   evidence.forEach((item) => {
+    const canonicalSource = canonicalEvidenceSource(item.sourceUrl);
+    const firstForSource = firstByCanonicalSource.get(canonicalSource);
+    if (firstForSource) union(firstForSource, item.id);
+    else firstByCanonicalSource.set(canonicalSource, item.id);
+
     if (item.originId) {
       const first = firstByOrigin.get(item.originId);
       if (first) union(first, item.id);
       else firstByOrigin.set(item.originId, item.id);
     }
-    if (item.claimId) {
+    item.sameSourceAsIds?.forEach((relatedId) => {
+      if (byId.has(relatedId)) union(item.id, relatedId);
+    });
+    if (!sourceOnly && item.claimId) {
       const first = firstByClaim.get(item.claimId);
       if (first) union(first, item.id);
       else firstByClaim.set(item.claimId, item.id);
     }
-    item.dependsOnIds?.forEach((dependencyId) => {
-      if (byId.has(dependencyId)) union(item.id, dependencyId);
-    });
+    if (!sourceOnly) {
+      item.dependsOnIds?.forEach((dependencyId) => {
+        if (byId.has(dependencyId)) union(item.id, dependencyId);
+      });
+    }
   });
 
   const components = new Map<string, EvidenceItem[]>();
@@ -489,6 +599,19 @@ export function buildEvidenceRoots(thesisCase: ThesisCase): EvidenceRoot[] {
         ? 0
         : root.absoluteContribution / totalAbsoluteContribution,
   }));
+}
+
+/** Source groups used by the focused user workflow. */
+export function buildSourceGroups(thesisCase: ThesisCase) {
+  return buildEvidenceGroups(thesisCase, true);
+}
+
+/**
+ * Legacy analytical groups retain claim/dependency links for saved rule-model
+ * compatibility. New source-group UI must use buildSourceGroups instead.
+ */
+export function buildEvidenceRoots(thesisCase: ThesisCase) {
+  return buildEvidenceGroups(thesisCase, false);
 }
 
 export function auditEvidenceIndependence(
@@ -1345,6 +1468,13 @@ function isEvidenceItem(value: unknown): value is EvidenceItem {
       value.dependsOnIds.length <= 40 &&
       value.dependsOnIds.every((id) => isNonEmptyString(id, 120)) &&
       new Set(value.dependsOnIds).size === value.dependsOnIds.length);
+  const hasValidSourceRelationships =
+    value.sameSourceAsIds === undefined ||
+    (Array.isArray(value.sameSourceAsIds) &&
+      value.sameSourceAsIds.length <= 40 &&
+      value.sameSourceAsIds.every((id) => isNonEmptyString(id, 120)) &&
+      new Set(value.sameSourceAsIds).size ===
+        value.sameSourceAsIds.length);
   return (
     isNonEmptyString(value.id, 120) &&
     isNonEmptyString(value.title, 500) &&
@@ -1368,8 +1498,15 @@ function isEvidenceItem(value: unknown): value is EvidenceItem {
     (value.claimId === undefined ||
       isNonEmptyString(value.claimId, 120)) &&
     hasValidDependencies &&
+    hasValidSourceRelationships &&
     (value.relation === undefined ||
-      evidenceRelations.has(value.relation as EvidenceRelation))
+      evidenceRelations.has(value.relation as EvidenceRelation)) &&
+    (value.verification === undefined ||
+      ["original", "reviewed", "unverified"].includes(
+        value.verification as string,
+      )) &&
+    (value.provenance === undefined ||
+      ["user", "system-market"].includes(value.provenance as string))
   );
 }
 
@@ -1550,9 +1687,9 @@ export function isThesisCase(value: unknown): value is ThesisCase {
     evidenceIdSet.size === evidenceIds.length &&
     new Set(assumptionIds).size === assumptionIds.length &&
     value.evidence.every((item) =>
-      (item.dependsOnIds ?? []).every(
-        (dependencyId) =>
-          dependencyId !== item.id && evidenceIdSet.has(dependencyId),
+      [...(item.dependsOnIds ?? []), ...(item.sameSourceAsIds ?? [])].every(
+        (relatedId) =>
+          relatedId !== item.id && evidenceIdSet.has(relatedId),
       ),
     )
   );
