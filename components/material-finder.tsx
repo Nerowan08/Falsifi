@@ -45,7 +45,10 @@ type FinderCopy = {
   add: (count: number) => string;
   cancel: string;
   limit: (count: number) => string;
-  provider: string;
+  provider: (providers: string) => string;
+  filing: string;
+  news: string;
+  selectItem: (title: string) => string;
 };
 
 const COPY: Record<Locale, FinderCopy> = {
@@ -57,9 +60,9 @@ const COPY: Record<Locale, FinderCopy> = {
     search: "Search",
     searching: "Searching…",
     notice:
-      "Results may be outdated, duplicated, or behind a login. Open the page and check it. Nothing is added until you select and confirm it.",
+      "These are candidate sources. Open the original page to check it. Nothing is added until you select and confirm it.",
     privacy:
-      "The company name, ticker, and search terms are sent to Yahoo Finance. Your claim is not included.",
+      "For A-shares, the ticker is sent to CNINFO. The company name, ticker, and search terms are sent to Yahoo Finance. Your claim is never sent.",
     noResults: "No matching pages found. Try different keywords.",
     unavailable:
       "Search is unavailable right now. You can still add material manually.",
@@ -72,22 +75,25 @@ const COPY: Record<Locale, FinderCopy> = {
     add: (count) => `Add ${count}`,
     cancel: "Cancel",
     limit: (count) => `You can add up to ${count} more.`,
-    provider: "Search: Yahoo Finance",
+    provider: (providers) => `Sources: ${providers}`,
+    filing: "Company filing",
+    news: "News",
+    selectItem: (title) => `Select: ${title}`,
   },
   "zh-CN": {
-    title: "搜索公开材料",
-    subtitle: "先打开网页核对，再选择要加入的材料。",
+    title: "帮我找材料",
+    subtitle: "选中需要的材料，再加入。",
     searchLabel: "搜索词",
     searchPlaceholder: "公司名、股票代码或关键词",
     search: "搜索",
     searching: "正在搜索…",
-    notice:
-      "结果可能过时、重复或需要登录。请打开网页核对。只有你勾选并确认的材料才会加入。",
-    privacy: "公司名、股票代码和搜索词会发送给 Yahoo Finance，不会发送你的判断。",
+    notice: "加入前请查看原文，确认内容与这只股票有关。",
+    privacy:
+      "A 股代码会发送给巨潮资讯；公司名、代码和搜索词会发送给 Yahoo Finance。不会发送你的判断。",
     noResults: "没有找到匹配网页。换个关键词试试。",
     unavailable: "暂时无法搜索。你仍可以手动添加材料。",
-    openPage: "打开网页",
-    unverified: "未核实",
+    openPage: "查看原文",
+    unverified: "待核对",
     alreadyAdded: "已在材料中",
     selectAll: "全选",
     clear: "清空",
@@ -95,7 +101,10 @@ const COPY: Record<Locale, FinderCopy> = {
     add: (count) => `确认加入 ${count} 条`,
     cancel: "取消",
     limit: (count) => `还可以加入 ${count} 条。`,
-    provider: "搜索来源：Yahoo Finance",
+    provider: (providers) => `来源：${providers}`,
+    filing: "公司公告",
+    news: "新闻",
+    selectItem: (title) => `选择：${title}`,
   },
   ja: {
     title: "公開資料を検索",
@@ -107,7 +116,7 @@ const COPY: Record<Locale, FinderCopy> = {
     notice:
       "結果は古い、重複している、またはログインが必要な場合があります。ページを開いて確認してください。選択して確定するまで追加されません。",
     privacy:
-      "企業名、銘柄コード、検索語は Yahoo Finance に送信されます。あなたの仮説は送信されません。",
+      "中国A株のコードはCNINFOに送信されます。企業名、コード、検索語はYahoo Financeに送信されます。仮説は送信されません。",
     noResults: "一致するページがありません。別のキーワードを試してください。",
     unavailable:
       "現在検索できません。資料は手動で追加できます。",
@@ -120,7 +129,10 @@ const COPY: Record<Locale, FinderCopy> = {
     add: (count) => `${count}件を追加`,
     cancel: "キャンセル",
     limit: (count) => `あと${count}件追加できます。`,
-    provider: "検索元：Yahoo Finance",
+    provider: (providers) => `検索元：${providers}`,
+    filing: "企業開示",
+    news: "ニュース",
+    selectItem: (title) => `選択：${title}`,
   },
   es: {
     title: "Buscar fuentes públicas",
@@ -132,7 +144,7 @@ const COPY: Record<Locale, FinderCopy> = {
     notice:
       "Los resultados pueden estar desactualizados, repetidos o requerir acceso. Abre la página y compruébala. No se añade nada hasta que lo selecciones y confirmes.",
     privacy:
-      "El nombre, el ticker y los términos se envían a Yahoo Finance. Tu tesis no se incluye.",
+      "Para acciones A, el ticker se envía a CNINFO. El nombre, el ticker y los términos se envían a Yahoo Finance. Tu tesis no se envía.",
     noResults:
       "No se encontraron páginas coincidentes. Prueba otras palabras.",
     unavailable:
@@ -146,12 +158,19 @@ const COPY: Record<Locale, FinderCopy> = {
     add: (count) => `Añadir ${count}`,
     cancel: "Cancelar",
     limit: (count) => `Puedes añadir ${count} más.`,
-    provider: "Búsqueda: Yahoo Finance",
+    provider: (providers) => `Fuentes: ${providers}`,
+    filing: "Documento oficial",
+    news: "Noticia",
+    selectItem: (title) => `Seleccionar: ${title}`,
   },
 };
 
 function formatDate(value: string, locale: Locale) {
-  const date = new Date(value);
+  const date = new Date(
+    /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? `${value}T12:00:00`
+      : value,
+  );
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat(locale, {
     year: "numeric",
@@ -182,6 +201,7 @@ export function MaterialFinderModal({
   const [loading, setLoading] = useState(true);
   const [searched, setSearched] = useState(false);
   const [unavailable, setUnavailable] = useState(false);
+  const [providers, setProviders] = useState<string[]>([]);
   const dialogRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const returnFocusRef = useRef<HTMLElement | null>(null);
@@ -220,12 +240,21 @@ export function MaterialFinderModal({
         const payload = (await response.json()) as {
           candidates?: unknown;
           providerStatus?: unknown;
+          providers?: unknown;
         };
         const nextCandidates = Array.isArray(payload.candidates)
           ? payload.candidates.filter(isMaterialCandidate)
           : [];
         setCandidates(nextCandidates);
         setUnavailable(payload.providerStatus === "unavailable");
+        setProviders(
+          Array.isArray(payload.providers)
+            ? payload.providers.filter(
+                (provider): provider is string =>
+                  typeof provider === "string" && provider.length <= 80,
+              )
+            : [],
+        );
       } catch (error) {
         if (error instanceof DOMException && error.name === "AbortError") {
           return;
@@ -241,6 +270,16 @@ export function MaterialFinderModal({
     },
     [locale, thesisCase.company, thesisCase.ticker],
   );
+
+  const providerNames = providers
+    .map((provider) =>
+      provider === "CNINFO"
+        ? locale === "zh-CN"
+          ? "巨潮资讯"
+          : "CNINFO"
+        : provider,
+    )
+    .join(locale === "en" || locale === "es" ? ", " : "、");
 
   useEffect(() => {
     returnFocusRef.current =
@@ -390,7 +429,14 @@ export function MaterialFinderModal({
         </div>
 
         <div className="material-result-toolbar">
-          <span>{copy.provider}</span>
+          <span>
+            {copy.provider(
+              providerNames ||
+                (locale === "zh-CN"
+                  ? "巨潮资讯、Yahoo Finance"
+                  : "CNINFO, Yahoo Finance"),
+            )}
+          </span>
           <div>
             <button
               type="button"
@@ -443,6 +489,7 @@ export function MaterialFinderModal({
                       type="checkbox"
                       checked={checked}
                       disabled={disabled}
+                      aria-label={copy.selectItem(candidate.title)}
                       onChange={() => toggle(candidate)}
                     />
                     <span className="candidate-check" aria-hidden="true">
@@ -456,6 +503,10 @@ export function MaterialFinderModal({
                       {formatDate(candidate.publishedAt, locale)}
                     </p>
                     <span className="candidate-status">
+                      {candidate.kind === "filing"
+                        ? copy.filing
+                        : copy.news}
+                      {" · "}
                       {exists ? copy.alreadyAdded : copy.unverified}
                     </span>
                   </div>
