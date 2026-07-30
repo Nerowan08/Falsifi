@@ -1,7 +1,7 @@
 {
   "name": "falsifi",
-  "version": "0.5.0",
-  "description": "A multilingual, source-linked stock thesis stress-testing workspace.",
+  "version": "0.6.0",
+  "description": "A multilingual source-group checker for stock-thesis material.",
   "license": "MIT",
   "private": true,
   "engines": {
