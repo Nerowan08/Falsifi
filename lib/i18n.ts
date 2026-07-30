@@ -38,8 +38,8 @@ export function resolveLocale(
 
 const EN = {
   "app.name": "Falsifi",
-  "app.tagline": "Investment thesis stress test",
-  "app.description": "See what would change the current assessment.",
+  "app.tagline": "Stock-thesis source grouping",
+  "app.description": "See how your stock-thesis materials group by source.",
   "app.demoCase": "Synthetic demo",
   "app.localCase": "Local case",
   "app.openSourceLocal": "Open source · stored in your browser · no brokerage connection",
@@ -415,8 +415,8 @@ type Dictionary = Readonly<Record<TranslationKey, string>>;
 
 const ZH_CN = {
   "app.name": "Falsifi",
-  "app.tagline": "投资逻辑压力测试",
-  "app.description": "找出什么变化会改变当前判断。",
+  "app.tagline": "股票判断来源归组",
+  "app.description": "查看一项股票判断的材料如何按来源归组。",
   "app.demoCase": "合成演示案例",
   "app.localCase": "本地案例",
   "app.openSourceLocal": "开源 · 保存在浏览器 · 不连接券商",
@@ -789,8 +789,8 @@ const ZH_CN = {
 
 const JA = {
   "app.name": "Falsifi",
-  "app.tagline": "投資仮説ストレステスト",
-  "app.description": "何が現在の評価を変えるのかを確認します。",
+  "app.tagline": "株式仮説の出典グループ確認",
+  "app.description": "株式仮説の資料を出典ごとにグループ化して確認します。",
   "app.demoCase": "合成デモケース",
   "app.localCase": "ローカルケース",
   "app.openSourceLocal": "オープンソース · ブラウザーに保存 · 証券口座接続なし",
@@ -1163,8 +1163,8 @@ const JA = {
 
 const ES = {
   "app.name": "Falsifi",
-  "app.tagline": "Prueba de estrés de la tesis de inversión",
-  "app.description": "Descubre qué cambiaría la evaluación actual.",
+  "app.tagline": "Agrupación de fuentes de una tesis",
+  "app.description": "Comprueba cómo se agrupan por fuente los materiales de una tesis.",
   "app.demoCase": "Demo sintética",
   "app.localCase": "Caso local",
   "app.openSourceLocal": "Código abierto · guardado en el navegador · sin conexión a un bróker",
