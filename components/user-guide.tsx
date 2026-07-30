@@ -69,38 +69,37 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
     title: "How to use Falsifi",
     subtitle:
       "One task: see how the material recorded for one stock thesis groups by source.",
-    duration: "About 6 minutes",
-    backToWorkspace: "Back to my evidence card",
+    duration: "About 3 minutes",
+    backToWorkspace: "Back to workspace",
     backToSearch: "Back to stock search",
     toc: "In this guide",
     overview: {
       nav: "Purpose",
       title: "What Falsifi reports",
       body:
-        "Investors often collect several articles that ultimately repeat one filing, dataset, interview, or republication chain. Falsifi turns one stock thesis and its material into an evidence card. It joins matching canonical URLs and same-source relationships you declare, then reports the source groups identified in the current record, the grouped material, and the next missing research step.",
+        "Several articles may repeat one filing, dataset, interview, or republication. Falsifi puts matching links and sources you mark as the same into one group.",
       callout:
-        "Falsifi checks evidence structure. It does not decide whether a stock is good, predict returns, calculate a target price, or issue buy and sell signals.",
+        "Falsifi only organizes sources. It does not judge a stock, predict returns, or issue buy and sell signals.",
     },
     workflow: {
-      nav: "Three-step workflow",
-      title: "Complete one evidence check",
-      intro:
-        "The interface shows one primary action at a time. Follow it in order.",
+      nav: "How it works",
+      title: "Use it in your own order",
+      intro: "Nothing is locked. Choose the action you need.",
       steps: [
         {
-          title: "1. Choose a stock and write one claim",
+          title: "1. Choose a stock",
           body:
-            "Search a U.S., mainland China, or Hong Kong listed stock. Write one concrete claim about what you expect over a stated period. Do not paste a general company description.",
+            "Search a U.S., mainland China, or Hong Kong listed stock and open its workspace.",
         },
         {
-          title: "2. Define what would weaken it",
+          title: "2. Add a claim or material",
           body:
-            "Record an observable event or fact that would make you reconsider, choose the time horizon, and set a future review date. This prevents the thesis from quietly changing after the outcome is known.",
+            "Write a claim, add material, or set a check date in any order. You can change each later.",
         },
         {
-          title: "3. Add original, contrary, and differently sourced material",
+          title: "3. Read the source result",
           body:
-            "Start with a company or regulatory original document, then add a credible fact that challenges the thesis. When another link traces to the same document, dataset, interview, or republication chain, connect it to the existing item.",
+            "Matching links group automatically. If different links come from the same document, dataset, interview, or republication, group them yourself.",
         },
       ],
     },
@@ -131,9 +130,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "Select an existing item when both materials ultimately trace to the same document, dataset, interview, or republication chain. This relationship makes them count as one source group.",
         },
         {
-          title: "Verification and optional role",
+          title: "Check status and optional details",
           body:
-            "You must state whether you read the original, checked a reliable secondary source, or have not independently verified it. Classifying the item as pivotal, important, or context is optional.",
+            "Mark whether you read the original, checked a secondary source, or have not checked it yet. Publisher, date, notes, and importance are optional.",
         },
       ],
     },
@@ -159,9 +158,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "How many extra items collapse into an existing source group. For example, 8 copies of the same URL produce 8 materials, 1 source group, and 7 grouped items.",
         },
         {
-          title: "Next action",
+          title: "Your controls",
           body:
-            "The single button identifies the first structural gap: define the claim, add an original disclosure, add contrary material, add a different source, or set the review date.",
+            "Write or edit the claim, add material, change check settings, or save the record whenever you want.",
         },
       ],
       example:
@@ -177,8 +176,8 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         "A user cannot split the same canonical URL into several groups by entering different labels.",
         "Different links are grouped only when a stored source identity or explicit same-source relationship connects them.",
         "Falsifi does not crawl every page, compare full article text, or guarantee that it has discovered every syndication chain.",
-        "A completed evidence structure does not prove the investment thesis true. It only means the record contains the required kinds of material.",
-        "Delayed market data is background only and never satisfies the original-source, contrary-evidence, or source-diversity checks.",
+        "More source groups do not prove the investment thesis true.",
+        "Delayed market data is background only and is not counted as user material.",
       ],
     },
     faq: {
@@ -196,9 +195,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "No. It only means the recorded material is less concentrated. Quality, relevance, timeliness, and interpretation still require human judgment.",
         },
         {
-          title: "Why does Falsifi require contrary material?",
+          title: "Do I have to add contrary material?",
           body:
-            "Without a credible challenge, the record mainly measures how much supporting material you collected, not whether you tested the thesis.",
+            "No. Falsifi can show that your material leans one way, but you decide what to add.",
         },
         {
           title: "Where is my work stored?",
@@ -208,56 +207,54 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       ],
     },
     closing:
-      "A useful result is not “the stock is good.” It is “these eight materials represent two source groups, and this is the next different fact I need to check.”",
+      "The useful result is simple: “These eight materials currently form two source groups.”",
   },
   "zh-CN": {
-    title: "Falsifi 完整使用教程",
-    subtitle:
-      "只完成一个任务：查看一项股票判断的材料如何按来源归组。",
-    duration: "约 6 分钟",
-    backToWorkspace: "返回我的判断证据卡",
+    title: "使用 Falsifi",
+    subtitle: "整理股票材料，查看它们被归成几组。",
+    duration: "约 3 分钟",
+    backToWorkspace: "返回工具",
     backToSearch: "返回股票搜索",
     toc: "本页内容",
     overview: {
       nav: "工具用途",
-      title: "Falsifi 到底解决什么问题",
+      title: "它能做什么",
       body:
-        "投资者经常收集多篇文章，但它们最终可能都来自同一份财报、同一组数据、同一次采访或同一转载链。Falsifi 把一项股票判断和相关材料整理成一张证据卡：相同规范化网址一定归组，你明确声明为同源的材料也会归组，然后显示当前记录中识别的来源组、哪些材料被合并，以及下一项最缺的研究任务。",
+        "很多文章其实都在引用同一份财报、数据或采访。Falsifi 会把同源材料放在一起，让你看到当前共有几组。",
       callout:
-        "Falsifi 检查的是证据结构，不判断股票好坏，不预测收益，不计算目标价，也不给买卖信号。",
+        "Falsifi 只整理材料来源，不判断股票好坏，也不给买卖建议。",
     },
     workflow: {
-      nav: "三步流程",
-      title: "完成一次证据核查",
-      intro: "页面每个阶段只显示一个主要操作，按顺序完成即可。",
+      nav: "怎么使用",
+      title: "按你的习惯操作",
+      intro: "没有固定顺序。需要做什么，就点什么。",
       steps: [
         {
-          title: "1. 选择股票，写下一个判断",
+          title: "1. 选择股票",
           body:
-            "搜索美股、A 股或港股。写下一项在明确期限内可能被检验的判断，不要填写笼统的公司介绍。",
+            "搜索美股、A 股或港股，进入这只股票的工具页。",
         },
         {
-          title: "2. 提前写明什么会削弱它",
+          title: "2. 自由添加内容",
           body:
-            "记录一个会让你重新考虑的可观察事件或事实，确认判断期限，并设置未来的复核日期。这样可以避免结果出现后悄悄修改原来的判断。",
+            "你可以先写判断，也可以先加材料。检查条件和日期都是选填，之后随时能改。",
         },
         {
-          title: "3. 添加原始披露、反方事实和不同来源",
+          title: "3. 查看来源组",
           body:
-            "先加入公司或监管机构的原始文件，再加入一条可信、会削弱判断的事实。若另一篇材料最终来自同一文件、数据集、采访或转载链，请把它关联到已有材料。",
+            "相同链接会自动归组。不同链接如果来自同一文件、数据或采访，也可以手动归组。",
         },
       ],
     },
     evidence: {
-      nav: "正确添加材料",
-      title: "记录事实和来源，不制造虚假精确",
-      intro:
-        "普通表单只要求事实与来源关系，不再要求用户随意填写影响分数或可信度百分比。",
+      nav: "添加材料",
+      title: "只填需要的信息",
+      intro: "先填材料内容、链接、类型和核查状态。其他信息放在“更多选项”里。",
       items: [
         {
-          title: "标题、发布方、网址和日期",
+          title: "材料内容和链接",
           body:
-            "标题应描述具体事实；网址必须是你实际核查过的 HTTP 或 HTTPS 页面；日期使用观察日期或发布日期。",
+            "写下关键信息，并贴上原网页链接。",
         },
         {
           title: "来源类型",
@@ -270,41 +267,41 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "方向必须相对于你写下的那项具体判断，而不是笼统判断这条新闻是利好还是利空。",
         },
         {
-          title: "是否共享同一底层来源",
+          title: "是否来自同一来源",
           body:
             "如果两项材料最终来自同一文件、数据集、采访或转载链，请选择已有材料。它们会按一个来源组计算。",
         },
         {
-          title: "核查方式与可选作用分类",
+          title: "核查状态和更多选项",
           body:
-            "必须选择你是阅读了原始文件、核对了可靠二手来源，还是尚未独立核查；把材料标为关键、重要或背景则是可选项。",
+            "核查状态默认是“尚未核查”。发布方、日期、备注和是否来自同一来源都可以按需补充。",
         },
       ],
     },
     result: {
       nav: "读懂结果",
-      title: "如何阅读判断证据卡",
-      intro: "主结果是描述性的，刻意保持简单。",
+      title: "怎么看结果",
+      intro: "页面只显示三个数字。",
       items: [
         {
-          title: "人工录入材料",
+          title: "材料",
           body:
-            "当前启用、由用户人工添加的材料数量。自动行情观察不会被算进来。",
+            "你添加了多少条材料。行情不会算进去。",
         },
         {
-          title: "当前识别的来源组",
+          title: "来源组",
           body:
-            "由相同规范化网址、共享来源身份或用户明确声明的同源关系形成的归组结果。“不同组”不等于已经证明统计独立。",
+            "当前材料被归成多少组。不同组不代表它们一定互相独立。",
         },
         {
-          title: "与其他材料归为一组",
+          title: "重复来源",
           body:
-            "被并入已有来源组的额外材料数量。例如同一网址复制 8 次，会显示 8 项材料、1 个来源组、7 项归组材料。",
+            "有多少条材料和其他材料来自同一来源。",
         },
         {
-          title: "下一项操作",
+          title: "你的操作",
           body:
-            "唯一的主按钮指出第一个结构性缺口：定义判断、加入原始披露、加入反方事实、加入不同来源，或设置复核日期。",
+            "写判断、加材料、改复查设置或保存记录，随时都能操作。",
         },
       ],
       example:
@@ -315,12 +312,12 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       title: "系统能知道什么，不能知道什么",
       intro: "归组采用确定性规则，因此相同记录会得到相同结果。",
       items: [
-        "同一规范化网址一定归为一组；跟踪参数、网页片段、主机名大小写或末尾斜杠不会制造新来源。",
-        "用户无法通过填写不同标签，把同一规范化网址拆成多个来源组。",
-        "不同链接只有在共享已记录的来源身份，或存在明确的同源关系时才会归组。",
+        "同一个链接会归为一组；跟踪参数、网页片段或末尾斜杠不会制造新来源。",
+        "修改材料名称，不会把同一个链接拆成多组。",
+        "不同链接只有在你标记为来自同一来源时才会归组。",
         "Falsifi 不会抓取并比较所有文章全文，也不能保证发现互联网上全部转载链。",
-        "证据结构完整，不代表投资判断已经正确；它只表示记录中包含了所要求的材料类型。",
-        "延迟行情永远只是背景，不会满足原始披露、反方证据或不同来源检查。",
+        "来源组更多，不代表投资判断正确。",
+        "延迟行情只是背景，不会算作你添加的材料。",
       ],
     },
     faq: {
@@ -338,9 +335,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "不是。它只说明记录的材料没有过度集中；材料质量、相关性、时效性和解释仍需要人工判断。",
         },
         {
-          title: "为什么必须加入反方材料？",
+          title: "一定要加入不支持判断的材料吗？",
           body:
-            "如果没有可信的挑战，你记录的只是收集了多少支持材料，而不是是否真正检验过这项判断。",
+            "不用。工具可以显示材料目前偏向哪一边，但是否补充由你决定。",
         },
         {
           title: "我的记录保存在哪里？",
@@ -350,43 +347,43 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       ],
     },
     closing:
-      "有价值的结果不是“这只股票很好”，而是“这 8 项材料在当前记录中被识别为 2 个来源组，下一步最该核查的是另一来源的材料”。",
+      "结果很简单：这 8 条材料，当前被归为 2 组。",
   },
   ja: {
     title: "Falsifi の使い方",
     subtitle:
-      "一つのタスク：株式仮説の資料が出典ごとにどう分かれるかを確認します。",
-    duration: "約6分",
-    backToWorkspace: "エビデンスカードに戻る",
+      "株式の資料を整理し、いくつの出典グループに分かれるか確認します。",
+    duration: "約3分",
+    backToWorkspace: "作業画面に戻る",
     backToSearch: "銘柄検索に戻る",
     toc: "このガイド",
     overview: {
       nav: "目的",
       title: "Falsifi が行うこと",
       body:
-        "複数の記事が同じ決算資料、データセット、インタビュー、転載経路に由来することがあります。Falsifi は一つの仮説と資料をカード化し、同じ正規化URLと明示された同一出典関係をまとめ、現在の記録で識別された出典群と次に不足する調査を示します。",
+        "複数の記事が、同じ決算資料、データ、インタビューを繰り返していることがあります。Falsifi は同じ出典の資料を一つのグループにまとめます。",
       callout:
-        "証拠構造を確認するツールです。株価予測、目標株価、売買推奨、銘柄の良否判断は行いません。",
+        "資料の出典だけを整理します。株価予測や売買推奨は行いません。",
     },
     workflow: {
-      nav: "3ステップ",
-      title: "一回の証拠チェックを完了",
-      intro: "各段階で主要操作は一つだけです。",
+      nav: "使い方",
+      title: "好きな順番で使う",
+      intro: "操作の順番は自由です。必要なものを選んでください。",
       steps: [
         {
-          title: "1. 銘柄と一つの仮説を入力",
+          title: "1. 銘柄を選ぶ",
           body:
-            "米国、中国A株、香港株を検索し、期間内に検証可能な具体的仮説を一つ記録します。",
+            "米国、中国A株、香港株から検索できます。",
         },
         {
-          title: "2. 弱める条件を事前に記録",
+          title: "2. 判断または資料を追加する",
           body:
-            "再考が必要になる観察可能な事実、期間、将来の確認日を設定します。",
+            "先に判断を書いても、先に資料を追加しても構いません。",
         },
         {
-          title: "3. 一次資料、反証、別の出典を追加",
+          title: "3. 出典グループを見る",
           body:
-            "企業・規制当局の原資料から始め、反証事実を追加します。同じ底層資料を繰り返す場合は既存項目に関連付けます。",
+            "同じURLは自動でまとまります。別のURLが同じ文書やインタビューに由来する場合は、自分で関連付けできます。",
         },
       ],
     },
@@ -418,7 +415,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "確認方法と任意の役割分類",
           body:
-            "原文確認・二次資料確認・未確認のいずれかは必須です。中核・重要・背景の役割分類は任意です。",
+            "初期状態は「未確認」です。発行者、日付、メモ、重要度、同一出典の関係は必要なときだけ追加できます。",
         },
       ],
     },
@@ -442,9 +439,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "既存群へ入る追加資料数。同じURL8件なら資料8件、出典群1件、関連資料7件です。",
         },
         {
-          title: "次の操作",
+          title: "操作",
           body:
-            "仮説定義、一次資料、反証、別出典、確認日のうち最初の不足を一つ示します。",
+            "判断の編集、資料の追加、確認設定、記録の保存はいつでも選べます。",
         },
       ],
       example:
@@ -477,8 +474,8 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
           body: "いいえ。集中度が低いだけで、品質や解釈は人が確認します。",
         },
         {
-          title: "反証資料が必要な理由は？",
-          body: "支持材料の収集と仮説の検証は異なるためです。",
+          title: "反証資料は必須ですか？",
+          body: "いいえ。何を追加するかは自分で決められます。",
         },
         {
           title: "記録はどこに保存？",
@@ -488,13 +485,13 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       ],
     },
     closing:
-      "有用な結果は「良い株」ではなく、「8件の資料は2つの出典群で、次にこの別の事実を確認すべき」です。",
+      "結果は簡単です。この8件の資料は、現在2つの出典グループに分かれています。",
   },
   es: {
     title: "Cómo usar Falsifi",
     subtitle:
       "Una tarea: ver cómo se agrupan por fuente los materiales registrados para una tesis bursátil.",
-    duration: "Unos 6 minutos",
+    duration: "Unos 3 minutos",
     backToWorkspace: "Volver a mi ficha",
     backToSearch: "Volver a buscar",
     toc: "En esta guía",
@@ -502,29 +499,29 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       nav: "Propósito",
       title: "Qué hace Falsifi",
       body:
-        "Varios artículos pueden proceder del mismo informe, conjunto de datos, entrevista o cadena de republicación. Falsifi convierte una tesis y sus materiales en una ficha, agrupa URL canónicas iguales y relaciones explícitas de misma fuente, y muestra los grupos identificados en el registro y el siguiente vacío de investigación.",
+        "Varios artículos pueden repetir el mismo informe, conjunto de datos o entrevista. Falsifi reúne los materiales que proceden de la misma fuente.",
       callout:
-        "Comprueba la estructura de evidencia. No predice rentabilidad, calcula precio objetivo ni recomienda comprar o vender.",
+        "Solo organiza las fuentes. No predice precios ni recomienda comprar o vender.",
     },
     workflow: {
-      nav: "Tres pasos",
-      title: "Completa una comprobación",
-      intro: "Cada etapa presenta una sola acción principal.",
+      nav: "Uso",
+      title: "Úsalo en el orden que prefieras",
+      intro: "No hay un orden obligatorio. Elige la acción que necesites.",
       steps: [
         {
-          title: "1. Elige una acción y escribe una tesis",
+          title: "1. Elige una acción",
           body:
-            "Busca una acción de EE. UU., China continental o Hong Kong y escribe una tesis concreta con plazo.",
+            "Busca una acción de EE. UU., China continental o Hong Kong.",
         },
         {
-          title: "2. Define qué la debilitaría",
+          title: "2. Añade una tesis o un material",
           body:
-            "Registra un hecho observable que te haría reconsiderar, el horizonte y una fecha futura de revisión.",
+            "Puedes escribir primero la tesis o añadir primero un material.",
         },
         {
-          title: "3. Añade fuente original, evidencia contraria y otra fuente",
+          title: "3. Lee los grupos de fuentes",
           body:
-            "Empieza con el emisor o regulador, añade un hecho contrario y relaciona materiales que repitan la misma fuente.",
+            "La misma URL se agrupa automáticamente. También puedes relacionar enlaces distintos que proceden del mismo documento o entrevista.",
         },
       ],
     },
@@ -556,7 +553,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
         {
           title: "Verificación y papel opcional",
           body:
-            "Debes indicar si leíste el original, comprobaste una fuente secundaria o aún no lo verificaste. Marcarlo como esencial, importante o contexto es opcional.",
+            "El estado inicial es «sin verificar». El editor, la fecha, la nota, la importancia y la relación entre fuentes son opcionales.",
         },
       ],
     },
@@ -580,9 +577,9 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
             "Elementos adicionales en grupos existentes. Ocho copias de una URL producen 8 materiales, 1 grupo y 7 agrupados.",
         },
         {
-          title: "Siguiente acción",
+          title: "Controles",
           body:
-            "Muestra el primer vacío: tesis, fuente original, evidencia contraria, fuente distinta o fecha.",
+            "Puedes editar la tesis, añadir material, cambiar la revisión o guardar cuando quieras.",
         },
       ],
       example:
@@ -614,8 +611,8 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
           body: "No. Solo indica menor concentración del material registrado.",
         },
         {
-          title: "¿Por qué exigir evidencia contraria?",
-          body: "Recopilar apoyo no equivale a poner a prueba una tesis.",
+          title: "¿Es obligatoria la evidencia contraria?",
+          body: "No. Tú decides qué material añadir.",
         },
         {
           title: "¿Dónde se guarda mi trabajo?",
@@ -625,7 +622,7 @@ export const GUIDE_COPY: Record<Locale, GuideCopy> = {
       ],
     },
     closing:
-      "Un resultado útil no es “buena acción”, sino “estos ocho materiales son dos grupos y esta es la siguiente fuente distinta que debo comprobar”.",
+      "El resultado es sencillo: estos ocho materiales forman ahora dos grupos de fuentes.",
   },
 };
 
