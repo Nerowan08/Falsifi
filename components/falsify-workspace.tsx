@@ -4,6 +4,7 @@ import {
   Check,
   Circle,
   ExternalLink,
+  FileSearch,
   FileText,
   Link2,
   Pencil,
@@ -21,9 +22,8 @@ import type { Locale } from "@/lib/i18n";
 type WorkspaceCopy = {
   toolLabel: string;
   actionTitle: string;
-  editClaim: string;
+  findEvidence: string;
   addEvidence: string;
-  editReview: string;
   saveReview: string;
   saved: string;
   resultTitle: string;
@@ -61,10 +61,9 @@ type WorkspaceCopy = {
 const COPY: Record<Locale, WorkspaceCopy> = {
   en: {
     toolLabel: "Source check",
-    actionTitle: "Actions",
-    editClaim: "Write / edit claim",
+    actionTitle: "Start",
+    findEvidence: "Find public sources",
     addEvidence: "Add material",
-    editReview: "Check settings",
     saveReview: "Save record",
     saved: "Saved",
     resultTitle: "Source result",
@@ -103,14 +102,13 @@ const COPY: Record<Locale, WorkspaceCopy> = {
     refresh: "Refresh",
     refreshing: "Refreshing…",
     boundary:
-      "Falsifi organizes the material you add. It does not judge the stock or predict returns.",
+      "Falsifi finds candidate pages and groups the material you choose. It does not judge the stock or predict returns.",
   },
   "zh-CN": {
     toolLabel: "材料来源检查",
-    actionTitle: "操作",
-    editClaim: "写或改判断",
+    actionTitle: "开始",
+    findEvidence: "帮我找材料",
     addEvidence: "添加材料",
-    editReview: "复查设置",
     saveReview: "保存记录",
     saved: "已保存",
     resultTitle: "归组结果",
@@ -148,14 +146,13 @@ const COPY: Record<Locale, WorkspaceCopy> = {
     source: "来源",
     refresh: "刷新",
     refreshing: "正在刷新…",
-    boundary: "只整理你添加的材料，不判断股票涨跌。",
+    boundary: "只查找候选网页并整理你确认加入的材料，不判断股票涨跌。",
   },
   ja: {
     toolLabel: "出典チェック",
-    actionTitle: "操作",
-    editClaim: "仮説を書く・編集",
+    actionTitle: "開始",
+    findEvidence: "公開資料を探す",
     addEvidence: "資料を追加",
-    editReview: "確認設定",
     saveReview: "記録を保存",
     saved: "保存済み",
     resultTitle: "出典の結果",
@@ -194,14 +191,13 @@ const COPY: Record<Locale, WorkspaceCopy> = {
     refresh: "更新",
     refreshing: "更新中…",
     boundary:
-      "追加した資料を整理するツールです。銘柄の評価やリターン予測はしません。",
+      "候補ページを探し、選んだ資料を整理します。銘柄評価やリターン予測はしません。",
   },
   es: {
     toolLabel: "Revisión de fuentes",
-    actionTitle: "Acciones",
-    editClaim: "Escribir / editar tesis",
+    actionTitle: "Empezar",
+    findEvidence: "Buscar fuentes públicas",
     addEvidence: "Añadir material",
-    editReview: "Ajustes de revisión",
     saveReview: "Guardar registro",
     saved: "Guardado",
     resultTitle: "Resultado de fuentes",
@@ -240,7 +236,7 @@ const COPY: Record<Locale, WorkspaceCopy> = {
     refresh: "Actualizar",
     refreshing: "Actualizando…",
     boundary:
-      "Falsifi organiza el material que añades. No valora la acción ni predice rentabilidad.",
+      "Falsifi busca páginas candidatas y agrupa el material que eliges. No valora la acción ni predice rentabilidad.",
   },
 };
 
@@ -276,6 +272,7 @@ export function FalsifyWorkspace({
   refreshing,
   onEditClaim,
   onEditReview,
+  onFindEvidence,
   onAddEvidence,
   onEditEvidence,
   onRefresh,
@@ -286,6 +283,7 @@ export function FalsifyWorkspace({
   refreshing: boolean;
   onEditClaim: () => void;
   onEditReview: () => void;
+  onFindEvidence: () => void;
   onAddEvidence: () => void;
   onEditEvidence: (item: EvidenceItem) => void;
   onRefresh: () => void;
@@ -321,17 +319,13 @@ export function FalsifyWorkspace({
       <section className="focus-command-bar" aria-label={copy.actionTitle}>
         <h2>{copy.actionTitle}</h2>
         <div>
-          <button className="button ghost" onClick={onEditClaim}>
-            <Pencil size={15} />
-            {copy.editClaim}
+          <button className="button primary" onClick={onFindEvidence}>
+            <FileSearch size={15} />
+            {copy.findEvidence}
           </button>
-          <button className="button primary" onClick={onAddEvidence}>
+          <button className="button ghost" onClick={onAddEvidence}>
             <Plus size={15} />
             {copy.addEvidence}
-          </button>
-          <button className="button ghost" onClick={onEditReview}>
-            <Settings2 size={15} />
-            {copy.editReview}
           </button>
           <button className="button ghost" onClick={saveRecord}>
             {saved ? <Check size={15} /> : <Save size={15} />}
@@ -409,10 +403,16 @@ export function FalsifyWorkspace({
             <h2>{copy.evidenceTitle}</h2>
             <p>{copy.evidenceHelp}</p>
           </div>
-          <button className="button primary" onClick={onAddEvidence}>
-            <Plus size={15} />
-            {copy.addEvidence}
-          </button>
+          <div className="focus-material-actions">
+            <button className="button primary" onClick={onFindEvidence}>
+              <FileSearch size={15} />
+              {copy.findEvidence}
+            </button>
+            <button className="button ghost" onClick={onAddEvidence}>
+              <Plus size={15} />
+              {copy.addEvidence}
+            </button>
+          </div>
         </div>
 
         {audit.groups.length ? (
