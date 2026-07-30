@@ -10,7 +10,7 @@
   "constructiveThreshold": 60,
   "cautiousThreshold": 40,
   "lastUpdated": "2026-07-29T00:00:00.000Z",
-  "modelVersion": "Falsifi 0.5.0",
+  "modelVersion": "Falsifi 0.6.0",
   "researchPlan": {
     "purpose": "new-research",
     "thesisConfirmed": true,
@@ -32,7 +32,9 @@
       "enabled": true,
       "originId": "primary-source-1",
       "claimId": "claim-1",
-      "relation": "direct"
+      "relation": "direct",
+      "verification": "original",
+      "provenance": "user"
     }
   ],
   "assumptions": [
