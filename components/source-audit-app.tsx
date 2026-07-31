@@ -47,6 +47,7 @@ import {
   type SourceSuggestion,
   type SourceSuggestionReason,
 } from "@/lib/source-audit";
+import type { ExtractedWebMaterial } from "@/lib/web-material";
 
 const CASE_KEY = "falsifi.case.v2";
 const LOCALE_KEY = "falsifi.locale.v1";
@@ -65,7 +66,17 @@ type Copy = {
   save: string;
   edit: string;
   find: string;
+  auditLinks: string;
   addLink: string;
+  batchTitle: string;
+  batchHelp: string;
+  batchPlaceholder: string;
+  batchRun: string;
+  batchReading: string;
+  batchPrivacy: string;
+  batchAdded: (count: number) => string;
+  batchFailed: (count: number) => string;
+  extraction: Record<"extracted" | "partial" | "blocked", string>;
   resultLabel: string;
   emptyResult: string;
   result: (materials: number, groups: number) => string;
@@ -128,7 +139,17 @@ const COPY: Record<Locale, Copy> = {
     save: "Save",
     edit: "Edit",
     find: "Find public materials",
+    auditLinks: "Audit links",
     addLink: "Add a link",
+    batchTitle: "Audit public links",
+    batchHelp: "Paste one link per line. Up to 12 at a time.",
+    batchPlaceholder: "https://company.com/filing\nhttps://news.example.com/story",
+    batchRun: "Read and audit",
+    batchReading: "Reading public pages…",
+    batchPrivacy: "Reads public pages only. Your claim is not sent. No sign-in or paywall bypass.",
+    batchAdded: (count) => `Added ${count} material${count === 1 ? "" : "s"}.`,
+    batchFailed: (count) => `${count} link${count === 1 ? "" : "s"} could not be read.`,
+    extraction: { extracted: "Text read", partial: "Basic details only", blocked: "Could not read" },
     resultLabel: "Source audit",
     emptyResult: "Add materials to start the audit.",
     result: (materials, groups) => `${materials} materials → ${groups} confirmed source groups`,
@@ -150,6 +171,9 @@ const COPY: Record<Locale, Copy> = {
       "near-identical-title": "The titles and publication dates are highly similar.",
       "same-event": "Both materials appear to cover the same company event.",
       "filing-follow-up": "The later item appears to follow a company filing on the same event.",
+      "shared-original-link": "Both pages point to the same original source.",
+      "direct-citation": "One page links directly to the other as a source.",
+      "content-overlap": "Large parts of the readable text overlap.",
     },
     confidence: { high: "High-confidence match", medium: "Possible match" },
     materialTitle: "Materials",
@@ -177,8 +201,9 @@ const COPY: Record<Locale, Copy> = {
     guideTitle: "How to use Falsifi",
     guideSteps: [
       { title: "Choose a stock", body: "Search by company name or ticker. Falsifi supports A-shares, Hong Kong stocks, and U.S. stocks." },
-      { title: "Add materials", body: "Search public sources or paste your own links. Open each original page before marking it checked." },
-      { title: "Review the source audit", body: "Exact links are grouped automatically. Similar materials are only grouped after you confirm the relationship." },
+      { title: "Audit links", body: "Paste up to 12 public links. Falsifi reads the pages and looks for the original source, citations, and repeated text." },
+      { title: "Review the result", body: "Exact canonical links are grouped automatically. All approximate matches require your confirmation." },
+      { title: "Fill the gap", body: "Follow the single next step: check an original, resolve a match, or add an independent or challenging source." },
     ],
     guideAccuracy: "What the result means",
     guideAccuracyBody: "A source group is a confirmed shared origin, not a claim that the articles agree. Similar titles and dates are hints only. If the tool is unsure, it asks you to decide.",
@@ -197,7 +222,17 @@ const COPY: Record<Locale, Copy> = {
     save: "保存",
     edit: "修改",
     find: "让工具找材料",
+    auditLinks: "批量审计链接",
     addLink: "自己加链接",
+    batchTitle: "批量审计公开链接",
+    batchHelp: "每行粘贴一个链接，一次最多 12 条。",
+    batchPlaceholder: "https://公司公告链接\nhttps://新闻链接",
+    batchRun: "读取并审计",
+    batchReading: "正在读取公开网页…",
+    batchPrivacy: "只读取公开网页，不发送你的判断；不登录，不绕过付费墙。",
+    batchAdded: (count) => `已加入 ${count} 份材料。`,
+    batchFailed: (count) => `${count} 个链接无法读取。`,
+    extraction: { extracted: "已读取正文", partial: "只读到基本信息", blocked: "无法自动读取" },
     resultLabel: "来源审计结果",
     emptyResult: "加入材料后，这里会显示结果。",
     result: (materials, groups) => `${materials} 份材料 → ${groups} 个已确认来源`,
@@ -219,6 +254,9 @@ const COPY: Record<Locale, Copy> = {
       "near-identical-title": "标题和发布时间高度接近。",
       "same-event": "两份材料可能在讲同一件公司事件。",
       "filing-follow-up": "后一份材料可能在转述同一事件的公司公告。",
+      "shared-original-link": "两个网页都指向同一份原始材料。",
+      "direct-citation": "其中一个网页直接引用了另一个网页。",
+      "content-overlap": "两个网页的大段正文相同。",
     },
     confidence: { high: "高度匹配", medium: "可能匹配" },
     materialTitle: "材料",
@@ -246,9 +284,9 @@ const COPY: Record<Locale, Copy> = {
     guideTitle: "Falsifi 使用教程",
     guideSteps: [
       { title: "1. 选择股票", body: "输入公司名或股票代码。支持 A 股、港股和美股。" },
-      { title: "2. 加入材料", body: "可以让工具搜索公开材料，也可以自己贴链接。打开原文核对后，再标记为“已核对”。" },
-      { title: "3. 确认来源关系", body: "完全相同的链接会自动归组。标题、时间或事件相似的材料只会提示，由你决定是否同源。" },
-      { title: "4. 按提示补材料", body: "结果会直接告诉你：先核对哪份材料、确认哪组关系，或补什么独立来源。" },
+      { title: "2. 批量粘贴链接", body: "一次粘贴最多 12 个公开网页。工具会读取正文，查找原始材料、引用关系和重复内容。" },
+      { title: "3. 确认不确定关系", body: "网页明确声明同一规范链接时会自动归组。正文相似或引用关系只会提示，由你决定。" },
+      { title: "4. 补齐缺口", body: "只看结果里的一个“下一步”：核对原文、确认关系，或补独立来源和反面材料。" },
     ],
     guideAccuracy: "结果怎么理解",
     guideAccuracyBody: "“同一来源”只表示材料来自同一份原始信息，不表示观点相同。相似标题和日期只是线索，不是结论；工具拿不准时会让你确认。",
@@ -267,7 +305,17 @@ const COPY: Record<Locale, Copy> = {
     save: "保存",
     edit: "編集",
     find: "公開資料を探す",
+    auditLinks: "リンクを一括監査",
     addLink: "リンクを追加",
+    batchTitle: "公開リンクを一括監査",
+    batchHelp: "1行に1件、最大12件まで貼り付けられます。",
+    batchPlaceholder: "https://company.com/filing\nhttps://news.example.com/story",
+    batchRun: "読み取って監査",
+    batchReading: "公開ページを読み取り中…",
+    batchPrivacy: "公開ページのみを読み取ります。判断内容は送信せず、ログインやペイウォール回避は行いません。",
+    batchAdded: (count) => `${count}件の資料を追加しました。`,
+    batchFailed: (count) => `${count}件のリンクを読み取れませんでした。`,
+    extraction: { extracted: "本文を取得済み", partial: "基本情報のみ", blocked: "自動取得不可" },
     resultLabel: "出典監査",
     emptyResult: "資料を追加すると結果が表示されます。",
     result: (materials, groups) => `${materials}件の資料 → ${groups}件の確認済み出典`,
@@ -285,7 +333,7 @@ const COPY: Record<Locale, Copy> = {
     possibleHelp: "重複の手掛かりがあります。まとめるかはあなたが決めます。",
     confirmSame: "同じ出典にまとめる",
     keepSeparate: "別の出典として残す",
-    reasons: { "near-identical-title": "見出しと公開日が非常に近いです。", "same-event": "同じ企業イベントを扱っている可能性があります。", "filing-follow-up": "後の記事が同じイベントの会社開示を参照している可能性があります。" },
+    reasons: { "near-identical-title": "見出しと公開日が非常に近いです。", "same-event": "同じ企業イベントを扱っている可能性があります。", "filing-follow-up": "後の記事が同じイベントの会社開示を参照している可能性があります。", "shared-original-link": "両方のページが同じ原典を示しています。", "direct-citation": "一方のページが他方を出典として直接リンクしています。", "content-overlap": "本文の大部分が重複しています。" },
     confidence: { high: "一致度が高い", medium: "一致の可能性" },
     materialTitle: "資料",
     noMaterials: "資料はまだありません。検索するかリンクを追加してください。",
@@ -312,8 +360,9 @@ const COPY: Record<Locale, Copy> = {
     guideTitle: "Falsifiの使い方",
     guideSteps: [
       { title: "1. 銘柄を選ぶ", body: "会社名またはティッカーで検索します。中国A株、香港株、米国株に対応します。" },
-      { title: "2. 資料を追加", body: "公開資料を検索するか、自分のリンクを追加します。確認済みにする前に原文を開いてください。" },
-      { title: "3. 出典関係を確認", body: "同一URLは自動でまとまります。類似資料は、あなたが確認した後だけまとめます。" },
+      { title: "2. リンクを一括追加", body: "公開ページを最大12件貼り付けます。原典、引用関係、本文の重複を自動で調べます。" },
+      { title: "3. 結果を確認", body: "同じ正規URLだけ自動でまとめます。類似本文や引用関係は、確認後にのみまとめます。" },
+      { title: "4. 不足を補う", body: "表示された次の一手に従い、原典確認、関係確認、独立した出典や反証資料の追加を行います。" },
     ],
     guideAccuracy: "結果の意味",
     guideAccuracyBody: "出典グループは共通の情報源を示すもので、記事の意見が同じという意味ではありません。類似性は手掛かりであり結論ではありません。",
@@ -332,7 +381,17 @@ const COPY: Record<Locale, Copy> = {
     save: "Guardar",
     edit: "Editar",
     find: "Buscar materiales públicos",
+    auditLinks: "Auditar enlaces",
     addLink: "Añadir enlace",
+    batchTitle: "Auditar enlaces públicos",
+    batchHelp: "Pega un enlace por línea. Hasta 12 cada vez.",
+    batchPlaceholder: "https://empresa.com/informe\nhttps://noticias.example.com/articulo",
+    batchRun: "Leer y auditar",
+    batchReading: "Leyendo páginas públicas…",
+    batchPrivacy: "Solo lee páginas públicas. No envía tu tesis, inicia sesión ni elude muros de pago.",
+    batchAdded: (count) => `Se añadieron ${count} material${count === 1 ? "" : "es"}.`,
+    batchFailed: (count) => `No se pudieron leer ${count} enlace${count === 1 ? "" : "s"}.`,
+    extraction: { extracted: "Texto leído", partial: "Solo datos básicos", blocked: "No se pudo leer" },
     resultLabel: "Auditoría de fuentes",
     emptyResult: "Añade materiales para iniciar la auditoría.",
     result: (materials, groups) => `${materials} materiales → ${groups} fuentes confirmadas`,
@@ -350,7 +409,7 @@ const COPY: Record<Locale, Copy> = {
     possibleHelp: "La herramienta encontró coincidencias. Tú decides si agruparlas.",
     confirmSame: "Agrupar",
     keepSeparate: "Mantener separadas",
-    reasons: { "near-identical-title": "Los títulos y las fechas son muy similares.", "same-event": "Ambos materiales parecen tratar el mismo evento.", "filing-follow-up": "El material posterior parece seguir una comunicación oficial sobre el mismo evento." },
+    reasons: { "near-identical-title": "Los títulos y las fechas son muy similares.", "same-event": "Ambos materiales parecen tratar el mismo evento.", "filing-follow-up": "El material posterior parece seguir una comunicación oficial sobre el mismo evento.", "shared-original-link": "Ambas páginas apuntan a la misma fuente original.", "direct-citation": "Una página enlaza directamente a la otra como fuente.", "content-overlap": "Gran parte del texto legible coincide." },
     confidence: { high: "Coincidencia alta", medium: "Coincidencia posible" },
     materialTitle: "Materiales",
     noMaterials: "Aún no hay materiales. Busca fuentes o añade un enlace.",
@@ -377,8 +436,9 @@ const COPY: Record<Locale, Copy> = {
     guideTitle: "Cómo usar Falsifi",
     guideSteps: [
       { title: "1. Elige una acción", body: "Busca por empresa o ticker. Compatible con acciones A, Hong Kong y EE. UU." },
-      { title: "2. Añade materiales", body: "Busca fuentes públicas o pega tus enlaces. Abre cada original antes de marcarlo como comprobado." },
-      { title: "3. Revisa las relaciones", body: "Las URL idénticas se agrupan automáticamente. Las coincidencias aproximadas requieren tu confirmación." },
+      { title: "2. Audita enlaces", body: "Pega hasta 12 páginas públicas. Falsifi busca la fuente original, citas y texto repetido." },
+      { title: "3. Revisa el resultado", body: "Solo las URL canónicas idénticas se agrupan automáticamente. Las coincidencias aproximadas requieren tu confirmación." },
+      { title: "4. Completa lo que falta", body: "Sigue un único siguiente paso: comprobar el original, resolver una coincidencia o añadir una fuente independiente o contraria." },
     ],
     guideAccuracy: "Qué significa el resultado",
     guideAccuracyBody: "Un grupo confirma un origen común, no que los artículos estén de acuerdo. La similitud es una pista, no una conclusión.",
@@ -494,6 +554,99 @@ function ManualMaterialForm({
   );
 }
 
+type ExtractionResponse = {
+  results?: Array<
+    | { ok: true; material: ExtractedWebMaterial }
+    | { ok: false; url: string; error: string }
+  >;
+};
+
+function BatchMaterialForm({
+  copy,
+  existing,
+  onCancel,
+  onAdd,
+}: {
+  copy: Copy;
+  existing: EvidenceItem[];
+  onCancel: () => void;
+  onAdd: (items: EvidenceItem[]) => void;
+}) {
+  const [value, setValue] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+  const [failedUrls, setFailedUrls] = useState<string[]>([]);
+  const urls = Array.from(new Set(value.split(/\r?\n/u).map((item) => item.trim()).filter(Boolean))).slice(0, 12);
+
+  const run = async () => {
+    if (!urls.length || loading) return;
+    setLoading(true);
+    setMessage("");
+    setFailedUrls([]);
+    try {
+      const response = await fetch("/api/materials/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ urls }),
+      });
+      if (!response.ok) throw new Error("request-failed");
+      const payload = await response.json() as ExtractionResponse;
+      const known = new Set(existing.map((item) => canonicalEvidenceSource(item.sourceUrl)));
+      const added: EvidenceItem[] = [];
+      const failed: string[] = [];
+      for (const result of payload.results ?? []) {
+        if (!result.ok) {
+          failed.push(result.url);
+          continue;
+        }
+        const sourceUrl = result.material.extraction.finalUrl || result.material.requestedUrl;
+        if (known.has(canonicalEvidenceSource(sourceUrl))) continue;
+        known.add(canonicalEvidenceSource(sourceUrl));
+        const extraction = result.material.extraction;
+        const canonical = extraction.canonicalUrl || sourceUrl;
+        const official = /(?:sec\.gov|cninfo\.com\.cn|hkexnews\.hk|sse\.com\.cn|szse\.cn)/iu.test(canonical);
+        added.push({
+          id: `web-${Date.now().toString(36)}-${added.length}`,
+          title: result.material.title,
+          source: extraction.publisher || new URL(sourceUrl).hostname.replace(/^www\./u, ""),
+          sourceUrl,
+          asOf: extraction.publishedAt || new Date().toISOString().slice(0, 10),
+          group: official ? "Official filing" : "External estimate",
+          direction: "unclassified",
+          impact: 3,
+          reliability: official ? 0.85 : 0.45,
+          note: "",
+          enabled: true,
+          originId: `source:${canonicalEvidenceSource(canonical)}`.slice(0, 120),
+          relation: "direct",
+          verification: "unverified",
+          provenance: "user",
+          extraction,
+        });
+      }
+      if (added.length) onAdd(added);
+      setFailedUrls(failed);
+      setMessage([added.length ? copy.batchAdded(added.length) : "", failed.length ? copy.batchFailed(failed.length) : ""].filter(Boolean).join(" "));
+      if (added.length && !failed.length) setValue("");
+    } catch {
+      setMessage(copy.batchFailed(urls.length));
+      setFailedUrls(urls);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <section className="batch-material">
+      <div className="section-heading"><div><h2>{copy.batchTitle}</h2><p>{copy.batchHelp}</p></div><button onClick={onCancel} aria-label={copy.close}><X size={17} /></button></div>
+      <textarea value={value} onChange={(event) => { setValue(event.target.value); setMessage(""); }} placeholder={copy.batchPlaceholder} rows={5} autoFocus />
+      <div className="batch-actions"><small><ShieldCheck size={13} />{copy.batchPrivacy}</small><button className="audit-primary" onClick={() => void run()} disabled={!urls.length || loading}><FileSearch size={15} />{loading ? copy.batchReading : `${copy.batchRun}${urls.length ? ` (${urls.length})` : ""}`}</button></div>
+      {message && <p className="batch-message" role="status">{message}</p>}
+      {failedUrls.length > 0 && <ul className="batch-errors">{failedUrls.map((url) => <li key={url}>{url}</li>)}</ul>}
+    </section>
+  );
+}
+
 function suggestionReason(copy: Copy, suggestion: SourceSuggestion) {
   return copy.reasons[suggestion.reason];
 }
@@ -522,6 +675,7 @@ function Workspace({
   const [editingClaim, setEditingClaim] = useState(!thesisCase.researchPlan?.thesisConfirmed);
   const [claim, setClaim] = useState(thesisCase.researchPlan?.thesisConfirmed ? thesisCase.thesis : "");
   const [showManual, setShowManual] = useState(false);
+  const [showBatch, setShowBatch] = useState(!audit.materials.length);
 
   const updateEvidence = (id: string, patch: Partial<EvidenceItem>) => {
     onCase({ ...thesisCase, evidence: thesisCase.evidence.map((item) => item.id === id ? { ...item, ...patch } : item), lastUpdated: new Date().toISOString() });
@@ -550,6 +704,10 @@ function Workspace({
     onCase({ ...thesisCase, evidence: [...thesisCase.evidence, item], lastUpdated: new Date().toISOString() });
     setShowManual(false);
   };
+  const addMaterials = (items: EvidenceItem[]) => {
+    if (!items.length) return;
+    onCase({ ...thesisCase, evidence: [...thesisCase.evidence, ...items].slice(0, 40), lastUpdated: new Date().toISOString() });
+  };
   const hasChallenge = audit.materials.some((item) => item.direction === "contradicts");
   const nextStep = !audit.materials.length
     ? copy.nextEmpty
@@ -568,7 +726,7 @@ function Workspace({
       <div className="workspace-topline"><button onClick={onChangeStock}>{copy.changeStock}</button><ChevronRight size={13} /><span>{thesisCase.company}</span><code>{thesisCase.ticker}</code></div>
       <section className="audit-hero">
         <div><h1>{copy.toolTitle}</h1><p>{copy.toolBody}</p></div>
-        <div className="hero-actions"><button className="audit-primary" onClick={onFind}><FileSearch size={16} />{copy.find}</button><button onClick={() => setShowManual((value) => !value)}><Plus size={16} />{copy.addLink}</button></div>
+        <div className="hero-actions"><button className="audit-primary" onClick={() => setShowBatch((value) => !value)}><Link2 size={16} />{copy.auditLinks}</button><button onClick={onFind}><FileSearch size={16} />{copy.find}</button></div>
       </section>
 
       <section className="claim-strip">
@@ -580,6 +738,7 @@ function Workspace({
         )}
       </section>
 
+      {showBatch && <BatchMaterialForm copy={copy} existing={audit.materials} onCancel={() => setShowBatch(false)} onAdd={addMaterials} />}
       {showManual && <ManualMaterialForm copy={copy} existing={audit.materials} onCancel={() => setShowManual(false)} onAdd={addMaterial} />}
 
       <section className="audit-result">
@@ -614,7 +773,7 @@ function Workspace({
         {audit.materials.length > 0 && <div className="material-list">{audit.materials.map((item) => {
           const checked = (item.verification ?? "unverified") !== "unverified";
           return <article key={item.id}>
-            <div className="material-status"><span className={checked ? "checked" : ""}>{checked ? <Check size={13} /> : null}{checked ? copy.reviewed : copy.unverified}</span><small>{item.group === "Official filing" ? copy.filing : copy.news}</small></div>
+            <div className="material-status"><span className={checked ? "checked" : ""}>{checked ? <Check size={13} /> : null}{checked ? copy.reviewed : copy.unverified}</span><small>{item.extraction ? copy.extraction[item.extraction.status] : item.group === "Official filing" ? copy.filing : copy.news}</small></div>
             <div className="material-copy"><h3>{item.title}</h3><p>{item.source} · {formatDate(item.asOf, locale)}</p></div>
             <div className="material-controls">
               <a href={item.sourceUrl} target="_blank" rel="noreferrer">{copy.original}<ExternalLink size={13} /></a>

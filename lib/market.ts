@@ -721,7 +721,7 @@ export function buildMarketCase(
     constructiveThreshold: 58,
     cautiousThreshold: 42,
     lastUpdated: snapshot.fetchedAt,
-    modelVersion: "Falsifi 0.8.0",
+    modelVersion: "Falsifi 0.9.0",
     researchPlan: {
       purpose: "new-research",
       thesisConfirmed: false,

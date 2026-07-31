@@ -26,6 +26,9 @@ A shared claim or publication date does not create a confirmed group.
 Different URLs can create a review suggestion when their metadata contains a
 strong, explainable overlap:
 
+- one page links directly to the other as a source;
+- both pages link to the same likely original material;
+- compact fingerprints show substantial readable-text overlap;
 - near-identical title tokens within fourteen days;
 - a shared company-event class, adequate title overlap, and publication within
   two days;
@@ -34,7 +37,14 @@ strong, explainable overlap:
 Detected event classes currently include earnings, repurchases, dividends,
 acquisitions, investigations, litigation, contracts, financing, and management
 changes. The detector uses public metadata already in the user's record; it
-does not claim to have compared every paragraph of the documents.
+also reads public HTML when the user submits links. It stores at most 160 hashed
+text shingles and a bounded set of outbound links, not the full page text.
+
+Readable-text overlap uses bottom-k hashed word trigrams and CJK character
+four-grams. A score of 0.82 or above is shown as a high-confidence lead; 0.62
+or above within fourteen days is shown as a possible lead. These thresholds
+passed the repository's labeled fixture benchmark, but that benchmark is small
+and synthetic. It is a regression guard, not a production-accuracy claim.
 
 Suggestions are never auto-merged. The UI shows the reason and asks the user to
 choose “group together” or “keep separate.” Rejected suggestions are stored in
@@ -58,6 +68,9 @@ This is workflow guidance, not an investment recommendation.
 - A source group records confirmed common provenance; it does not prove that
   two publishers lack editorial independence.
 - A possible match is a lead, not a conclusion.
+- Public-page fetching has an eight-second timeout, a 2 MB body limit, validates
+  redirects, rejects private-network and non-HTTP addresses, sends no cookies,
+  and does not bypass logins or paywalls.
 - “Checked” means the user says they opened and reviewed the page. Falsifi does
   not certify the content.
 - Source diversity does not prove a claim true or predict returns.

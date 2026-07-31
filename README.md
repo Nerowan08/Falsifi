@@ -28,7 +28,9 @@ claim.
 ## How it works
 
 1. Choose an A-share, Hong Kong, or U.S. listed stock.
-2. Ask Falsifi to find public material, or paste your own links.
+2. Paste up to 12 public links at once. Falsifi reads each page and extracts a
+   compact text fingerprint and cited-source links. You can also search named
+   public providers or add one link manually.
 3. Open the original pages and mark only the material you checked.
 4. Review possible source relationships. You decide whether two materials are
    grouped.
@@ -42,6 +44,12 @@ as supporting, challenging, or not yet classified.
 - Canonically identical links are grouped automatically. Tracking parameters,
   fragments, host casing, `www`, and trailing slashes cannot create fake source
   diversity.
+- Public HTML pages are read server-side without a login. Falsifi keeps compact
+  fingerprints and links, not full article text.
+- If a public page blocks automated reading, the link stays in the audit and is
+  plainly marked as unread instead of being treated as analyzed.
+- Direct citations, a shared original link, and substantial readable-text
+  overlap create an explainable review suggestion.
 - Highly similar titles published near each other create a review suggestion.
 - A news item published near an official filing on the same detected company
   event can create a review suggestion.
@@ -65,7 +73,9 @@ Spanish. The active audit is stored in the browser. Falsifi has no account,
 telemetry, brokerage connection, or OpenAI API dependency.
 
 For public-material search, the stock identity and visible search terms are
-sent only to the named public providers. The user's thesis is never sent.
+sent only to the named public providers. When auditing pasted links, only those
+public URLs are fetched. The user's thesis is never sent. Falsifi does not sign
+in, bypass paywalls, or fetch private-network addresses.
 
 ## Run locally
 
@@ -89,10 +99,12 @@ npm test
 ```text
 components/source-audit-app.tsx   Focused source-audit interface
 lib/source-audit.ts               Explainable relationship suggestions
+lib/web-material.ts               Page metadata, citation, and text fingerprint extraction
 lib/falsifi.ts                    Canonical URL and confirmed-source grouping
 lib/sec.ts                        SEC EDGAR filing adapter
 lib/cninfo.ts                     CNINFO announcement adapter
 app/api/stocks/materials          Public-material search endpoint
+app/api/materials/extract         Safe batch page-reading endpoint
 tests/                            Grouping, false-positive, provider, and UI tests
 ```
 

@@ -84,6 +84,7 @@ export type EvidenceItem = {
   relation?: EvidenceRelation;
   verification?: EvidenceVerification;
   provenance?: EvidenceProvenance;
+  extraction?: import("./web-material.ts").EvidenceExtraction;
 };
 
 export type Assumption = {
@@ -1489,6 +1490,21 @@ function isEvidenceItem(value: unknown): value is EvidenceItem {
       value.sameSourceAsIds.every((id) => isNonEmptyString(id, 120)) &&
       new Set(value.sameSourceAsIds).size ===
         value.sameSourceAsIds.length);
+  const extraction = value.extraction;
+  const hasValidExtraction = extraction === undefined || (
+    isRecord(extraction) &&
+    ["extracted", "partial", "blocked"].includes(extraction.status as string) &&
+    isNonEmptyString(extraction.fetchedAt, 80) &&
+    isHttpUrl(extraction.finalUrl) &&
+    (extraction.canonicalUrl === undefined || isHttpUrl(extraction.canonicalUrl)) &&
+    (extraction.publishedAt === undefined || /^\d{4}-\d{2}-\d{2}$/.test(extraction.publishedAt as string)) &&
+    (extraction.publisher === undefined || (typeof extraction.publisher === "string" && extraction.publisher.length <= 300)) &&
+    isFiniteNumber(extraction.wordCount) && extraction.wordCount >= 0 && extraction.wordCount <= 2_000_000 &&
+    Array.isArray(extraction.signature) && extraction.signature.length <= 160 && extraction.signature.every((hash) => Number.isInteger(hash) && hash >= 0 && hash <= 0xffffffff) &&
+    Array.isArray(extraction.outboundUrls) && extraction.outboundUrls.length <= 20 && extraction.outboundUrls.every(isHttpUrl) &&
+    Array.isArray(extraction.sourceLinks) && extraction.sourceLinks.length <= 12 && extraction.sourceLinks.every(isHttpUrl) &&
+    (extraction.reason === undefined || (typeof extraction.reason === "string" && extraction.reason.length <= 120))
+  );
   return (
     isNonEmptyString(value.id, 120) &&
     isNonEmptyString(value.title, 500) &&
@@ -1521,6 +1537,7 @@ function isEvidenceItem(value: unknown): value is EvidenceItem {
       )) &&
     (value.provenance === undefined ||
       ["user", "system-market"].includes(value.provenance as string))
+    && hasValidExtraction
   );
 }
 

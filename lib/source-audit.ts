@@ -1,14 +1,19 @@
 import {
   buildSourceGroups,
+  canonicalEvidenceSource,
   isUserAddedEvidence,
   type EvidenceItem,
   type ThesisCase,
 } from "./falsifi.ts";
+import { signatureSimilarity } from "./web-material.ts";
 
 export type SourceSuggestionReason =
   | "near-identical-title"
   | "same-event"
-  | "filing-follow-up";
+  | "filing-follow-up"
+  | "shared-original-link"
+  | "direct-citation"
+  | "content-overlap";
 
 export type SourceSuggestion = {
   id: string;
@@ -19,6 +24,7 @@ export type SourceSuggestion = {
   similarity: number;
   dayGap: number;
   sharedEvent?: string;
+  sharedSourceUrl?: string;
 };
 
 export type SourceAuditResult = {
@@ -114,6 +120,26 @@ function preferredPrimary(left: EvidenceItem, right: EvidenceItem) {
     : ([right, left] as const);
 }
 
+const sourceKey = (value: string) => canonicalEvidenceSource(value);
+
+function extractedUrls(item: EvidenceItem) {
+  const urls = [item.sourceUrl, item.extraction?.finalUrl, item.extraction?.canonicalUrl]
+    .filter((value): value is string => Boolean(value))
+    .map(sourceKey);
+  return new Set(urls);
+}
+
+function directCitation(citing: EvidenceItem, cited: EvidenceItem) {
+  const targets = extractedUrls(cited);
+  return citing.extraction?.sourceLinks.find((url) => targets.has(sourceKey(url)))
+    ?? citing.extraction?.outboundUrls.find((url) => targets.has(sourceKey(url)));
+}
+
+function sharedOriginalLink(left: EvidenceItem, right: EvidenceItem) {
+  const rightSources = new Set((right.extraction?.sourceLinks ?? []).map(sourceKey));
+  return left.extraction?.sourceLinks.find((url) => rightSources.has(sourceKey(url)));
+}
+
 export function suggestSourceRelationships(
   thesisCase: ThesisCase,
 ): SourceSuggestion[] {
@@ -134,10 +160,37 @@ export function suggestSourceRelationships(
       const event = sharedEvent(left.title, right.title);
       const hasOfficial =
         left.group === "Official filing" || right.group === "Official filing";
+      const leftCitesRight = directCitation(left, right);
+      const rightCitesLeft = directCitation(right, left);
+      const commonSource = sharedOriginalLink(left, right);
+      const contentOverlap = signatureSimilarity(
+        left.extraction?.signature ?? [],
+        right.extraction?.signature ?? [],
+      );
       let reason: SourceSuggestionReason | null = null;
       let confidence: "high" | "medium" = "medium";
+      let selectedPrimary: EvidenceItem | undefined;
+      let selectedRelated: EvidenceItem | undefined;
 
-      if (similarity >= 0.78 && gap <= 14) {
+      if (leftCitesRight) {
+        reason = "direct-citation";
+        confidence = "high";
+        selectedPrimary = right;
+        selectedRelated = left;
+      } else if (rightCitesLeft) {
+        reason = "direct-citation";
+        confidence = "high";
+        selectedPrimary = left;
+        selectedRelated = right;
+      } else if (commonSource) {
+        reason = "shared-original-link";
+        confidence = "high";
+      } else if (contentOverlap >= 0.82) {
+        reason = "content-overlap";
+        confidence = "high";
+      } else if (contentOverlap >= 0.62 && gap <= 14) {
+        reason = "content-overlap";
+      } else if (similarity >= 0.78 && gap <= 14) {
         reason = "near-identical-title";
         confidence = similarity >= 0.9 ? "high" : "medium";
       } else if (event && hasOfficial && gap <= 3 && similarity >= 0.18) {
@@ -147,16 +200,19 @@ export function suggestSourceRelationships(
       }
       if (!reason) continue;
 
-      const [primary, related] = preferredPrimary(left, right);
+      const [primary, related] = selectedPrimary && selectedRelated
+        ? [selectedPrimary, selectedRelated]
+        : preferredPrimary(left, right);
       suggestions.push({
         id: [primary.id, related.id].sort().join("::"),
         primaryId: primary.id,
         relatedId: related.id,
         confidence,
         reason,
-        similarity,
+        similarity: Math.max(similarity, contentOverlap),
         dayGap: gap,
         sharedEvent: event,
+        sharedSourceUrl: leftCitesRight ?? rightCitesLeft ?? commonSource,
       });
     }
   }

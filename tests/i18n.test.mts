@@ -74,6 +74,13 @@ test("the main workflow leaves every action under user control", async () => {
   assert.match(workspace, /onClick=\{\(\) => confirmSuggestion\(suggestion\)\}/);
   assert.match(workspace, /onClick=\{\(\) => onReject\(suggestion\.id\)\}/);
   assert.match(workspace, /setShowManual/);
+  assert.match(workspace, /setShowBatch/);
+  assert.match(workspace, /批量审计链接/);
+  assert.match(workspace, /Audit links/);
+  assert.match(workspace, /リンクを一括監査/);
+  assert.match(workspace, /Auditar enlaces/);
+  assert.match(workspace, /Your claim is not sent/);
+  assert.match(workspace, /不发送你的判断/);
   assert.doesNotMatch(workspace, /setShowResearchPlanModal\(true\)/);
   assert.match(page, /SourceAuditApp/);
   assert.match(finder, /useState<Set<string>>\(new Set\(\)\)/);

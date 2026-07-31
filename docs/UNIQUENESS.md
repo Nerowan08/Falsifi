@@ -25,7 +25,8 @@ documents. Investment journals track theses and review dates.
 Falsifi combines a smaller set of behaviors around one task:
 
 1. canonical-link grouping that cannot be split by cosmetic URL changes;
-2. cross-publisher overlap suggestions based on title, timing, event, and
+2. cross-publisher overlap suggestions based on direct citations, shared
+   originals, compact text fingerprints, title, timing, event, and
    official-filing status;
 3. a human confirmation loop for every approximate relationship;
 4. an A-share official-announcement path through CNINFO, plus SEC EDGAR for
@@ -37,11 +38,12 @@ Private, internal, or undocumented tools may do similar work.
 
 ## Current defensibility
 
-The product is more useful than exact-URL deduplication alone because it now
-finds explainable candidate relationships and turns the result into a next
-research action. It remains reproducible by a capable competitor; the moat is
-execution, provider coverage, labeled confirmation data, and increasingly
-accurate provenance detection—not a secret algorithm.
+The product is more useful than exact-URL deduplication alone because it reads
+several links at once, finds explicit and textual provenance signals, explains
+each candidate relationship, and turns the result into one next research
+action. It remains reproducible by a capable competitor; the moat is execution,
+provider coverage, labeled confirmation data, and increasingly accurate
+provenance detection—not a secret algorithm.
 
 ## Claims we can and cannot make
 
@@ -63,7 +65,7 @@ Not reasonable:
 
 ## Next quality frontier
 
-The largest remaining gap is full-text provenance: resolving redirects,
-extracting explicit citations, and comparing factual claims across document
-bodies. That should improve the one source-audit task; it should not become a
-new dashboard or generic stock-analysis suite.
+The largest remaining gaps are PDF text extraction, paywall-aware metadata
+fallbacks, and a larger real-world labeled benchmark across Chinese, English,
+Japanese, and Spanish publishers. Those improvements should deepen the same
+source-audit task, not turn the product into a generic stock-analysis suite.
