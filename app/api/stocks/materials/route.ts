@@ -12,6 +12,10 @@ import {
   inferMarketRegion,
   type MarketRegion,
 } from "@/lib/market";
+import {
+  parseSecMaterialCandidates,
+  resolveSecCompany,
+} from "@/lib/sec";
 
 const validSymbol = /^[A-Z0-9^=.-]{1,24}$/;
 
@@ -65,6 +69,42 @@ async function fetchYahooNews(
     }
   }
   throw lastError ?? new Error("Public source search failed.");
+}
+
+const secHeaders = {
+  accept: "application/json",
+  "user-agent":
+    "Falsifi/0.8 source-audit https://github.com/Nerowan08/Falsifi",
+};
+
+async function fetchSecFilings(symbol: string) {
+  const tickersResponse = await fetch(
+    "https://www.sec.gov/files/company_tickers.json",
+    {
+      headers: secHeaders,
+      signal: AbortSignal.timeout(7_000),
+    },
+  );
+  if (!tickersResponse.ok) throw new Error("SEC ticker list unavailable.");
+  const company = resolveSecCompany(await tickersResponse.json(), symbol);
+  if (!company) return { candidates: [], available: true };
+
+  const cik = company.cik.toString().padStart(10, "0");
+  const submissionsResponse = await fetch(
+    `https://data.sec.gov/submissions/CIK${cik}.json`,
+    {
+      headers: secHeaders,
+      signal: AbortSignal.timeout(7_000),
+    },
+  );
+  if (!submissionsResponse.ok) throw new Error("SEC submissions unavailable.");
+  return {
+    candidates: parseSecMaterialCandidates(
+      await submissionsResponse.json(),
+      { cik: company.cik, companyName: company.name, limit: 10 },
+    ),
+    available: true,
+  };
 }
 
 export async function GET(request: Request) {
@@ -175,9 +215,20 @@ export async function GET(request: Request) {
           resolvedCompanyName: null as string | null,
           available: false,
         });
-  const [settled, cninfoResult] = await Promise.all([
+  const secRequest =
+    market === "us"
+      ? fetchSecFilings(symbol).catch(() => ({
+          candidates: [] as ReturnType<typeof parseSecMaterialCandidates>,
+          available: false,
+        }))
+      : Promise.resolve({
+          candidates: [] as ReturnType<typeof parseSecMaterialCandidates>,
+          available: false,
+        });
+  const [settled, cninfoResult, secResult] = await Promise.all([
     yahooRequest,
     cninfoRequest,
+    secRequest,
   ]);
   const successfulPayloads = settled
     .filter(
@@ -201,9 +252,15 @@ export async function GET(request: Request) {
           [cninfoResult.candidates.slice(0, 8), yahooCandidates],
           12,
         )
-      : yahooCandidates;
+      : market === "us"
+        ? mergeMaterialCandidatesInOrder(
+            [secResult.candidates.slice(0, 8), yahooCandidates],
+            12,
+          )
+        : yahooCandidates;
   const providers = [
     ...(cninfoResult.available ? ["CNINFO"] : []),
+    ...(secResult.available ? ["SEC EDGAR"] : []),
     ...(successfulPayloads.length > 0 ? ["Yahoo Finance"] : []),
   ];
 

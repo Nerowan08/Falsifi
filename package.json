@@ -1,7 +1,7 @@
 {
   "name": "falsifi",
-  "version": "0.7.1",
-  "description": "A multilingual source-group checker for stock-thesis material.",
+  "version": "0.8.0",
+  "description": "A multilingual source audit for stock research material.",
   "license": "MIT",
   "private": true,
   "engines": {

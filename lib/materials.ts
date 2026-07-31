@@ -10,7 +10,7 @@ export type MaterialCandidate = {
   publisher: string;
   sourceUrl: string;
   publishedAt: string;
-  provider: "CNINFO" | "Yahoo Finance";
+  provider: "CNINFO" | "SEC EDGAR" | "Yahoo Finance";
   kind: "filing" | "news";
 };
 
@@ -400,7 +400,8 @@ export function isMaterialCandidate(
     isHttpUrl(value.sourceUrl) &&
     typeof value.publishedAt === "string" &&
     !Number.isNaN(Date.parse(value.publishedAt)) &&
-    ((value.provider === "CNINFO" && value.kind === "filing") ||
+    (((value.provider === "CNINFO" || value.provider === "SEC EDGAR") &&
+      value.kind === "filing") ||
       (value.provider === "Yahoo Finance" && value.kind === "news"))
   );
 }

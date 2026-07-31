@@ -13,6 +13,7 @@ test("user-facing source does not reintroduce retired internal jargon", async ()
   const sources = await Promise.all(
     [
       "app/page.tsx",
+      "components/source-audit-app.tsx",
       "components/falsify-workspace.tsx",
       "components/market-workspace.tsx",
       "components/user-guide.tsx",
@@ -43,17 +44,17 @@ test("user-facing source does not reintroduce retired internal jargon", async ()
   }
 });
 
-test("the four-language guide explains the single source-group task", async () => {
+test("the four-language guide explains the single source-audit task", async () => {
   const guide = await readFile(
-    new URL("../components/user-guide.tsx", import.meta.url),
+    new URL("../components/source-audit-app.tsx", import.meta.url),
     "utf8",
   );
 
-  assert.match(guide, /groups by source/);
-  assert.match(guide, /来源组/);
-  assert.match(guide, /出典グループ/);
-  assert.match(guide, /grupos de fuentes/);
-  assert.match(guide, /canonical URL/i);
+  assert.match(guide, /source audit/i);
+  assert.match(guide, /来源审计/);
+  assert.match(guide, /出典監査/);
+  assert.match(guide, /Auditoría de fuentes/);
+  assert.match(guide, /URL/);
   assert.doesNotMatch(guide, /shared source or claim metadata/i);
   assert.doesNotMatch(guide, /按顺序完成/);
   assert.doesNotMatch(guide, /各段階で主要操作は一つだけ/);
@@ -61,29 +62,24 @@ test("the four-language guide explains the single source-group task", async () =
 });
 
 test("the main workflow leaves every action under user control", async () => {
-  const [page, workspace, finder, editor] = await Promise.all(
+  const [page, workspace, finder] = await Promise.all(
     [
       "app/page.tsx",
-      "components/falsify-workspace.tsx",
+      "components/source-audit-app.tsx",
       "components/material-finder.tsx",
-      "components/research-action.tsx",
     ].map((path) => readFile(new URL(`../${path}`, import.meta.url), "utf8")),
   );
 
-  assert.match(workspace, /onEditClaim/);
-  assert.match(workspace, /onAddEvidence/);
-  assert.match(workspace, /onFindEvidence/);
-  assert.match(workspace, /onEditReview/);
-  assert.match(workspace, /onSaveReview/);
-  assert.doesNotMatch(workspace, /readiness\.nextAction/);
-  assert.doesNotMatch(workspace, /focus-steps/);
-  assert.doesNotMatch(page, /setShowResearchPlanModal\(true\)/);
-  assert.match(page, /onFindEvidence=\{\(\) => setShowMaterialFinder\(true\)\}/);
+  assert.match(workspace, /onFind=\{\(\) => setShowFinder\(true\)\}/);
+  assert.match(workspace, /onClick=\{\(\) => confirmSuggestion\(suggestion\)\}/);
+  assert.match(workspace, /onClick=\{\(\) => onReject\(suggestion\.id\)\}/);
+  assert.match(workspace, /setShowManual/);
+  assert.doesNotMatch(workspace, /setShowResearchPlanModal\(true\)/);
+  assert.match(page, /SourceAuditApp/);
   assert.match(finder, /useState<Set<string>>\(new Set\(\)\)/);
   assert.match(finder, /Nothing is added until you select and confirm it/);
   assert.doesNotMatch(finder, /onResolveCompanyName/);
-  assert.doesNotMatch(page, /onResolveCompanyName/);
-  assert.match(editor, /mode: ResearchPlanEditorMode/);
+  assert.doesNotMatch(workspace, /onResolveCompanyName/);
 });
 
 test("the material finder names its A-share source in every language", async () => {

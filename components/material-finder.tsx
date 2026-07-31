@@ -62,7 +62,7 @@ const COPY: Record<Locale, FinderCopy> = {
     notice:
       "These are candidate sources. Open the original page to check it. Nothing is added until you select and confirm it.",
     privacy:
-      "For A-shares, the ticker is sent to CNINFO. The company name, ticker, and search terms are sent to Yahoo Finance. Your claim is never sent.",
+      "A-share tickers are sent to CNINFO; U.S. tickers are sent to SEC EDGAR. Company name, ticker, and search terms may also be sent to Yahoo Finance. Your claim is never sent.",
     noResults: "No matching pages found. Try different keywords.",
     unavailable:
       "Search is unavailable right now. You can still add material manually.",
@@ -89,7 +89,7 @@ const COPY: Record<Locale, FinderCopy> = {
     searching: "正在搜索…",
     notice: "加入前请查看原文，确认内容与这只股票有关。",
     privacy:
-      "A 股代码会发送给巨潮资讯；公司名、代码和搜索词会发送给 Yahoo Finance。不会发送你的判断。",
+      "A 股代码会发送给巨潮资讯，美股代码会发送给 SEC EDGAR；公司名、代码和搜索词也可能发送给 Yahoo Finance。不会发送你的判断。",
     noResults: "没有找到匹配网页。换个关键词试试。",
     unavailable: "暂时无法搜索。你仍可以手动添加材料。",
     openPage: "查看原文",
@@ -116,7 +116,7 @@ const COPY: Record<Locale, FinderCopy> = {
     notice:
       "結果は古い、重複している、またはログインが必要な場合があります。ページを開いて確認してください。選択して確定するまで追加されません。",
     privacy:
-      "中国A株のコードはCNINFOに送信されます。企業名、コード、検索語はYahoo Financeに送信されます。仮説は送信されません。",
+      "中国A株のコードはCNINFO、米国株のコードはSEC EDGARに送信されます。企業名、コード、検索語はYahoo Financeにも送信される場合があります。仮説は送信されません。",
     noResults: "一致するページがありません。別のキーワードを試してください。",
     unavailable:
       "現在検索できません。資料は手動で追加できます。",
@@ -144,7 +144,7 @@ const COPY: Record<Locale, FinderCopy> = {
     notice:
       "Los resultados pueden estar desactualizados, repetidos o requerir acceso. Abre la página y compruébala. No se añade nada hasta que lo selecciones y confirmes.",
     privacy:
-      "Para acciones A, el ticker se envía a CNINFO. El nombre, el ticker y los términos se envían a Yahoo Finance. Tu tesis no se envía.",
+      "Los tickers de acciones A se envían a CNINFO y los de EE. UU. a SEC EDGAR. El nombre, ticker y términos también pueden enviarse a Yahoo Finance. Tu tesis no se envía.",
     noResults:
       "No se encontraron páginas coincidentes. Prueba otras palabras.",
     unavailable:
@@ -433,8 +433,8 @@ export function MaterialFinderModal({
             {copy.provider(
               providerNames ||
                 (locale === "zh-CN"
-                  ? "巨潮资讯、Yahoo Finance"
-                  : "CNINFO, Yahoo Finance"),
+                  ? "巨潮资讯、SEC EDGAR、Yahoo Finance"
+                  : "CNINFO, SEC EDGAR, Yahoo Finance"),
             )}
           </span>
           <div>

@@ -1,214 +1,67 @@
-# Methodology
+# Source-audit methodology
 
-Falsifi treats an investment thesis as an explicit, testable model rather than
-a block of persuasive prose. Every result is deterministic for the same valid
-case JSON and engine version.
-
-## 1. Case score
-
-For base score `b`, related evidence groups `g`, argument units `u`, repeated
-evidence items `i` for an argument, and scenario inputs `j`:
+Falsifi's primary result is a provenance count, not a stock score:
 
 ```text
-argument_contribution_u =
-  Σ (evidence_sign_i × impact_i × reliability_i) / duplicate_item_count_u
-
-group_contribution_g =
-  Σ argument_contribution_u / enabled_argument_count_g
-
-score =
-  b
-  + Σ group_contribution_g
-  + Σ (value_j − baseline_j) × impact_per_unit_j × input_direction_j
+user-added materials → confirmed source groups → relationships to review
 ```
 
-Within each legacy analytical group, the engine keeps at most the strongest
-supporting contribution and the strongest challenging contribution. When both
-directions are present, it averages those two values. Repeating a row, changing
-its label, or adding more rows already assigned to the same group therefore
-cannot increase that group’s influence. Evidence-exclusion counterfactuals
-keep the case’s original group topology and recompute the bounded group
-contribution from the items that remain enabled.
-`evidence_sign` is `+1` for supporting evidence and `−1` for weakening
-evidence. The scenario-input summation adds each input’s change from its
-baseline; `input_direction` is the configured slope sign (`+1` or `−1`) for
-that input.
+## Confirmed grouping
 
-The score is clamped to `[0, 100]`. User-defined thresholds divide it into
-favorable, neutral, and cautious assessments. With the current defaults, the
-ranges are `score ≥ 58`, `42 ≤ score < 58`, and `score < 42`, respectively.
+Two materials are in the same confirmed source group when at least one of these
+conditions is true:
 
-The score is not a probability, forecast, expected return, or suitability
-assessment.
-
-## 2. Score change if an item is excluded
-
-For every enabled evidence item, the engine removes that item, recomputes the
-case, and records the score delta and resulting assessment. This explains the
-configured rule model; it is not a backtest.
-
-Removing an observation does not mean its opposite is true, and it does not
-establish a real-world causal effect.
-
-## 3. Source grouping in the focused product
-
-Flat material lists can reuse the same underlying source. The primary workflow
-places user-added items in the same **source group** when they share:
-
-- the same canonical HTTP(S) URL;
-- an explicit `originId`;
-- or a `sameSourceAsIds` edge explicitly recorded by the user.
-
-A matching `claimId` or `dependsOnIds` edge does not merge primary source
-groups. Independent sources may report the same claim, and logical dependency
-does not establish common provenance. Those legacy fields remain available to
-older rule-model diagnostics but are not used for the focused source count.
+- their HTTP(S) URLs match after canonicalization;
+- they share a stored source identifier;
+- the user confirms a same-source relationship.
 
 Canonicalization removes fragments and common tracking parameters, normalizes
-the host and trailing slash, and preserves meaningful query parameters. User
-metadata may connect more material but cannot split one canonical URL.
+the host, `www`, and trailing slash, and preserves meaningful query parameters.
+The grouping graph is undirected and transitive.
 
-The relationship graph is treated as undirected for grouping. Diagnostics
-include:
+A shared claim or publication date does not create a confirmed group.
 
-- enabled item count and related-group count;
-- the number of items consolidated into those groups;
-- each group’s share of absolute rule-score influence and an internal
-  0–100 influence-concentration measure;
-- groups containing both supporting and weakening items;
-- evidence older than the configured freshness window; and
-- score effects from excluding each source category.
+## Relationship suggestions
 
-This process does not prove statistical independence or detect copied text.
-Users remain responsible for declaring same-source relationships. The tool
-cannot discover every copied article or republication chain.
+Different URLs can create a review suggestion when their metadata contains a
+strong, explainable overlap:
 
-## 4. Smallest tested item and related-group changes
+- near-identical title tokens within fourteen days;
+- a shared company-event class, adequate title overlap, and publication within
+  two days;
+- an official filing plus a nearby article on the same detected event.
 
-The item-level test enumerates evidence subsets in increasing cardinality,
-currently through four items:
+Detected event classes currently include earnings, repurchases, dividends,
+acquisitions, investigations, litigation, contracts, financing, and management
+changes. The detector uses public metadata already in the user's record; it
+does not claim to have compared every paragraph of the documents.
 
-```text
-argmin |E′| such that assessment(case − E′) ≠ assessment(case)
-```
+Suggestions are never auto-merged. The UI shows the reason and asks the user to
+choose “group together” or “keep separate.” Rejected suggestions are stored in
+the current browser.
 
-The related-group test performs the same search over groups, excluding every
-linked item together:
+## Next-step selection
 
-```text
-argmin |G′| such that assessment(case − evidence(G′)) ≠ assessment(case)
-```
+Falsifi returns one next step, in this order:
 
-When a flip is found at cardinality `k ≤ 4`, minimal cardinality is exact.
-When there are more than four groups and no change is found, the result explicitly
-reports that the search was not exhaustive. “Not found” is not proof of
-robustness.
+1. add the first material;
+2. review possible source relationships;
+3. open and verify unchecked materials;
+4. add an independent source when fewer than two confirmed sources remain;
+5. when a claim exists, add credible material that could challenge it;
+6. add another independent source.
 
-## 5. One-variable sensitivity analysis
+This is workflow guidance, not an investment recommendation.
 
-Each scenario input is swept in both directions using its declared step and bounds.
-All other inputs stay fixed. Candidate assessment changes are ranked by:
+## Boundaries
 
-```text
-|value − current| / max(typicalShock, step)
-```
+- A source group records confirmed common provenance; it does not prove that
+  two publishers lack editorial independence.
+- A possible match is a lead, not a conclusion.
+- “Checked” means the user says they opened and reviewed the page. Falsifi does
+  not certify the content.
+- Source diversity does not prove a claim true or predict returns.
 
-This is ceteris-paribus sensitivity analysis, not a forecast or causal model.
-
-## 6. Two-variable threshold combinations
-
-The joint search evaluates every pair of scenario inputs. Each variable is tested
-inside both its declared `[min, max]` range and `current ± 2 × typicalShock`.
-States in which both variables change are scored and filtered to assessment
-changes. A returned pair can have `requiresBoth: false` when either one-variable
-change already crosses the threshold.
-
-Candidates are ranked by normalized distance:
-
-```text
-z_j = (candidate_j − current_j) / typicalShock_j
-distance = sqrt(z_1² + z_2²)
-```
-
-Within each variable pair and directional quadrant, dominated combinations are
-removed. The closest five combinations are returned, with `L∞` distance and a
-stable lexicographic order as tie-breakers.
-
-The exhaustive-state budget is 100,000. If the full pair grid would exceed it,
-all pairs receive a deterministic equal-stride sample and the result marks
-`exact: false`, along with planned/evaluated state counts and the actual
-resolution stride.
-
-The search does not infer variable correlations or claim that a tested
-combination is economically feasible.
-
-## 7. Three evidence test modes
-
-For the current minimum item-level flip set, Falsifi compares:
-
-| Mode | Operation | Question answered |
-|---|---|---|
-| Exclude | contribution becomes zero | What if this evidence were unavailable? |
-| Lower confidence | confidence weight is multiplied by `0.5` | What if this source deserved less trust? |
-| Reverse direction | direction is reversed | What if equally strong contrary evidence appeared? |
-
-These operations answer different counterfactual questions. Their scores should
-not be interpreted as interchangeable.
-
-## 8. Model robustness score
-
-The preliminary model-robustness diagnostic is:
-
-```text
-35% × related-group buffer × concentration resilience
-+ 25% × nearest scenario-input buffer
-+ 40% × score margin to the assessment threshold
-```
-
-- Related-group buffer: when a change is found, its smallest related-group
-  count divided by three and capped at one. If no change is found, the number
-  of related groups actually tested (up to four) is divided by three and
-  capped at one.
-- Concentration resilience: normalized from group-contribution HHI so equally
-  weighted groups score one and a single group scores zero:
-
-  ```text
-  (1 − HHI) / (1 − 1 / related_group_count)
-  ```
-
-- Scenario-input buffer: nearest one-variable threshold distance divided by
-  typical change and capped at one.
-- Score margin: distance to the relevant assessment threshold divided by 9.5 points,
-  capped at one.
-
-When removing `k` related groups changes the assessment, the final robustness
-score is capped at `100 × min(k / 3, 1)`. Thus a model whose assessment depends
-on one related group cannot score above 33. A case with no enabled evidence has
-robustness zero.
-
-This is an internal comparative diagnostic, not stock-price stability,
-investment safety, or a financial-risk estimate.
-
-## 9. Snapshot fingerprint
-
-The browser canonicalizes case JSON by sorting object keys and generates a
-SHA-256 digest. A changed case creates a changed digest. The corresponding case
-state can be restored locally.
-
-SHA-256 proves content equality, not when the content existed or who created
-it. The snapshot is not a digital signature, blockchain, trusted timestamp, or
-tamper-proof registry.
-
-## Known limitations
-
-- User-defined weights and thresholds can encode bias.
-- Exact canonical URLs are grouped automatically; relationships between
-  different URLs are declared and are not verified from full page text.
-- Related-group scoring depends on user-declared relationships and is not a
-  causal graph.
-- The pairwise search can miss interactions involving three or more
-  scenario inputs.
-- Tested parameter combinations can be unrealistic.
-- A confidence weight is a judgment, not a calibrated measurement.
-- A case with a high model-robustness score can still lose money; a case with a
-  low score can still make money.
+Legacy deterministic stress-model code remains in the repository for backward
+compatibility with older saved case JSON. It is not shown in, and does not
+affect, the focused source-audit result.

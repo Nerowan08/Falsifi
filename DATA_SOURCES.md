@@ -5,9 +5,9 @@ news, filings, estimates, or other third-party content.
 
 ## Default deployed adapters
 
-### Yahoo Finance chart/search
+### Yahoo Finance chart/search (supplemental)
 
-The current owner-only deployment uses Yahoo Finance’s undocumented chart and
+The deployment uses Yahoo Finance’s undocumented chart and
 search endpoints to retrieve delayed daily market history for personal
 evaluation. The UI labels the source and retrieval time. The adapter has no
 service-level agreement and can be throttled, changed, or disabled upstream.
@@ -23,8 +23,8 @@ labels that basis. The 20-session volume ratio is omitted unless all latest 20
 sessions have valid volume.
 
 This keyless adapter does **not** establish display or redistribution rights for
-a public commercial service. Before widening a deployment beyond personal use,
-replace it with a licensed provider and document that provider’s delay,
+a commercial service. Before commercial use, replace it with a licensed
+provider and document that provider’s delay,
 display, retention, and redistribution terms. Falsifi does not call this feed
 real-time data.
 
@@ -68,10 +68,11 @@ challenging contribution, so repeated rows cannot multiply one group’s
 influence. This does not prove statistical independence or discover an
 undeclared relationship.
 
-## SEC EDGAR (supported)
+### SEC EDGAR U.S. filings
 
-The optional adapter uses the SEC’s official submissions and XBRL CompanyFacts
-APIs:
+For a U.S. ticker, the material finder resolves an exact ticker through the
+SEC company-ticker file and requests recent filing metadata from the official
+submissions API:
 
 - [EDGAR API documentation](https://www.sec.gov/search-filings/edgar-application-programming-interfaces)
 - [Accessing EDGAR data](https://www.sec.gov/search-filings/edgar-search-assistance/accessing-edgar-data)
@@ -80,9 +81,11 @@ The APIs do not require a key, but automated clients must follow SEC fair-access
 rules and identify themselves with a descriptive `User-Agent` including contact
 information. Falsifi throttles requests well below the published ceiling.
 
-The adapter extracts structured facts and links back to SEC sources. It does not
-mirror entire filings or assume that every filer-authored exhibit is
-public-domain content.
+The adapter returns recent 10-K, 10-Q, 8-K, 20-F, 6-K, and DEF 14A links from
+`sec.gov`. Results are labeled as company filings but remain unselected,
+unclassified, and unverified until the user reviews them. The ticker is sent to
+SEC EDGAR; the user's claim is not sent. Falsifi links to filings and does not
+mirror their bodies.
 
 ## US Treasury and BLS (planned)
 

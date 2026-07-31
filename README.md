@@ -1,120 +1,71 @@
 # Falsifi
 
-> **See how your stock-thesis material groups by source.**
+> **Trace the sources behind stock research.**
 
-Falsifi is an open-source tool for sorting stock-research material by source.
-Pick a listed stock, ask the tool for candidate public pages, or add your own
-link. Writing a claim is optional.
-Falsifi groups matching links and items that you mark as coming from the same
-source. It then shows:
+Falsifi is an open-source source audit for stock research. It answers one
+question: **how many original sources are your materials actually based on?**
 
-1. how many user-added materials are in the record;
-2. how many source groups the current record identifies;
-3. which items are grouped together.
-
-It does **not** predict returns, calculate target prices, recommend trades, or
-prove a thesis true.
-
+[Open Falsifi](https://thesis-trace.nerowan22.chatgpt.site) ·
 [简体中文](./README.zh-CN.md) ·
 [Method](./docs/METHODOLOGY.md) ·
-[Product and competitor audit](./docs/UNIQUENESS.md) ·
-[Data-source boundaries](./DATA_SOURCES.md)
+[Data sources](./DATA_SOURCES.md)
 
-Live app: [thesis-trace.nerowan22.chatgpt.site](https://thesis-trace.nerowan22.chatgpt.site)
+## The problem
 
-## The single job
+Ten articles can all repeat one filing, interview, press release, or dataset.
+Counting links makes the research look more independent than it is.
 
-Eight articles can still trace to one source when all eight repeat the same
-filing, dataset, interview, or republication chain. Link count is not source
-diversity.
-
-Falsifi keeps the job small:
+Falsifi turns:
 
 ```text
-material you choose
-→ matching links and user-confirmed relationships
-→ source groups
+12 materials → 3 confirmed source groups → 2 relationships to review
 ```
 
-There is no required research sequence. After opening a workspace, the user
-chooses whether to add material, edit the claim, or inspect the source groups.
-Market data and optional review notes do not control the grouping result.
+It then gives one concrete next step: verify an original, review a possible
+duplicate, add an independent source, or look for material that challenges the
+claim.
 
-## What v0.7 changes
+## How it works
 
-- **One clear landing-page task.** Falsifi no longer presents itself as a
-  general stock-analysis dashboard.
-- **The user chooses what to do.** Adding material, editing the claim, and
-  reviewing groups are available without a forced sequence or automatic
-  follow-up dialog.
-- **User-controlled source search.** “Find public sources” searches for
-  candidate pages only after the user asks. Results start unselected and
-  unverified; nothing enters the record until the user confirms it. For
-  A-shares, official CNINFO filings are shown before supplemental Yahoo news.
-- **A clear output without subjective scores.** The main view reports material
-  count, source-group count, and grouped items. It does not need user-entered
-  0–100 impact or confidence numbers.
-- **Matching links stay together.** Common tracking parameters, page fragments,
-  host casing, and trailing slashes cannot make the same link look like several
-  sources. Users may group more items together, but cannot split a matching
-  link into several groups.
-- **User material only.** Automatic price observations remain optional market
-  context and do not count as user-added material. Missing price history never
-  blocks source grouping.
-- **Simple material entry.** Users add a title and link, then may record the
-  publisher, date, review status, and a same-source relationship.
-  Unchecked material remains clearly labeled.
-- **Progressive disclosure.** The claim, source relationships, and compact
-  market context appear in one record. Secondary information stays out of the
-  way.
-- **Four languages and a rewritten guide.** English, Simplified Chinese,
-  Japanese, and Spanish now explain the same focused task and its limits.
+1. Choose an A-share, Hong Kong, or U.S. listed stock.
+2. Ask Falsifi to find public material, or paste your own links.
+3. Open the original pages and mark only the material you checked.
+4. Review possible source relationships. You decide whether two materials are
+   grouped.
+5. Follow the next-step prompt to improve the record.
 
-## When material is grouped
+Writing a stock thesis is optional. If you add one, each material can be marked
+as supporting, challenging, or not yet classified.
 
-Falsifi forms connected source groups from:
+## What is automatic
 
-- HTTP(S) links that match after common tracking parts are removed;
-- a shared stored source identifier;
-- a same-source relationship added by the user.
+- Canonically identical links are grouped automatically. Tracking parameters,
+  fragments, host casing, `www`, and trailing slashes cannot create fake source
+  diversity.
+- Highly similar titles published near each other create a review suggestion.
+- A news item published near an official filing on the same detected company
+  event can create a review suggestion.
+- U.S. official filings come from SEC EDGAR; A-share announcements come from
+  CNINFO. Yahoo Finance is supplemental.
 
-A shared factual claim or logical dependency does not merge two sources:
-independent publishers can report the same fact.
+Approximate matches are **never** merged automatically. Every suggestion states
+why it appeared, and the user chooses “group together” or “keep separate.”
 
-Before comparing links, Falsifi removes common tracking parameters and page
-fragments, makes host names consistent, and handles trailing slashes. It keeps
-query parameters that may point to different documents. Different links are
-**not** automatically declared independent, and the tool does not claim to
-find every copied or republished article on the internet.
+## What Falsifi does not do
 
-Example:
+Falsifi does not predict prices, recommend trades, calculate target prices, or
+decide whether a thesis is true. Source grouping measures confirmed provenance
+in the current record; it does not prove editorial independence or factual
+accuracy.
 
-```text
-8 manually added copies of the same link
-→ 8 user-added materials
-→ 1 source group
-→ 7 items grouped with another item
-```
+## Languages and privacy
 
-## Basic use
+The interface and guide support English, Simplified Chinese, Japanese, and
+Spanish. The active audit is stored in the browser. Falsifi has no account,
+telemetry, brokerage connection, or OpenAI API dependency.
 
-- Search a U.S., mainland China, or Hong Kong listed equity.
-- Ask Falsifi for candidate public pages or add a link yourself.
-- Open each candidate page and select only material you want to keep.
-- Write a claim if it helps you keep the material in context.
-- If two items come from the same document, dataset, interview, or
-  republication chain, link them.
-- Review the groups and edit any relationship that is wrong.
-
-Review dates, invalidation conditions, and contrary material can be useful, but
-they are optional and do not block source grouping.
-
-For A-shares, CNINFO supplies exact-ticker company-filing candidates with links
-to the original PDFs. Yahoo Finance supplies delayed market context and
-supplemental public-page search results. The lookup sends only the company
-identity and visible search terms needed by those providers, never the user's
-claim. Neither source is a complete filing or news archive, and every candidate
-still requires review. See [DATA_SOURCES.md](./DATA_SOURCES.md).
+For public-material search, the stock identity and visible search terms are
+sent only to the named public providers. The user's thesis is never sent.
 
 ## Run locally
 
@@ -133,51 +84,24 @@ npm run typecheck
 npm test
 ```
 
-Production build:
-
-```bash
-npm run build
-```
-
 ## Repository map
 
 ```text
-app/                         Product route and same-origin market endpoints
-components/market-workspace  Focused stock-and-thesis entry
-components/falsify-workspace User-controlled source-group workspace
-components/user-guide        Four-language practical guide
-lib/evidence-audit.ts        Weight-free primary evidence-structure output
-lib/falsifi.ts               Canonical grouping and deterministic model engine
-lib/readiness.ts             Optional research-status suggestions
-lib/market.ts                Market normalization and background metrics
-tests/                       Engine, grouping, locale, market, and worker tests
+components/source-audit-app.tsx   Focused source-audit interface
+lib/source-audit.ts               Explainable relationship suggestions
+lib/falsifi.ts                    Canonical URL and confirmed-source grouping
+lib/sec.ts                        SEC EDGAR filing adapter
+lib/cninfo.ts                     CNINFO announcement adapter
+app/api/stocks/materials          Public-material search endpoint
+tests/                            Grouping, false-positive, provider, and UI tests
 ```
 
 ## Honest differentiation
 
-Thesis journals, source links, AI research tools, and provenance systems
-already exist. Falsifi does not claim to be the first or only product in this
-area. Its current focus is simply:
+Reference managers detect duplicate records, and research platforms cite source
+documents. Falsifi's narrower focus is the **source dependency between several
+stock-research materials**, with an A-share-first official filing path and a
+human confirmation loop. It does not claim to be the world's first or only
+tool in this category. See [the product audit](./docs/UNIQUENESS.md).
 
-```text
-matching links stay together
-+ user-confirmed same-source relationships
-+ a primary “materials → source groups” output
-```
-
-This describes the product, not a claim that no other public, private, or
-undocumented tool can do the same thing. See
-[docs/UNIQUENESS.md](./docs/UNIQUENESS.md).
-
-## Privacy and disclaimer
-
-The active record and saved reviews stay in the browser unless exported. There
-is no account, telemetry, or brokerage connection.
-
-Falsifi is an educational research-record tool. It does not provide investment
-advice, recommendations, forecasts, suitability assessments, or trade
-execution. Evidence grouping describes the supplied record; it does not prove
-truth, quality, statistical independence, or future returns. Investing can
-lose principal.
-
-Code is available under the [MIT License](./LICENSE).
+MIT licensed. Investing can lose principal.

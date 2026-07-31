@@ -1,0 +1,711 @@
+"use client";
+
+import {
+  ArrowRight,
+  Check,
+  ChevronRight,
+  ExternalLink,
+  FileSearch,
+  Github,
+  Link2,
+  Plus,
+  ShieldCheck,
+  Trash2,
+  X,
+} from "lucide-react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+
+import { MaterialFinderModal } from "@/components/material-finder";
+import { StockPicker } from "@/components/market-workspace";
+import {
+  canonicalEvidenceSource,
+  isHttpUrl,
+  isThesisCase,
+  type EvidenceDirection,
+  type EvidenceGroup,
+  type EvidenceItem,
+  type MarketSnapshot,
+  type ThesisCase,
+} from "@/lib/falsifi";
+import {
+  LOCALE_OPTIONS,
+  resolveLocale,
+  type Locale,
+} from "@/lib/i18n";
+import {
+  buildResearchCase,
+  normalizeMarketCase,
+  type StockSearchResult,
+} from "@/lib/market";
+import {
+  isCandidateAlreadyAdded,
+  materialCandidateToEvidence,
+  type MaterialCandidate,
+} from "@/lib/materials";
+import {
+  auditSources,
+  type SourceSuggestion,
+  type SourceSuggestionReason,
+} from "@/lib/source-audit";
+
+const CASE_KEY = "falsifi.case.v2";
+const LOCALE_KEY = "falsifi.locale.v1";
+const REJECTION_KEY = "falsifi.source-rejections.v1";
+
+type Copy = {
+  tagline: string;
+  guide: string;
+  github: string;
+  changeStock: string;
+  toolTitle: string;
+  toolBody: string;
+  claimLabel: string;
+  claimOptional: string;
+  claimPlaceholder: string;
+  save: string;
+  edit: string;
+  find: string;
+  addLink: string;
+  resultLabel: string;
+  emptyResult: string;
+  result: (materials: number, groups: number) => string;
+  materials: string;
+  sourceGroups: string;
+  confirmedDuplicates: string;
+  pending: string;
+  next: string;
+  nextEmpty: string;
+  nextReview: (count: number) => string;
+  nextVerify: (count: number) => string;
+  nextIndependent: string;
+  nextChallenge: string;
+  possibleSameSource: string;
+  possibleHelp: string;
+  confirmSame: string;
+  keepSeparate: string;
+  reasons: Record<SourceSuggestionReason, string>;
+  confidence: Record<"high" | "medium", string>;
+  materialTitle: string;
+  noMaterials: string;
+  reviewed: string;
+  unverified: string;
+  markReviewed: string;
+  relation: string;
+  directions: Record<EvidenceDirection, string>;
+  original: string;
+  remove: string;
+  manualTitle: string;
+  url: string;
+  title: string;
+  publisher: string;
+  date: string;
+  type: string;
+  filing: string;
+  news: string;
+  cancel: string;
+  invalidUrl: string;
+  duplicateUrl: string;
+  boundary: string;
+  local: string;
+  guideTitle: string;
+  guideSteps: Array<{ title: string; body: string }>;
+  guideAccuracy: string;
+  guideAccuracyBody: string;
+  close: string;
+};
+
+const COPY: Record<Locale, Copy> = {
+  en: {
+    tagline: "Trace the sources behind stock research",
+    guide: "How it works",
+    github: "GitHub",
+    changeStock: "Change stock",
+    toolTitle: "Check where these materials really come from.",
+    toolBody: "Find the original source, group repeated coverage, and see what evidence is still missing.",
+    claimLabel: "Claim",
+    claimOptional: "optional",
+    claimPlaceholder: "e.g. Gross-margin recovery can offset slower revenue growth over the next year.",
+    save: "Save",
+    edit: "Edit",
+    find: "Find public materials",
+    addLink: "Add a link",
+    resultLabel: "Source audit",
+    emptyResult: "Add materials to start the audit.",
+    result: (materials, groups) => `${materials} materials → ${groups} confirmed source groups`,
+    materials: "Materials",
+    sourceGroups: "Confirmed sources",
+    confirmedDuplicates: "Grouped repeats",
+    pending: "Needs review",
+    next: "Next step",
+    nextEmpty: "Add the first material.",
+    nextReview: (count) => `Review ${count} possible source relationship${count === 1 ? "" : "s"}.`,
+    nextVerify: (count) => `Open and check ${count} unverified material${count === 1 ? "" : "s"}.`,
+    nextIndependent: "Add an independent source, not another retelling.",
+    nextChallenge: "Add one credible source that could weaken your claim.",
+    possibleSameSource: "Possibly the same source",
+    possibleHelp: "The tool found overlap. You decide whether to group it.",
+    confirmSame: "Group together",
+    keepSeparate: "Keep separate",
+    reasons: {
+      "near-identical-title": "The titles and publication dates are highly similar.",
+      "same-event": "Both materials appear to cover the same company event.",
+      "filing-follow-up": "The later item appears to follow a company filing on the same event.",
+    },
+    confidence: { high: "High-confidence match", medium: "Possible match" },
+    materialTitle: "Materials",
+    noMaterials: "No materials yet. Let Falsifi search, or add a link yourself.",
+    reviewed: "Checked",
+    unverified: "Not checked",
+    markReviewed: "Mark checked",
+    relation: "Relation to claim",
+    directions: { supports: "Supports", contradicts: "Challenges", unclassified: "Not set" },
+    original: "Open original",
+    remove: "Remove",
+    manualTitle: "Add a material",
+    url: "URL",
+    title: "Title",
+    publisher: "Publisher",
+    date: "Date",
+    type: "Type",
+    filing: "Company filing",
+    news: "News or analysis",
+    cancel: "Cancel",
+    invalidUrl: "Enter a valid http or https URL.",
+    duplicateUrl: "This link is already in the audit.",
+    boundary: "Falsifi does not predict prices or make investment decisions.",
+    local: "Your audit is stored in this browser.",
+    guideTitle: "How to use Falsifi",
+    guideSteps: [
+      { title: "Choose a stock", body: "Search by company name or ticker. Falsifi supports A-shares, Hong Kong stocks, and U.S. stocks." },
+      { title: "Add materials", body: "Search public sources or paste your own links. Open each original page before marking it checked." },
+      { title: "Review the source audit", body: "Exact links are grouped automatically. Similar materials are only grouped after you confirm the relationship." },
+    ],
+    guideAccuracy: "What the result means",
+    guideAccuracyBody: "A source group is a confirmed shared origin, not a claim that the articles agree. Similar titles and dates are hints only. If the tool is unsure, it asks you to decide.",
+    close: "Close",
+  },
+  "zh-CN": {
+    tagline: "查清股票材料的真正来源",
+    guide: "使用教程",
+    github: "GitHub",
+    changeStock: "更换股票",
+    toolTitle: "查清这些材料到底来自哪里",
+    toolBody: "找原始来源，合并重复转述，告诉你下一步该补什么。",
+    claimLabel: "你的判断",
+    claimOptional: "可选",
+    claimPlaceholder: "例如：未来一年，毛利率改善可以抵消收入增速放缓。",
+    save: "保存",
+    edit: "修改",
+    find: "让工具找材料",
+    addLink: "自己加链接",
+    resultLabel: "来源审计结果",
+    emptyResult: "加入材料后，这里会显示结果。",
+    result: (materials, groups) => `${materials} 份材料 → ${groups} 个已确认来源`,
+    materials: "材料",
+    sourceGroups: "已确认来源",
+    confirmedDuplicates: "重复转述",
+    pending: "待确认关系",
+    next: "下一步",
+    nextEmpty: "先加入一份材料。",
+    nextReview: (count) => `确认 ${count} 组可能同源的材料。`,
+    nextVerify: (count) => `打开并核对 ${count} 份材料。`,
+    nextIndependent: "补一个独立来源，不要再加同一消息的转述。",
+    nextChallenge: "补一份可能推翻你判断的可靠材料。",
+    possibleSameSource: "可能来自同一来源",
+    possibleHelp: "工具发现了重合点，是否归组由你决定。",
+    confirmSame: "归为同一来源",
+    keepSeparate: "保持独立",
+    reasons: {
+      "near-identical-title": "标题和发布时间高度接近。",
+      "same-event": "两份材料可能在讲同一件公司事件。",
+      "filing-follow-up": "后一份材料可能在转述同一事件的公司公告。",
+    },
+    confidence: { high: "高度匹配", medium: "可能匹配" },
+    materialTitle: "材料",
+    noMaterials: "还没有材料。让工具搜索，或自己加链接。",
+    reviewed: "已核对",
+    unverified: "待核对",
+    markReviewed: "标记为已核对",
+    relation: "与判断的关系",
+    directions: { supports: "支持", contradicts: "反驳", unclassified: "未设置" },
+    original: "查看原文",
+    remove: "删除",
+    manualTitle: "添加材料",
+    url: "链接",
+    title: "标题",
+    publisher: "发布方",
+    date: "发布日期",
+    type: "材料类型",
+    filing: "公司公告",
+    news: "新闻或分析",
+    cancel: "取消",
+    invalidUrl: "请输入有效的 http 或 https 链接。",
+    duplicateUrl: "这条链接已经添加过。",
+    boundary: "Falsifi 不预测股价，也不替你做投资决定。",
+    local: "审计记录保存在当前浏览器。",
+    guideTitle: "Falsifi 使用教程",
+    guideSteps: [
+      { title: "1. 选择股票", body: "输入公司名或股票代码。支持 A 股、港股和美股。" },
+      { title: "2. 加入材料", body: "可以让工具搜索公开材料，也可以自己贴链接。打开原文核对后，再标记为“已核对”。" },
+      { title: "3. 确认来源关系", body: "完全相同的链接会自动归组。标题、时间或事件相似的材料只会提示，由你决定是否同源。" },
+      { title: "4. 按提示补材料", body: "结果会直接告诉你：先核对哪份材料、确认哪组关系，或补什么独立来源。" },
+    ],
+    guideAccuracy: "结果怎么理解",
+    guideAccuracyBody: "“同一来源”只表示材料来自同一份原始信息，不表示观点相同。相似标题和日期只是线索，不是结论；工具拿不准时会让你确认。",
+    close: "关闭",
+  },
+  ja: {
+    tagline: "株式調査資料の出典を確認",
+    guide: "使い方",
+    github: "GitHub",
+    changeStock: "銘柄を変更",
+    toolTitle: "資料の本当の出典を確認します",
+    toolBody: "原典を探し、重複記事をまとめ、次に必要な資料を示します。",
+    claimLabel: "あなたの仮説",
+    claimOptional: "任意",
+    claimPlaceholder: "例：今後1年、粗利益率の改善が売上成長の鈍化を補う。",
+    save: "保存",
+    edit: "編集",
+    find: "公開資料を探す",
+    addLink: "リンクを追加",
+    resultLabel: "出典監査",
+    emptyResult: "資料を追加すると結果が表示されます。",
+    result: (materials, groups) => `${materials}件の資料 → ${groups}件の確認済み出典`,
+    materials: "資料",
+    sourceGroups: "確認済み出典",
+    confirmedDuplicates: "重複記事",
+    pending: "要確認",
+    next: "次の手順",
+    nextEmpty: "まず資料を1件追加してください。",
+    nextReview: (count) => `${count}組の出典関係を確認してください。`,
+    nextVerify: (count) => `${count}件の未確認資料を開いて確認してください。`,
+    nextIndependent: "同じ話の転載ではなく、独立した出典を追加してください。",
+    nextChallenge: "仮説を弱める可能性のある信頼できる資料を追加してください。",
+    possibleSameSource: "同じ出典の可能性",
+    possibleHelp: "重複の手掛かりがあります。まとめるかはあなたが決めます。",
+    confirmSame: "同じ出典にまとめる",
+    keepSeparate: "別の出典として残す",
+    reasons: { "near-identical-title": "見出しと公開日が非常に近いです。", "same-event": "同じ企業イベントを扱っている可能性があります。", "filing-follow-up": "後の記事が同じイベントの会社開示を参照している可能性があります。" },
+    confidence: { high: "一致度が高い", medium: "一致の可能性" },
+    materialTitle: "資料",
+    noMaterials: "資料はまだありません。検索するかリンクを追加してください。",
+    reviewed: "確認済み",
+    unverified: "未確認",
+    markReviewed: "確認済みにする",
+    relation: "仮説との関係",
+    directions: { supports: "支持", contradicts: "反証", unclassified: "未設定" },
+    original: "原文を開く",
+    remove: "削除",
+    manualTitle: "資料を追加",
+    url: "URL",
+    title: "タイトル",
+    publisher: "発行元",
+    date: "公開日",
+    type: "種類",
+    filing: "会社開示",
+    news: "ニュース・分析",
+    cancel: "キャンセル",
+    invalidUrl: "有効な http または https URLを入力してください。",
+    duplicateUrl: "このリンクはすでに追加されています。",
+    boundary: "Falsifiは株価を予測せず、投資判断を代行しません。",
+    local: "監査記録はこのブラウザに保存されます。",
+    guideTitle: "Falsifiの使い方",
+    guideSteps: [
+      { title: "1. 銘柄を選ぶ", body: "会社名またはティッカーで検索します。中国A株、香港株、米国株に対応します。" },
+      { title: "2. 資料を追加", body: "公開資料を検索するか、自分のリンクを追加します。確認済みにする前に原文を開いてください。" },
+      { title: "3. 出典関係を確認", body: "同一URLは自動でまとまります。類似資料は、あなたが確認した後だけまとめます。" },
+    ],
+    guideAccuracy: "結果の意味",
+    guideAccuracyBody: "出典グループは共通の情報源を示すもので、記事の意見が同じという意味ではありません。類似性は手掛かりであり結論ではありません。",
+    close: "閉じる",
+  },
+  es: {
+    tagline: "Rastrea las fuentes del análisis bursátil",
+    guide: "Cómo funciona",
+    github: "GitHub",
+    changeStock: "Cambiar acción",
+    toolTitle: "Comprueba de dónde vienen realmente estos materiales.",
+    toolBody: "Encuentra la fuente original, agrupa repeticiones y descubre qué evidencia falta.",
+    claimLabel: "Tu tesis",
+    claimOptional: "opcional",
+    claimPlaceholder: "Ej.: La mejora del margen bruto compensará el menor crecimiento durante el próximo año.",
+    save: "Guardar",
+    edit: "Editar",
+    find: "Buscar materiales públicos",
+    addLink: "Añadir enlace",
+    resultLabel: "Auditoría de fuentes",
+    emptyResult: "Añade materiales para iniciar la auditoría.",
+    result: (materials, groups) => `${materials} materiales → ${groups} fuentes confirmadas`,
+    materials: "Materiales",
+    sourceGroups: "Fuentes confirmadas",
+    confirmedDuplicates: "Repeticiones agrupadas",
+    pending: "Por revisar",
+    next: "Siguiente paso",
+    nextEmpty: "Añade el primer material.",
+    nextReview: (count) => `Revisa ${count} posible${count === 1 ? "" : "s"} relación${count === 1 ? "" : "es"} de fuente.`,
+    nextVerify: (count) => `Abre y comprueba ${count} material${count === 1 ? "" : "es"}.`,
+    nextIndependent: "Añade una fuente independiente, no otra repetición.",
+    nextChallenge: "Añade una fuente fiable que pueda debilitar tu tesis.",
+    possibleSameSource: "Posible fuente común",
+    possibleHelp: "La herramienta encontró coincidencias. Tú decides si agruparlas.",
+    confirmSame: "Agrupar",
+    keepSeparate: "Mantener separadas",
+    reasons: { "near-identical-title": "Los títulos y las fechas son muy similares.", "same-event": "Ambos materiales parecen tratar el mismo evento.", "filing-follow-up": "El material posterior parece seguir una comunicación oficial sobre el mismo evento." },
+    confidence: { high: "Coincidencia alta", medium: "Coincidencia posible" },
+    materialTitle: "Materiales",
+    noMaterials: "Aún no hay materiales. Busca fuentes o añade un enlace.",
+    reviewed: "Comprobado",
+    unverified: "Sin comprobar",
+    markReviewed: "Marcar como comprobado",
+    relation: "Relación con la tesis",
+    directions: { supports: "Apoya", contradicts: "Cuestiona", unclassified: "Sin definir" },
+    original: "Abrir original",
+    remove: "Eliminar",
+    manualTitle: "Añadir material",
+    url: "URL",
+    title: "Título",
+    publisher: "Editor",
+    date: "Fecha",
+    type: "Tipo",
+    filing: "Comunicación de empresa",
+    news: "Noticia o análisis",
+    cancel: "Cancelar",
+    invalidUrl: "Introduce una URL http o https válida.",
+    duplicateUrl: "Este enlace ya está en la auditoría.",
+    boundary: "Falsifi no predice precios ni toma decisiones de inversión.",
+    local: "La auditoría se guarda en este navegador.",
+    guideTitle: "Cómo usar Falsifi",
+    guideSteps: [
+      { title: "1. Elige una acción", body: "Busca por empresa o ticker. Compatible con acciones A, Hong Kong y EE. UU." },
+      { title: "2. Añade materiales", body: "Busca fuentes públicas o pega tus enlaces. Abre cada original antes de marcarlo como comprobado." },
+      { title: "3. Revisa las relaciones", body: "Las URL idénticas se agrupan automáticamente. Las coincidencias aproximadas requieren tu confirmación." },
+    ],
+    guideAccuracy: "Qué significa el resultado",
+    guideAccuracyBody: "Un grupo confirma un origen común, no que los artículos estén de acuerdo. La similitud es una pista, no una conclusión.",
+    close: "Cerrar",
+  },
+};
+
+const formatDate = (value: string, locale: Locale) => {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? value
+    : new Intl.DateTimeFormat(locale, { year: "numeric", month: "short", day: "numeric" }).format(date);
+};
+
+function AppHeader({
+  locale,
+  onLocale,
+  onGuide,
+}: {
+  locale: Locale;
+  onLocale: (locale: Locale) => void;
+  onGuide: () => void;
+}) {
+  const copy = COPY[locale];
+  return (
+    <header className="audit-header">
+      <div className="audit-header-inner">
+        <div className="audit-brand">
+          <span aria-hidden="true"><i /><i /><i /></span>
+          <div><strong>Falsifi</strong><small>{copy.tagline}</small></div>
+        </div>
+        <nav>
+          <button onClick={onGuide}>{copy.guide}</button>
+          <a href="https://github.com/Nerowan08/Falsifi" target="_blank" rel="noreferrer">
+            <Github size={15} />{copy.github}
+          </a>
+          <select value={locale} onChange={(event) => onLocale(event.target.value as Locale)} aria-label="Language">
+            {LOCALE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
+          </select>
+        </nav>
+      </div>
+    </header>
+  );
+}
+
+function Guide({ copy, onClose }: { copy: Copy; onClose: () => void }) {
+  return (
+    <div className="audit-overlay" role="presentation" onMouseDown={onClose}>
+      <section className="audit-guide" role="dialog" aria-modal="true" aria-labelledby="guide-title" onMouseDown={(event) => event.stopPropagation()}>
+        <header><h2 id="guide-title">{copy.guideTitle}</h2><button onClick={onClose} aria-label={copy.close}><X size={19} /></button></header>
+        <div className="guide-steps">{copy.guideSteps.map((step) => <article key={step.title}><h3>{step.title}</h3><p>{step.body}</p></article>)}</div>
+        <aside><strong>{copy.guideAccuracy}</strong><p>{copy.guideAccuracyBody}</p></aside>
+        <button className="audit-primary" onClick={onClose}>{copy.close}</button>
+      </section>
+    </div>
+  );
+}
+
+function ManualMaterialForm({
+  copy,
+  onCancel,
+  onAdd,
+  existing,
+}: {
+  copy: Copy;
+  onCancel: () => void;
+  onAdd: (item: EvidenceItem) => void;
+  existing: EvidenceItem[];
+}) {
+  const [url, setUrl] = useState("");
+  const [title, setTitle] = useState("");
+  const [publisher, setPublisher] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [group, setGroup] = useState<EvidenceGroup>("External estimate");
+  const [error, setError] = useState("");
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    const cleanUrl = url.trim();
+    if (!isHttpUrl(cleanUrl)) return setError(copy.invalidUrl);
+    const canonical = canonicalEvidenceSource(cleanUrl);
+    if (existing.some((item) => canonicalEvidenceSource(item.sourceUrl) === canonical)) return setError(copy.duplicateUrl);
+    let fallbackPublisher = "Source";
+    try { fallbackPublisher = new URL(cleanUrl).hostname.replace(/^www\./u, ""); } catch { /* validated above */ }
+    onAdd({
+      id: `manual-${Date.now().toString(36)}`,
+      title: title.trim(),
+      source: publisher.trim() || fallbackPublisher,
+      sourceUrl: cleanUrl,
+      asOf: date,
+      group,
+      direction: "unclassified",
+      impact: 3,
+      reliability: 0.4,
+      note: "",
+      enabled: true,
+      originId: `source:${canonical}`.slice(0, 120),
+      relation: "direct",
+      verification: "unverified",
+      provenance: "user",
+    });
+  };
+  return (
+    <form className="manual-material" onSubmit={submit}>
+      <div className="section-heading"><h3>{copy.manualTitle}</h3><button type="button" onClick={onCancel}><X size={17} /></button></div>
+      <label className="wide"><span>{copy.url}</span><input value={url} onChange={(event) => { setUrl(event.target.value); setError(""); }} placeholder="https://" autoFocus required /></label>
+      <label className="wide"><span>{copy.title}</span><input value={title} onChange={(event) => setTitle(event.target.value)} required /></label>
+      <label><span>{copy.publisher}</span><input value={publisher} onChange={(event) => setPublisher(event.target.value)} /></label>
+      <label><span>{copy.date}</span><input type="date" value={date} onChange={(event) => setDate(event.target.value)} required /></label>
+      <label><span>{copy.type}</span><select value={group} onChange={(event) => setGroup(event.target.value as EvidenceGroup)}><option value="Official filing">{copy.filing}</option><option value="External estimate">{copy.news}</option></select></label>
+      {error && <p className="form-error" role="alert">{error}</p>}
+      <div className="manual-actions"><button type="button" onClick={onCancel}>{copy.cancel}</button><button className="audit-primary" type="submit" disabled={!url.trim() || !title.trim()}><Plus size={15} />{copy.addLink}</button></div>
+    </form>
+  );
+}
+
+function suggestionReason(copy: Copy, suggestion: SourceSuggestion) {
+  return copy.reasons[suggestion.reason];
+}
+
+function Workspace({
+  locale,
+  thesisCase,
+  rejected,
+  onCase,
+  onReject,
+  onFind,
+  onChangeStock,
+}: {
+  locale: Locale;
+  thesisCase: ThesisCase;
+  rejected: Set<string>;
+  onCase: (next: ThesisCase) => void;
+  onReject: (id: string) => void;
+  onFind: () => void;
+  onChangeStock: () => void;
+}) {
+  const copy = COPY[locale];
+  const audit = useMemo(() => auditSources(thesisCase), [thesisCase]);
+  const suggestions = audit.suggestions.filter((item) => !rejected.has(item.id));
+  const byId = new Map(audit.materials.map((item) => [item.id, item]));
+  const [editingClaim, setEditingClaim] = useState(!thesisCase.researchPlan?.thesisConfirmed);
+  const [claim, setClaim] = useState(thesisCase.researchPlan?.thesisConfirmed ? thesisCase.thesis : "");
+  const [showManual, setShowManual] = useState(false);
+
+  const updateEvidence = (id: string, patch: Partial<EvidenceItem>) => {
+    onCase({ ...thesisCase, evidence: thesisCase.evidence.map((item) => item.id === id ? { ...item, ...patch } : item), lastUpdated: new Date().toISOString() });
+  };
+  const confirmSuggestion = (suggestion: SourceSuggestion) => {
+    const related = byId.get(suggestion.relatedId);
+    if (!related) return;
+    updateEvidence(related.id, { sameSourceAsIds: Array.from(new Set([...(related.sameSourceAsIds ?? []), suggestion.primaryId])) });
+  };
+  const saveClaim = () => {
+    const clean = claim.trim();
+    onCase({
+      ...thesisCase,
+      thesis: clean,
+      researchPlan: {
+        purpose: thesisCase.researchPlan?.purpose ?? "new-research",
+        thesisConfirmed: Boolean(clean),
+        invalidationCriteria: thesisCase.researchPlan?.invalidationCriteria ?? "",
+        nextReviewDate: thesisCase.researchPlan?.nextReviewDate ?? "",
+      },
+      lastUpdated: new Date().toISOString(),
+    });
+    setEditingClaim(false);
+  };
+  const addMaterial = (item: EvidenceItem) => {
+    onCase({ ...thesisCase, evidence: [...thesisCase.evidence, item], lastUpdated: new Date().toISOString() });
+    setShowManual(false);
+  };
+  const hasChallenge = audit.materials.some((item) => item.direction === "contradicts");
+  const nextStep = !audit.materials.length
+    ? copy.nextEmpty
+    : suggestions.length
+      ? copy.nextReview(suggestions.length)
+      : audit.unverifiedCount
+        ? copy.nextVerify(audit.unverifiedCount)
+        : audit.confirmedGroupCount < 2
+          ? copy.nextIndependent
+          : thesisCase.researchPlan?.thesisConfirmed && !hasChallenge
+            ? copy.nextChallenge
+            : copy.nextIndependent;
+
+  return (
+    <main className="audit-main" id="main-content">
+      <div className="workspace-topline"><button onClick={onChangeStock}>{copy.changeStock}</button><ChevronRight size={13} /><span>{thesisCase.company}</span><code>{thesisCase.ticker}</code></div>
+      <section className="audit-hero">
+        <div><h1>{copy.toolTitle}</h1><p>{copy.toolBody}</p></div>
+        <div className="hero-actions"><button className="audit-primary" onClick={onFind}><FileSearch size={16} />{copy.find}</button><button onClick={() => setShowManual((value) => !value)}><Plus size={16} />{copy.addLink}</button></div>
+      </section>
+
+      <section className="claim-strip">
+        <div className="claim-label"><strong>{copy.claimLabel}</strong><span>{copy.claimOptional}</span></div>
+        {editingClaim ? (
+          <div className="claim-editor"><textarea value={claim} onChange={(event) => setClaim(event.target.value)} placeholder={copy.claimPlaceholder} maxLength={500} /><button onClick={saveClaim}>{copy.save}</button></div>
+        ) : (
+          <button className="claim-value" onClick={() => setEditingClaim(true)}><span>{thesisCase.thesis || copy.claimPlaceholder}</span><em>{copy.edit}</em></button>
+        )}
+      </section>
+
+      {showManual && <ManualMaterialForm copy={copy} existing={audit.materials} onCancel={() => setShowManual(false)} onAdd={addMaterial} />}
+
+      <section className="audit-result">
+        <div className="result-main"><span>{copy.resultLabel}</span><h2>{audit.materials.length ? copy.result(audit.materials.length, audit.confirmedGroupCount) : copy.emptyResult}</h2></div>
+        <dl>
+          <div><dt>{copy.materials}</dt><dd>{audit.materials.length}</dd></div>
+          <div><dt>{copy.sourceGroups}</dt><dd>{audit.confirmedGroupCount}</dd></div>
+          <div><dt>{copy.confirmedDuplicates}</dt><dd>{audit.duplicateMaterialCount}</dd></div>
+          <div className={suggestions.length ? "attention" : ""}><dt>{copy.pending}</dt><dd>{suggestions.length}</dd></div>
+        </dl>
+        <aside><span>{copy.next}</span><strong>{nextStep}</strong><ArrowRight size={18} /></aside>
+      </section>
+
+      {suggestions.length > 0 && (
+        <section className="suggestion-section">
+          <div className="section-heading"><div><h2>{copy.possibleSameSource}</h2><p>{copy.possibleHelp}</p></div><span>{suggestions.length}</span></div>
+          <div className="suggestion-list">{suggestions.map((suggestion) => {
+            const primary = byId.get(suggestion.primaryId);
+            const related = byId.get(suggestion.relatedId);
+            if (!primary || !related) return null;
+            return <article key={suggestion.id}>
+              <div className="match-label"><Link2 size={15} /><strong>{copy.confidence[suggestion.confidence]}</strong><span>{suggestionReason(copy, suggestion)}</span></div>
+              <div className="match-pair"><div><small>{primary.source}</small><strong>{primary.title}</strong></div><div><small>{related.source}</small><strong>{related.title}</strong></div></div>
+              <div className="match-actions"><button onClick={() => onReject(suggestion.id)}>{copy.keepSeparate}</button><button className="audit-primary" onClick={() => confirmSuggestion(suggestion)}><Check size={14} />{copy.confirmSame}</button></div>
+            </article>;
+          })}</div>
+        </section>
+      )}
+
+      <section className="materials-section">
+        <div className="section-heading"><div><h2>{copy.materialTitle}</h2><p>{audit.materials.length ? `${audit.unverifiedCount} ${copy.unverified}` : copy.noMaterials}</p></div><div><button onClick={onFind}><FileSearch size={15} />{copy.find}</button><button onClick={() => setShowManual(true)}><Plus size={15} />{copy.addLink}</button></div></div>
+        {audit.materials.length > 0 && <div className="material-list">{audit.materials.map((item) => {
+          const checked = (item.verification ?? "unverified") !== "unverified";
+          return <article key={item.id}>
+            <div className="material-status"><span className={checked ? "checked" : ""}>{checked ? <Check size={13} /> : null}{checked ? copy.reviewed : copy.unverified}</span><small>{item.group === "Official filing" ? copy.filing : copy.news}</small></div>
+            <div className="material-copy"><h3>{item.title}</h3><p>{item.source} · {formatDate(item.asOf, locale)}</p></div>
+            <div className="material-controls">
+              <a href={item.sourceUrl} target="_blank" rel="noreferrer">{copy.original}<ExternalLink size={13} /></a>
+              {!checked && <button onClick={() => updateEvidence(item.id, { verification: "reviewed" })}>{copy.markReviewed}</button>}
+              {thesisCase.researchPlan?.thesisConfirmed && <label><span>{copy.relation}</span><select value={item.direction} onChange={(event) => updateEvidence(item.id, { direction: event.target.value as EvidenceDirection })}><option value="unclassified">{copy.directions.unclassified}</option><option value="supports">{copy.directions.supports}</option><option value="contradicts">{copy.directions.contradicts}</option></select></label>}
+              <button className="danger" aria-label={copy.remove} onClick={() => onCase({ ...thesisCase, evidence: thesisCase.evidence.filter((candidate) => candidate.id !== item.id).map((candidate) => ({ ...candidate, sameSourceAsIds: candidate.sameSourceAsIds?.filter((id) => id !== item.id) })), lastUpdated: new Date().toISOString() })}><Trash2 size={14} /></button>
+            </div>
+          </article>;
+        })}</div>}
+      </section>
+
+      <footer className="audit-boundary"><span><ShieldCheck size={14} />{copy.boundary}</span><span>{copy.local}</span></footer>
+    </main>
+  );
+}
+
+export function SourceAuditApp() {
+  const [locale, setLocale] = useState<Locale>("en");
+  const [thesisCase, setThesisCase] = useState<ThesisCase | null>(null);
+  const [hydrated, setHydrated] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
+  const [showFinder, setShowFinder] = useState(false);
+  const [rejected, setRejected] = useState<Set<string>>(new Set());
+  const importRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const load = window.setTimeout(() => {
+      try {
+        const nextLocale = resolveLocale(localStorage.getItem(LOCALE_KEY) || navigator.languages || navigator.language);
+        setLocale(nextLocale);
+        const storedCase = localStorage.getItem(CASE_KEY);
+        if (storedCase) {
+          const parsed: unknown = JSON.parse(storedCase);
+          if (isThesisCase(parsed) && !parsed.isDemo) setThesisCase(normalizeMarketCase(parsed));
+        }
+        const storedRejected = localStorage.getItem(REJECTION_KEY);
+        if (storedRejected) {
+          const parsed: unknown = JSON.parse(storedRejected);
+          if (Array.isArray(parsed)) setRejected(new Set(parsed.filter((id): id is string => typeof id === "string")));
+        }
+      } catch { /* Start with an empty in-memory audit. */ }
+      setHydrated(true);
+    }, 0);
+    return () => window.clearTimeout(load);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = locale;
+    if (!hydrated) return;
+    try { localStorage.setItem(LOCALE_KEY, locale); } catch { /* Keep working in memory. */ }
+  }, [hydrated, locale]);
+  useEffect(() => {
+    if (!hydrated) return;
+    try {
+      if (thesisCase) localStorage.setItem(CASE_KEY, JSON.stringify(thesisCase));
+      else localStorage.removeItem(CASE_KEY);
+      localStorage.setItem(REJECTION_KEY, JSON.stringify(Array.from(rejected)));
+    } catch { /* Keep working in memory. */ }
+  }, [hydrated, rejected, thesisCase]);
+
+  const selectStock = (stock: StockSearchResult, snapshot?: MarketSnapshot) => {
+    setThesisCase(buildResearchCase(stock, locale, snapshot));
+    setRejected(new Set());
+  };
+  const addFoundMaterials = (candidates: MaterialCandidate[]) => {
+    setThesisCase((current) => {
+      if (!current) return current;
+      const accepted: EvidenceItem[] = [];
+      for (const candidate of candidates) {
+        if (current.evidence.length + accepted.length >= 40 || isCandidateAlreadyAdded(candidate, [...current.evidence, ...accepted])) continue;
+        accepted.push(materialCandidateToEvidence(candidate, `found-${Date.now().toString(36)}-${accepted.length}`));
+      }
+      return accepted.length ? { ...current, evidence: [...current.evidence, ...accepted], lastUpdated: new Date().toISOString() } : current;
+    });
+    setShowFinder(false);
+  };
+
+  return <div className="audit-app">
+    <AppHeader locale={locale} onLocale={setLocale} onGuide={() => setShowGuide(true)} />
+    {!hydrated ? <main className="audit-loading" /> : thesisCase ? (
+      <Workspace locale={locale} thesisCase={thesisCase} rejected={rejected} onCase={setThesisCase} onReject={(id) => setRejected((current) => new Set([...current, id]))} onFind={() => setShowFinder(true)} onChangeStock={() => setThesisCase(null)} />
+    ) : (
+      <main className="audit-picker-page"><StockPicker locale={locale} onSelect={selectStock} onImport={() => importRef.current?.click()} /></main>
+    )}
+    {showGuide && <Guide copy={COPY[locale]} onClose={() => setShowGuide(false)} />}
+    {showFinder && thesisCase && <MaterialFinderModal thesisCase={thesisCase} locale={locale} existingEvidence={thesisCase.evidence} remainingSlots={Math.max(0, 40 - thesisCase.evidence.length)} onClose={() => setShowFinder(false)} onAdd={addFoundMaterials} />}
+    <input ref={importRef} type="file" hidden accept="application/json" onChange={(event) => {
+      const file = event.target.files?.[0];
+      if (!file || file.size > 2 * 1024 * 1024) return;
+      void file.text().then((text) => { try { const parsed: unknown = JSON.parse(text); if (isThesisCase(parsed) && !parsed.isDemo) setThesisCase(normalizeMarketCase(parsed)); } catch { /* Ignore invalid imports. */ } });
+      event.currentTarget.value = "";
+    }} />
+  </div>;
+}
